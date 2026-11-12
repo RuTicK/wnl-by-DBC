@@ -433,7 +433,7 @@ export default function LoginView({ onLoginSuccess }: LoginViewProps) {
               <div className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-slate-50 border border-slate-100">
                 <div className="text-lg sm:text-xl mb-0.5">📝</div>
                 <div className="text-xs font-bold text-slate-800">6 ประเภทวันลา</div>
-                <div className="text-xs text-slate-500 font-medium">เช็คโปร 120 วัน</div>
+                <div className="text-xs text-slate-500 font-medium">เช็คโปร 119 วัน</div>
               </div>
               <div className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-slate-50 border border-slate-100">
                 <div className="text-lg sm:text-xl mb-0.5">🛡️</div>

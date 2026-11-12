@@ -93,10 +93,10 @@ export default function LeavePolicyModal({
           <div className="rounded-2xl bg-gradient-to-r from-amber-50 via-amber-50 to-orange-50 border border-amber-200 p-4 sm:p-4.5 text-xs sm:text-sm text-amber-950 space-y-1.5 shadow-2xs">
             <div className="font-black flex items-center gap-2 text-amber-900">
               <Clock className="h-4.5 w-4.5 text-amber-600 shrink-0" />
-              <span>เกณฑ์การผ่านทดลองงาน: 120 วัน (Probation)</span>
+              <span>เกณฑ์การผ่านทดลองงาน: 119 วัน (Probation)</span>
             </div>
             <p className="text-amber-800 leading-relaxed font-medium">
-              พนักงานต้องปฏิบัติงานครบ <strong>120 วัน</strong> จึงจะถือว่าผ่านการทดลองงาน โดยในช่วงระหว่างทดลองงานจะไม่สามารถใช้สิทธิ <strong>ลาพักร้อน (Vacation) หรือ Work From Home (WFH)</strong> ได้ (สามารถใช้สิทธิลาป่วย หรือ ทำงานนอกสถานที่ได้ตามปกติ)
+              พนักงานต้องปฏิบัติงานครบ <strong>119 วัน</strong> จึงจะถือว่าผ่านการทดลองงาน โดยในช่วงระหว่างทดลองงานจะไม่สามารถใช้สิทธิ <strong>ลาพักร้อน (Vacation) หรือ Work From Home (WFH)</strong> ได้ (สามารถใช้สิทธิลาป่วย หรือ ทำงานนอกสถานที่ได้ตามปกติ)
             </p>
           </div>
 

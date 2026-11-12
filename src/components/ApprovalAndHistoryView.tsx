@@ -168,54 +168,6 @@ export default function ApprovalAndHistoryView({
 
   return (
     <div className="space-y-5">
-      {/* 4-Role Approval Workflow Guide (Collapsible for a clean, uncluttered interface) */}
-      {currentUser.role !== 'employee' && (
-        <details className="group rounded-2xl bg-white border border-slate-200/90 shadow-2xs overflow-hidden transition">
-          <summary className="p-3.5 sm:p-4 cursor-pointer font-bold text-xs sm:text-sm text-slate-700 hover:text-blue-700 flex items-center justify-between list-none [&::-webkit-details-marker]:hidden select-none min-h-[44px]">
-            <div className="flex items-center gap-2 min-w-0">
-              <ShieldCheck className="h-4.5 w-4.5 text-blue-600 shrink-0" />
-              <span className="font-extrabold truncate">
-                ผังสายการอนุมัติวันลาตามบทบาท (Approval Matrix)
-              </span>
-            </div>
-            <span className="text-xs font-semibold text-blue-600 group-open:rotate-180 transition-transform shrink-0 ml-2">
-              ▼
-            </span>
-          </summary>
-          <div className="px-3.5 sm:px-4 pb-4 pt-1 border-t border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs">
-            <div className="rounded-xl bg-slate-50 p-3 border border-slate-200/80">
-              <div className="font-bold text-slate-900 flex items-center gap-1.5">
-                <span className="h-5 w-5 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-[11px]">1</span>
-                พนักงาน (Employee)
-              </div>
-              <p className="text-slate-600 mt-1 leading-relaxed">
-                Employee &rarr; Manager (ขั้น 1) &rarr; HR (ขั้น 2) ตัดโควต้า
-              </p>
-            </div>
-
-            <div className="rounded-xl bg-slate-50 p-3 border border-slate-200/80">
-              <div className="font-bold text-slate-900 flex items-center gap-1.5">
-                <span className="h-5 w-5 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-[11px]">2</span>
-                หัวหน้าแผนก (Manager)
-              </div>
-              <p className="text-slate-600 mt-1 leading-relaxed">
-                Manager &rarr; C-Level (ขั้น 1) &rarr; HR (ขั้น 2) ตัดโควต้า
-              </p>
-            </div>
-
-            <div className="rounded-xl bg-slate-50 p-3 border border-slate-200/80">
-              <div className="font-bold text-slate-900 flex items-center gap-1.5">
-                <span className="h-5 w-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[11px]">3</span>
-                ฝ่ายบุคคล (HR)
-              </div>
-              <p className="text-slate-600 mt-1 leading-relaxed">
-                HR 1 &rarr; C-Level (ขั้น 1) &rarr; HR 2 สำรอง (ขั้น 2)
-              </p>
-            </div>
-          </div>
-        </details>
-      )}
-
       {/* Sub-navigation Tabs */}
       {currentUser.role === 'employee' ? (
         <div className="flex items-center justify-between border-b border-slate-200/90 pb-3.5">
@@ -508,8 +460,8 @@ export default function ApprovalAndHistoryView({
                         ) : (
                           <div className="mt-2 text-xs text-amber-900 font-medium">
                             {isCLevelStep1Workflow
-                              ? 'รอผู้บริหาร (C-Level) ตรวจสอบและกดอนุมัติ'
-                              : `รอหัวหน้าแผนก ${lv.department} ตรวจสอบและกดอนุมัติ`}
+                              ? 'รอ C-Level อนุมัติ'
+                              : `รอหัวหน้าฝ่าย ${lv.department} อนุมัติ`}
                           </div>
                         )}
                       </div>
@@ -570,9 +522,9 @@ export default function ApprovalAndHistoryView({
                           <div className="mt-2 text-xs text-slate-600 font-medium">
                             {lv.status === 'pending_hr'
                               ? lv.requesterRole === 'hr'
-                                ? 'รอ HR สำรองอีกท่าน (HR 2) กดอนุมัติ'
-                                : 'รอ HR กดอนุมัติเพื่อตัดโควต้า & แจ้ง C-Level'
-                              : 'ต้องผ่านการอนุมัติขั้นที่ 1 ก่อนจึงจะมาถึงขั้นนี้'}
+                                ? 'รอ HR สำรองอนุมัติ'
+                                : 'รอ HR อนุมัติ'
+                              : 'รอขั้นที่ 1'}
                           </div>
                         )}
                       </div>

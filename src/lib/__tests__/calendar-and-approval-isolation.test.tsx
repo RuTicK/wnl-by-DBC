@@ -363,12 +363,17 @@ describe('LeaveCalendar & Departmental Approval Isolation UI Tests', () => {
     }
   });
 
-  it('removes manual English name input and skips department & startDate for C-Level in HrManagementView', () => {
+  it('removes manual English name input, unnecessary manual descriptions, and skips department & startDate for C-Level', () => {
     const hrMgmtPath = path.resolve(__dirname, '../../components/HrManagementView.tsx');
     const hrMgmtContent = fs.readFileSync(hrMgmtPath, 'utf-8');
     expect(hrMgmtContent).not.toContain('setEmpEnglishName');
     expect(hrMgmtContent).not.toContain('ชื่อภาษาอังกฤษ (Google Profile)');
+    expect(hrMgmtContent).not.toContain('โควต้าวันลามาตรฐานบริษัท (กำหนดอัตโนมัติ ไม่ต้องตั้งค่าเอง)');
     expect(hrMgmtContent).toContain('isExecutiveRole');
-    expect(hrMgmtContent).toContain('ไม่ต้องเลือกฝ่าย และไม่ต้องระบุวันเริ่มทำงาน');
+    expect(hrMgmtContent).toContain('ไม่ต้องเลือกฝ่ายและไม่ต้องระบุวันเริ่มทำงาน');
+
+    const approvalsPath = path.resolve(__dirname, '../../components/ApprovalAndHistoryView.tsx');
+    const approvalsContent = fs.readFileSync(approvalsPath, 'utf-8');
+    expect(approvalsContent).not.toContain('ผังสายการอนุมัติวันลาตามบทบาท');
   });
 });

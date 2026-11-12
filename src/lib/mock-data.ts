@@ -108,7 +108,7 @@ export const INITIAL_USERS: User[] = isTestEnv
         role: 'employee',
         department: 'Accounting & Finance',
         position: 'Accountant (Probation)',
-        startDate: `${CURRENT_YEAR}-10-15`, // ยังไม่ครบ 120 วัน (อยู่ในช่วงทดลองงาน)
+        startDate: `${CURRENT_YEAR}-10-15`, // ยังไม่ครบ 119 วัน (อยู่ในช่วงทดลองงาน)
         quotas: { sick: 30, personal: 3, vacation: 6, wfh: 0, wfa: 0, offsite: 0 },
       },
       {

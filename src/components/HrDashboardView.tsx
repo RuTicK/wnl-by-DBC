@@ -267,18 +267,12 @@ export default function HrDashboardView({
             <div>
               <div className="flex items-center gap-2.5 flex-wrap">
                 <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
-                  แดชบอร์ดสรุปสถิติการลา &amp; โควต้าพนักงาน (PDPA Compliant)
+                  สถิติการลา &amp; โควต้าพนักงาน
                 </h2>
-                <span className="rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-white px-3 py-1 text-xs font-black tracking-wider shadow-xs">
-                  วันนี้ลา by DBC
-                </span>
                 <span className="rounded-full bg-blue-50 border border-blue-200 px-3 py-1 text-xs font-bold text-blue-700">
                   ประจำปี {year + 543}
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
-                ภาพรวมสถิติวันลาและปฏิบัติงานนอกสถานที่ทั้งบริษัท สรุปรายเดือน รายแผนก สถานะผ่านโปร 120 วัน และโควต้ารายบุคคล
-              </p>
             </div>
           </div>
         </div>
@@ -548,7 +542,7 @@ export default function HrDashboardView({
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-black">
                 <th className="py-4 px-5">พนักงาน (TH / EN / Email)</th>
-                <th className="py-4 px-4">แผนก / เริ่มงาน (โปร 120 วัน)</th>
+                <th className="py-4 px-4">แผนก / เริ่มงาน (โปร 119 วัน)</th>
                 <th className="py-4 px-3 text-center bg-rose-50/60 text-rose-800">
                   ลาป่วย
                 </th>

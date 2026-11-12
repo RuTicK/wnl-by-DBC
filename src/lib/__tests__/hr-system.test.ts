@@ -636,14 +636,14 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
     });
   });
 
-  describe('4. 120-Day Probation Enforcement & 6 Leave Types (WFH / WFA / Offsite)', () => {
-    it('blocks probation employee (< 120 days) from Vacation, WFH, and WFA, but allows Sick and Offsite', async () => {
-      // EMP007 started on 2026-10-01 (<120 days on 2026-11-09)
+  describe('4. 119-Day Probation Enforcement & 6 Leave Types (WFH / WFA / Offsite)', () => {
+    it('blocks probation employee (< 119 days) from Vacation, WFH, and WFA, but allows Sick and Offsite', async () => {
+      // EMP007 started on 2026-10-01 (<119 days on 2026-11-09)
       const probInfo = getProbationInfo('2026-10-01', '2026-11-09');
       expect(probInfo.passed).toBe(false);
-      expect(probInfo.probationDaysRequired).toBe(120);
+      expect(probInfo.probationDaysRequired).toBe(119);
       expect(probInfo.daysWorked).toBe(39);
-      expect(probInfo.daysRemaining).toBe(81);
+      expect(probInfo.daysRemaining).toBe(80);
       expect(
         checkProbationLeaveEligibility('2026-10-01', 'vacation', '2026-11-09')
           .allowed
@@ -689,32 +689,32 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
       expect(offsiteSuccess.leave?.locationDetail).toContain('ไบเทคบางนา');
     });
 
-    it('handles exact boundary transition between 119 days (restricted) and 120 days (passed probation)', () => {
+    it('handles exact boundary transition between 118 days (restricted) and 119 days (passed probation)', () => {
       // Start date: 2026-01-01
+      // Exactly 118 days worked -> 2026-04-29
+      const day118 = getProbationInfo('2026-01-01', '2026-04-29');
+      expect(day118.daysWorked).toBe(118);
+      expect(day118.passed).toBe(false);
+      expect(day118.daysRemaining).toBe(1);
+      expect(
+        checkProbationLeaveEligibility('2026-01-01', 'vacation', '2026-04-29')
+          .allowed
+      ).toBe(false);
+      expect(
+        checkProbationLeaveEligibility('2026-01-01', 'wfh', '2026-04-29').allowed
+      ).toBe(false);
+
       // Exactly 119 days worked -> 2026-04-30
       const day119 = getProbationInfo('2026-01-01', '2026-04-30');
       expect(day119.daysWorked).toBe(119);
-      expect(day119.passed).toBe(false);
-      expect(day119.daysRemaining).toBe(1);
+      expect(day119.passed).toBe(true);
+      expect(day119.daysRemaining).toBe(0);
       expect(
         checkProbationLeaveEligibility('2026-01-01', 'vacation', '2026-04-30')
           .allowed
-      ).toBe(false);
-      expect(
-        checkProbationLeaveEligibility('2026-01-01', 'wfh', '2026-04-30').allowed
-      ).toBe(false);
-
-      // Exactly 120 days worked -> 2026-05-01
-      const day120 = getProbationInfo('2026-01-01', '2026-05-01');
-      expect(day120.daysWorked).toBe(120);
-      expect(day120.passed).toBe(true);
-      expect(day120.daysRemaining).toBe(0);
-      expect(
-        checkProbationLeaveEligibility('2026-01-01', 'vacation', '2026-05-01')
-          .allowed
       ).toBe(true);
       expect(
-        checkProbationLeaveEligibility('2026-01-01', 'wfh', '2026-05-01').allowed
+        checkProbationLeaveEligibility('2026-01-01', 'wfh', '2026-04-30').allowed
       ).toBe(true);
     });
 
@@ -1089,7 +1089,7 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
       expect(secondAuth.user?.englishName).toBe('Nawaphon K. (Verified)');
     });
 
-    it('allows logged-in Google user to switch their own Role (employee/manager/hr/c_level) and 120-day probation startDate', async () => {
+    it('allows logged-in Google user to switch their own Role (employee/manager/hr/c_level) and 119-day probation startDate', async () => {
       // Switch EMP003 from employee -> c_level and probation startDate via POST /api/auth (action: update_self_role)
       const switchReq = new NextRequest('http://localhost:3000/api/auth', {
         method: 'POST',

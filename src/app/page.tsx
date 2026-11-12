@@ -747,7 +747,7 @@ export default function HomePage() {
               >
                 {probation.passed
                   ? 'ผ่านโปร'
-                  : `ทดลองงาน (${probation.daysWorked}/120ว.)`}
+                  : `ทดลองงาน (${probation.daysWorked}/119ว.)`}
               </span>
             </div>
           </div>
@@ -1105,7 +1105,7 @@ export default function HomePage() {
                             </span>
                             {lockedByProbation && (
                               <span className="rounded bg-amber-100 border border-amber-300 px-1.5 py-0.2 text-[10px] font-bold text-amber-800 shrink-0">
-                                รอผ่านโปร (120 วัน)
+                                รอผ่านโปร (119 วัน)
                               </span>
                             )}
                           </div>

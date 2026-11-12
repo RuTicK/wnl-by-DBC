@@ -91,7 +91,11 @@ export default function LeaveRequestModal({
       setStartDate(baseDate);
       setEndDate(baseDate);
       setError(null);
-      if (currentUser) {
+      if (
+        currentUser &&
+        currentUser.role !== 'c_level' &&
+        currentUser.role !== 'admin'
+      ) {
         const prob = checkProbationLeaveEligibility(
           currentUser.startDate,
           'vacation',
@@ -128,12 +132,19 @@ export default function LeaveRequestModal({
   }, [startDate, currentUser, leaves, holidays, myQuota]);
 
   const probationCheck = useMemo(() => {
-    return checkProbationLeaveEligibility(
+    const check = checkProbationLeaveEligibility(
       currentUser?.startDate,
       leaveType,
       startDate
     );
-  }, [currentUser?.startDate, leaveType, startDate]);
+    if (currentUser?.role === 'c_level' || currentUser?.role === 'admin') {
+      return {
+        allowed: true,
+        probation: { ...check.probation, passed: true, daysRemaining: 0 },
+      };
+    }
+    return check;
+  }, [currentUser?.role, currentUser?.startDate, leaveType, startDate]);
 
   const selectedQuota = effectiveQuota.quotas[leaveType];
   const isOverQuota =
@@ -316,41 +327,37 @@ export default function LeaveRequestModal({
             </div>
           )}
 
-          {/* แจ้งเตือนกรณีพนักงานยังอยู่ในช่วงทดลองงาน (< 120 วัน) */}
+          {/* แจ้งเตือนกรณีพนักงานยังอยู่ในช่วงทดลองงาน (< 119 วัน) */}
           {!probationCheck.probation.passed && (
-            <div className="rounded-2xl bg-amber-50 border border-amber-200 p-3.5 sm:p-4 text-xs sm:text-sm text-amber-950 space-y-1.5 shadow-2xs">
-              <div className="font-black flex items-center gap-2">
-                <Lock className="h-4.5 w-4.5 text-amber-600 shrink-0" />
-                <span>
-                  สถานะทดลองงาน 120 วัน (เริ่มงาน{' '}
-                  {formatThaiDate(probationCheck.probation.startDate, true)} •
-                  ผ่านโปร {formatThaiDate(probationCheck.probation.passDate, true)})
-                </span>
-              </div>
-              <p className="text-amber-800 leading-relaxed font-medium">
-                ระหว่างยังไม่ผ่านโปร 120 วัน จะยังไม่สามารถกด{' '}
-                <strong>ลาพักร้อน / WFH / WFA</strong> ได้ แต่สามารถกด{' '}
-                <strong>ลาป่วย / ทำงานนอกสถานที่ (พบลูกค้า/ออกบูธ)</strong> ได้ตามปกติ
-              </p>
+            <div className="rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3 text-xs sm:text-sm text-amber-950 shadow-2xs flex items-center gap-2">
+              <Lock className="h-4 w-4 text-amber-600 shrink-0" />
+              <span className="font-bold">
+                ทดลองงาน 119 วัน (ผ่านโปร{' '}
+                {formatThaiDate(probationCheck.probation.passDate, true)}) —
+                ล็อก ลาพักร้อน / WFH / WFA
+              </span>
             </div>
           )}
 
           {/* 1. เลือกประเภทการลา / รูปแบบการปฏิบัติงาน */}
           <div>
             <label className="block text-sm font-bold text-slate-800 mb-2 sm:mb-2.5">
-              1. เลือกประเภทการลา หรือ ปฏิบัติงานนอกสถานที่ (ประจำปี {effectiveQuota.year}):
+              1. เลือกประเภท ({effectiveQuota.year}):
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
               {ALL_LEAVE_TYPES.map((type) => {
                 const meta = LEAVE_TYPE_META[type];
                 const q = effectiveQuota.quotas[type];
                 const isSelected = leaveType === type;
+                const isExec =
+                  currentUser?.role === 'c_level' ||
+                  currentUser?.role === 'admin';
                 const typeProbation = checkProbationLeaveEligibility(
                   currentUser?.startDate,
                   type,
                   startDate
                 );
-                const isLockedByProbation = !typeProbation.allowed;
+                const isLockedByProbation = !isExec && !typeProbation.allowed;
 
                 return (
                   <button
@@ -683,7 +690,7 @@ export default function LeaveRequestModal({
               rows={3}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="ระบุเหตุผลการลา หรือ รายละเอียดงาน (ซ่อนข้อมูลส่วนตัวจากเพื่อนร่วมแผนกอัตโนมัติตาม PDPA)"
+              placeholder="ระบุเหตุผลการลา หรือ รายละเอียดงาน"
               className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-base sm:text-sm text-slate-900 focus:border-blue-600 focus:outline-hidden leading-relaxed"
               required
             />

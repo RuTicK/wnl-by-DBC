@@ -250,7 +250,7 @@ export default function AttendanceAndOfficeView({
     if (!myProbation.passed && (loc === 'wfh' || loc === 'wfa')) {
       setFeedback({
         type: 'error',
-        message: `ช่วงทดลองงาน (< 120 วัน) ยังไม่สามารถเลือกลงเวลา WFH หรือ WFA ได้ (เริ่มงาน ${formatThaiDate(myProbation.startDate, true)} ผ่านโปร ${formatThaiDate(myProbation.passDate, true)})`,
+        message: `ช่วงทดลองงาน (< 119 วัน) ยังไม่สามารถเลือกลงเวลา WFH หรือ WFA ได้ (เริ่มงาน ${formatThaiDate(myProbation.startDate, true)} ผ่านโปร ${formatThaiDate(myProbation.passDate, true)})`,
       });
       return;
     }
@@ -367,12 +367,8 @@ export default function AttendanceAndOfficeView({
             </div>
 
             {!myProbation.passed && (
-              <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4 text-xs sm:text-sm text-amber-900 leading-relaxed shadow-2xs">
-                <strong>⚠️ สถานะทดลองงาน (ยังไม่ครบ 120 วัน):</strong> เริ่มงาน{' '}
-                {formatThaiDate(myProbation.startDate, true)} (เหลืออีก{' '}
-                {myProbation.daysRemaining} วัน) • สามารถลงเวลา{' '}
-                <strong>เข้า Office</strong> หรือ{' '}
-                <strong>ทำงานนอกสถานที่ (พบลูกค้า/ออกบูธ)</strong> ได้ตามปกติ
+              <div className="rounded-2xl bg-amber-50 border border-amber-200 px-3.5 py-2.5 text-xs sm:text-sm text-amber-900 shadow-2xs">
+                <strong>⚠️ ทดลองงาน ({myProbation.daysWorked}/119 วัน):</strong> ยังไม่สามารถใช้ WFH / WFA ได้
               </div>
             )}
 
@@ -445,8 +441,8 @@ export default function AttendanceAndOfficeView({
                       </button>
                     </div>
                   ) : (
-                    <div className="text-center py-3 px-4 text-xs sm:text-sm font-bold text-emerald-800 bg-emerald-100/80 rounded-2xl">
-                      🎉 บันทึกเวลาครบถ้วนแล้ว (รวม {getElapsedDuration(myTodayRecord.checkInTime, myTodayRecord.checkOutTime)}) พักผ่อนให้สบายใจครับ!
+                    <div className="text-center py-2.5 px-4 text-xs sm:text-sm font-bold text-emerald-800 bg-emerald-100/80 rounded-2xl">
+                      บันทึกเวลาครบถ้วนแล้ว (รวม {getElapsedDuration(myTodayRecord.checkInTime, myTodayRecord.checkOutTime)})
                     </div>
                   )}
                 </div>
@@ -547,7 +543,7 @@ export default function AttendanceAndOfficeView({
                       </div>
                       <div className="text-xs text-blue-700 font-semibold mt-1 truncate">
                         {!myProbation.passed
-                          ? 'รอผ่านโปร 120 วัน'
+                          ? 'รอผ่านโปร 119 วัน'
                           : submitting
                             ? 'กำลังบันทึก...'
                             : 'ทำงานที่บ้าน'}
@@ -615,7 +611,7 @@ export default function AttendanceAndOfficeView({
                       </div>
                       <div className="text-xs text-violet-700 font-semibold mt-1 truncate">
                         {!myProbation.passed
-                          ? 'รอผ่านโปร 120 วัน'
+                          ? 'รอผ่านโปร 119 วัน'
                           : submitting
                             ? 'กำลังบันทึก...'
                             : 'นอกสถานที่ทำงาน'}

@@ -685,20 +685,11 @@ export default function HrManagementView({
       {/* SECTION 1: EMPLOYEES MANAGEMENT */}
       {activeSection === 'EMPLOYEES' && (
         <div className="rounded-3xl bg-white border border-slate-200 shadow-xs overflow-hidden">
-          <div className="p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="p-5 sm:p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h3 className="text-base sm:text-lg font-black text-slate-900">
-                  ตารางพนักงานตามมาตรฐาน PDPA (เชื่อมต่อ Google Login &amp; AppSheet)
-                </h3>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-0.5 text-xs font-bold text-emerald-800">
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  ไม่เก็บเบอร์โทร &amp; ข้อมูลส่วนเกิน
-                </span>
-              </div>
-              <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
-                เก็บเฉพาะ EmployeeID, ชื่อภาษาไทย, ชื่อภาษาอังกฤษ, Email (Google Login), Role (C-Level / HR / Manager / Employee), แผนก, ตำแหน่ง และวันที่เริ่มงาน (เช็คผ่านโปร 120 วัน)
-              </p>
+              <h3 className="text-base sm:text-lg font-black text-slate-900">
+                รายชื่อพนักงาน ({users.length} คน)
+              </h3>
             </div>
 
             <button
@@ -715,11 +706,11 @@ export default function HrManagementView({
             <table className="w-full text-left border-collapse text-xs sm:text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-black">
-                  <th className="py-4 px-5">EmployeeID / ชื่อภาษาไทย</th>
-                  <th className="py-4 px-4">Google Login (Email &amp; ชื่อ EN)</th>
-                  <th className="py-4 px-3">บทบาท (Role)</th>
-                  <th className="py-4 px-3">แผนก / ตำแหน่ง</th>
-                  <th className="py-4 px-3">วันที่เริ่มงาน (โปร 120 วัน)</th>
+                  <th className="py-4 px-5">รหัส / ชื่อภาษาไทย</th>
+                  <th className="py-4 px-4">Google Email / EN</th>
+                  <th className="py-4 px-3">บทบาท</th>
+                  <th className="py-4 px-3">ฝ่าย / ตำแหน่ง</th>
+                  <th className="py-4 px-3">เริ่มงาน (โปร 119 วัน)</th>
                   <th className="py-4 px-3 text-center">
                     โควต้า (ป่วย/กิจ/พักร้อน)
                   </th>
@@ -836,12 +827,9 @@ export default function HrManagementView({
             <div>
               <h3 className="text-base sm:text-lg font-black text-slate-900">
                 {editingHolidayId
-                  ? 'แก้ไขวันหยุดนักขัตฤกษ์ / วันหยุดบริษัท'
-                  : 'เพิ่มวันหยุดนักขัตฤกษ์ / วันหยุดพิเศษบริษัท'}
+                  ? 'แก้ไขวันหยุดบริษัท'
+                  : 'เพิ่มวันหยุดบริษัท'}
               </h3>
-              <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
-                เมื่อเพิ่มหรือแก้ไขวันหยุดแล้ว ระบบจะตัดวันหยุดออกจากการคำนวณวันลาให้อัตโนมัติ (ไม่เสียวันลา)
-              </p>
             </div>
 
             <form onSubmit={handleAddHoliday} className="space-y-4 text-xs sm:text-sm">
@@ -969,16 +957,13 @@ export default function HrManagementView({
       {isEmpModalOpen && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 p-0 sm:p-4 backdrop-blur-xs">
           <div className="w-full max-w-2xl rounded-t-[28px] sm:rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
-            <div className="flex items-center justify-between bg-gradient-to-r from-[#0A2540] to-[#0066FF] px-5 sm:px-6 py-4 sm:py-5 text-white">
+            <div className="flex items-center justify-between bg-gradient-to-r from-[#0A2540] to-[#0066FF] px-5 sm:px-6 py-4 text-white">
               <div>
                 <h3 className="font-black text-base sm:text-lg">
                   {editingEmpId
                     ? `แก้ไขข้อมูลพนักงาน (${editingEmpId})`
-                    : 'เพิ่มพนักงานใหม่ (PDPA Compliant)'}
+                    : 'เพิ่มพนักงานใหม่'}
                 </h3>
-                <p className="text-xs text-blue-100 mt-0.5 font-medium">
-                  เก็บเฉพาะข้อมูลที่จำเป็นตาม PDPA • ไม่เก็บเบอร์โทรศัพท์
-                </p>
               </div>
               <button
                 type="button"
@@ -1012,7 +997,7 @@ export default function HrManagementView({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block font-bold text-slate-800 mb-1.5">
-                    รหัสพนักงาน (Employee ID) <span className="text-rose-500">*</span>
+                    รหัสพนักงาน <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -1023,11 +1008,6 @@ export default function HrManagementView({
                     className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm font-mono font-bold text-slate-900 bg-slate-50 disabled:bg-slate-100 disabled:text-slate-500 focus:border-blue-600 focus:outline-hidden"
                     required
                   />
-                  {!editingEmpId && (
-                    <p className="text-xs text-slate-500 mt-1 font-medium">
-                      * ระบบคำนวณรหัสถัดไปให้อัตโนมัติ (สามารถแก้ไขได้)
-                    </p>
-                  )}
                 </div>
 
                 <div>
@@ -1035,7 +1015,7 @@ export default function HrManagementView({
                     htmlFor="emp-role-select"
                     className="block font-bold text-slate-800 mb-1.5"
                   >
-                    บทบาทและสิทธิ์ในระบบ (Role) <span className="text-rose-500">*</span>
+                    บทบาท (Role) <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
                     <select
@@ -1052,22 +1032,14 @@ export default function HrManagementView({
                       }}
                       className="w-full appearance-none rounded-xl border border-slate-300 pl-4 pr-11 py-3 text-base sm:text-sm text-slate-900 bg-white font-medium hover:border-blue-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 focus:outline-hidden cursor-pointer min-h-[46px]"
                     >
-                      <option value="employee">
-                        พนักงานทั่วไป (Employee) — เช็คอิน, ยื่นใบลา, ดูสถิติตัวเอง
-                      </option>
-                      <option value="manager">
-                        หัวหน้าแผนก (Manager) — ยื่นใบลา + อนุมัติใบลาลูกทีม Step 1
-                      </option>
-                      <option value="hr">
-                        ฝ่ายบุคคล (HR) — อนุมัติ Step 2 / จัดการพนักงาน &amp; วันหยุด / ดูรายงานทั้งองค์กร
-                      </option>
-                      <option value="c_level">
-                        ผู้บริหารระดับสูง (C-Level) — สิทธิ์อนุมัติได้ทุกระดับ / จัดการพนักงาน
-                      </option>
+                      <option value="employee">พนักงานทั่วไป (Employee)</option>
+                      <option value="manager">หัวหน้าฝ่าย (Manager)</option>
+                      <option value="hr">ฝ่ายบุคคล (HR)</option>
+                      <option value="c_level">ผู้บริหารระดับสูง (C-Level)</option>
                       {empEmail.trim().toLowerCase() ===
                         'rut.wa@digitalbusinessconsult.asia' && (
                         <option value="admin">
-                          👑 ผู้ดูแลระบบสูงสุด (Super Admin) — สิทธิ์เข้าถึงทุกหน้าและจัดการทั้งระบบ (เฉพาะคุณรุจน์)
+                          👑 ผู้ดูแลระบบสูงสุด (Super Admin)
                         </option>
                       )}
                     </select>
@@ -1081,40 +1053,30 @@ export default function HrManagementView({
 
                 <div className="sm:col-span-2">
                   <label className="block font-bold text-slate-800 mb-1.5">
-                    อีเมล Google สำหรับเข้าสู่ระบบ <span className="text-rose-500">*</span>
+                    อีเมล Google <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="email"
                     value={empEmail}
                     onChange={(e) => setEmpEmail(e.target.value)}
-                    placeholder="เช่น name@digitalbusinessconsult.asia หรือ name@gmail.com"
+                    placeholder="name@digitalbusinessconsult.asia"
                     className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm text-slate-900 font-medium focus:border-blue-600 focus:outline-hidden"
                     required
                   />
-                  <p className="text-xs text-slate-500 mt-1 font-medium">
-                    * ชื่อภาษาอังกฤษจะถูกดึงจากบัญชี Google Login ให้อัตโนมัติเมื่อพนักงานเข้าสู่ระบบครั้งแรก
-                  </p>
                   {editingEmpId && (
                     <div className="mt-2 inline-flex items-center gap-2 rounded-xl bg-slate-50 border border-slate-200 px-3 py-1.5 text-xs">
-                      <span className="font-bold text-slate-600">ชื่อจาก Google Login:</span>
+                      <span className="font-bold text-slate-600">ชื่อจาก Google:</span>
                       <span className="font-bold text-blue-700">
-                        {editingEnglishName || 'ยังไม่ได้เข้าสู่ระบบ (รอดึงอัตโนมัติ)'}
+                        {editingEnglishName || 'รอดึงอัตโนมัติ'}
                       </span>
                     </div>
                   )}
                 </div>
 
                 {isExecutiveRole ? (
-                  <div className="sm:col-span-2 rounded-2xl bg-purple-50/80 border border-purple-200 px-4 py-3.5 text-xs sm:text-sm text-purple-900 font-medium flex items-start gap-2.5">
-                    <ShieldCheck className="h-4.5 w-4.5 text-purple-600 shrink-0 mt-0.5" />
-                    <div>
-                      <div className="font-extrabold text-purple-950">
-                        สิทธิ์ผู้บริหารระดับสูง (C-Level)
-                      </div>
-                      <p className="text-xs text-purple-800 mt-0.5">
-                        ไม่ต้องเลือกฝ่าย และไม่ต้องระบุวันเริ่มทำงาน (สามารถใช้สิทธิ์วันลาได้ทุกประเภททันทีโดยไม่ติดเงื่อนไขทดลองงาน 120 วัน)
-                      </p>
-                    </div>
+                  <div className="sm:col-span-2 rounded-2xl bg-purple-50/80 border border-purple-200 px-4 py-3 text-xs sm:text-sm text-purple-950 font-bold flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-purple-600 shrink-0" />
+                    <span>C-Level: ไม่ต้องเลือกฝ่ายและไม่ต้องระบุวันเริ่มทำงาน</span>
                   </div>
                 ) : (
                   <>
@@ -1124,8 +1086,7 @@ export default function HrManagementView({
                         htmlFor="emp-department-trigger"
                         className="block font-bold text-slate-800 mb-1.5"
                       >
-                        ฝ่าย / แผนก (Department){' '}
-                        <span className="text-rose-500">*</span>
+                        ฝ่าย / แผนก <span className="text-rose-500">*</span>
                       </label>
                       <DepartmentDropdown
                         value={empDepartment}
@@ -1136,7 +1097,6 @@ export default function HrManagementView({
                         }}
                         legacyDepartment={editingEmpId ? editingOriginalDepartment : null}
                         error={deptValidationError}
-                        helperText="คลิกเลือกฝ่ายจาก Dropdown ด้านบน (AE, สำนักงาน, Consult, Marketing&BD)"
                         isOpen={isDeptDropdownOpen}
                         onOpenChange={setIsDeptDropdownOpen}
                         triggerRef={deptTriggerRef}
@@ -1145,7 +1105,7 @@ export default function HrManagementView({
 
                     <div>
                       <label className="block font-bold text-slate-800 mb-1.5">
-                        วันที่เริ่มงาน (Start Date - ใช้เช็คโปร 120 วัน){' '}
+                        วันที่เริ่มงาน (โปร 119 วัน){' '}
                         <span className="text-rose-500">*</span>
                       </label>
                       <input
@@ -1155,9 +1115,6 @@ export default function HrManagementView({
                         className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm text-slate-900 font-medium focus:border-blue-600 focus:outline-hidden min-h-[46px]"
                         required
                       />
-                      <p className="text-xs text-slate-500 mt-1 font-medium">
-                        * หากอายุงานยังไม่ครบ 120 วัน จะยังไม่สามารถขอลาพักร้อน / WFH / WFA ได้
-                      </p>
                     </div>
                   </>
                 )}
@@ -1171,52 +1128,23 @@ export default function HrManagementView({
                     type="text"
                     value={empName}
                     onChange={(e) => setEmpName(e.target.value)}
-                    placeholder="เว้นว่างได้ (ใช้ชื่อจาก Google / อีเมล)"
+                    placeholder="เช่น สมชาย ใจดี"
                     className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm text-slate-900 font-medium focus:border-blue-600 focus:outline-hidden"
                   />
                 </div>
 
                 <div>
                   <label className="block font-bold text-slate-800 mb-1.5">
-                    ตำแหน่ง (Position){' '}
+                    ตำแหน่ง{' '}
                     <span className="text-xs font-medium text-slate-400">(ไม่บังคับ)</span>
                   </label>
                   <input
                     type="text"
                     value={empPosition}
                     onChange={(e) => setEmpPosition(e.target.value)}
-                    placeholder={
-                      isExecutiveRole
-                        ? 'เว้นว่างได้ (ผู้บริหารระดับสูง C-Level)'
-                        : 'เว้นว่างได้ (เช่น AE / Consultant)'
-                    }
+                    placeholder={isExecutiveRole ? 'C-Level' : 'เช่น AE / Consultant'}
                     className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm text-slate-900 font-medium focus:border-blue-600 focus:outline-hidden"
                   />
-                </div>
-              </div>
-
-              <div className="rounded-2xl bg-blue-50/70 border border-blue-200 p-4 sm:p-5 space-y-2.5">
-                <div className="font-extrabold text-xs sm:text-sm text-blue-950 flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-blue-600 shrink-0" />
-                  <span>โควต้าวันลามาตรฐานบริษัท (กำหนดอัตโนมัติ ไม่ต้องตั้งค่าเอง)</span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-semibold">
-                  <div className="rounded-xl bg-white border border-rose-200 p-2.5 text-center">
-                    <span className="text-rose-600 block font-bold">ลาป่วย</span>
-                    <strong className="text-slate-900 text-sm font-black">30 วัน/ปี</strong>
-                  </div>
-                  <div className="rounded-xl bg-white border border-amber-200 p-2.5 text-center">
-                    <span className="text-amber-600 block font-bold">ลากิจ</span>
-                    <strong className="text-slate-900 text-sm font-black">3 วัน/ปี</strong>
-                  </div>
-                  <div className="rounded-xl bg-white border border-sky-200 p-2.5 text-center">
-                    <span className="text-sky-600 block font-bold">ลาพักร้อน</span>
-                    <strong className="text-slate-900 text-sm font-black">6 วัน/ปี</strong>
-                  </div>
-                  <div className="rounded-xl bg-white border border-blue-200 p-2.5 text-center">
-                    <span className="text-blue-600 block font-bold">WFH / นอกสถานที่</span>
-                    <strong className="text-teal-700 text-sm font-black">ไม่จำกัด</strong>
-                  </div>
                 </div>
               </div>
 

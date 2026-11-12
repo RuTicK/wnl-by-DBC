@@ -292,7 +292,7 @@ export default function PrivacyPolicyPage() {
             <div className="space-y-3 pt-2">
               <h3 className="font-bold text-slate-900 text-sm">2.2 ข้อมูลการปฏิบัติงานและประวัติในระบบ (HR Operational Data)</h3>
               <ul className="list-disc pl-5 space-y-1.5 text-slate-600">
-                <li><strong>ชื่อ-นามสกุล และข้อมูลโปรไฟล์:</strong> รหัสพนักงาน (EmployeeID), ชื่อภาษาไทย, ชื่อภาษาอังกฤษ (จาก Google Profile), แผนก/ฝ่าย, บทบาทหน้าที่ (Employee, Manager, HR, C-Level) และวันเริ่มงาน (เพื่อคำนวณระยะทดลองงาน 120 วัน)</li>
+                <li><strong>ชื่อ-นามสกุล และข้อมูลโปรไฟล์:</strong> รหัสพนักงาน (EmployeeID), ชื่อภาษาไทย, ชื่อภาษาอังกฤษ (จาก Google Profile), แผนก/ฝ่าย, บทบาทหน้าที่ (Employee, Manager, HR, C-Level) และวันเริ่มงาน (เพื่อคำนวณระยะทดลองงาน 119 วัน)</li>
                 <li><strong>ที่อยู่อีเมล Google:</strong> เพื่อการสื่อสารและการยืนยันสิทธิ์ในระบบ</li>
                 <li><strong>รูปโปรไฟล์จาก Google OAuth:</strong> เพื่อใช้แสดงตัวตนในระบบและปฏิทิน</li>
                 <li><strong>ประวัติการลงเวลา Check-in (Attendance Logs):</strong> วันที่และเวลาลงเวลาเข้า-ออกงาน (Check-in / Check-out timestamps), ประเภทสถานที่ปฏิบัติงาน (Office, Remote / WFH, Offsite) และบันทึกหมายเหตุการทำงาน</li>

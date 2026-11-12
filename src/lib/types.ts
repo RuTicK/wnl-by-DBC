@@ -41,7 +41,7 @@ export interface LeaveQuotas {
 /**
  * ข้อมูลพนักงานตามนโยบาย PDPA (Data Minimization):
  * เก็บเฉพาะ EmployeeID, ชื่อภาษาไทย, ชื่อภาษาอังกฤษ (จาก Google Login),
- * Email (จาก Google Login), Role, Department, Position, วันที่เริ่มงาน (สำหรับเช็คผ่านโปร 120 วัน)
+ * Email (จาก Google Login), Role, Department, Position, วันที่เริ่มงาน (สำหรับเช็คผ่านโปร 119 วัน)
  * ไม่เก็บเบอร์โทรศัพท์ ไม่เก็บเลขบัตรประชาชน ไม่เก็บที่อยู่บ้าน และไม่เก็บรหัสผ่านในชีต
  */
 export interface User {
@@ -52,7 +52,7 @@ export interface User {
   role: Role;          // 'c_level' | 'hr' | 'manager' | 'employee'
   department: string;  // แผนก
   position: string;    // ตำแหน่ง
-  startDate: string;   // วันที่เริ่มงาน YYYY-MM-DD (ใช้ตรวจสอบผ่านโปร 120 วัน)
+  startDate: string;   // วันที่เริ่มงาน YYYY-MM-DD (ใช้ตรวจสอบผ่านโปร 119 วัน)
   quotas: LeaveQuotas;
   username?: string;   // ชื่อผู้ใช้สำรองสำหรับโหมดทดสอบ/อ้างอิง
 }
@@ -62,7 +62,7 @@ export type SafeUser = User;
 export interface ProbationInfo {
   startDate: string;
   daysWorked: number;
-  probationDaysRequired: number; // 120 วัน
+  probationDaysRequired: number; // 119 วัน
   daysRemaining: number;
   passed: boolean;
   passDate: string; // YYYY-MM-DD

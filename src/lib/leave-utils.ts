@@ -40,10 +40,10 @@ export const STANDARD_LEAVE_QUOTAS: LeaveQuotas = {
   offsite: 0,
 };
 
-export const PROBATION_DAYS_REQUIRED = 120;
+export const PROBATION_DAYS_REQUIRED = 119;
 
 /**
- * ช่วงทดลองงาน (< 120 วัน):
+ * ช่วงทดลองงาน (< 119 วัน):
  * ห้ามกด "ลาพักร้อน (vacation) / Work From Home (wfh) / Work From Anywhere (wfa)"
  * แต่ยังสามารถกด "ลาป่วย (sick) / ทำงานนอกสถานที่ (offsite) / ลากิจฉุกเฉิน (personal)" ได้
  */
@@ -360,7 +360,7 @@ export function formatThaiDate(dateStr: string, short = false): string {
 }
 
 /**
- * คำนวณสถานะการผ่านทดลองงาน 120 วัน จากวันที่เริ่มงาน (startDate)
+ * คำนวณสถานะการผ่านทดลองงาน 119 วัน จากวันที่เริ่มงาน (startDate)
  */
 export function getProbationInfo(
   startDateStr?: string,
@@ -401,7 +401,7 @@ export function getProbationInfo(
 }
 
 /**
- * ตรวจสอบว่าพนักงานที่อยู่ในช่วงทดลองงาน (< 120 วัน) มีสิทธิ์ขอลาประเภทที่เลือกหรือไม่
+ * ตรวจสอบว่าพนักงานที่อยู่ในช่วงทดลองงาน (< 119 วัน) มีสิทธิ์ขอลาประเภทที่เลือกหรือไม่
  */
 export function checkProbationLeaveEligibility(
   userStartDate: string | undefined,
@@ -1131,7 +1131,7 @@ export function generateQuotaSummaryCsv(
     'แผนก',
     'ตำแหน่ง',
     'วันที่เริ่มงาน',
-    'สถานะผ่านโปร (120 วัน)',
+    'สถานะผ่านโปร (119 วัน)',
     'ปี',
     'โควต้าลาป่วย',
     'ใช้ไป (ลาป่วย)',

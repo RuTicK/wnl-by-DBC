@@ -513,7 +513,7 @@ export async function registerGoogleUser(
 
 /**
  * สำหรับผู้ใช้งานที่ล็อกอินด้วยบัญชี Google จริง สามารถสลับ Role (employee / manager / hr / c_level)
- * หรือสลับสถานะทดลองงาน 120 วัน (startDate) / แผนก ของบัญชีตัวเอง เพื่อทดสอบสิทธิ์ทุกมุมมองได้ทันที
+ * หรือสลับสถานะทดลองงาน 119 วัน (startDate) / แผนก ของบัญชีตัวเอง เพื่อทดสอบสิทธิ์ทุกมุมมองได้ทันที
  */
 export async function updateOwnTestingProfile(
   userId: string,
@@ -733,7 +733,7 @@ export async function createLeaveRequest(
     };
   }
 
-  // 1. ตรวจสอบเงื่อนไขผ่านทดลองงาน 120 วัน (Probation Check) — ยกเว้น C-Level และ Admin
+  // 1. ตรวจสอบเงื่อนไขผ่านทดลองงาน 119 วัน (Probation Check) — ยกเว้น C-Level และ Admin
   if (actor.role !== 'c_level' && actor.role !== 'admin') {
     const probationCheck = checkProbationLeaveEligibility(
       actor.startDate,
@@ -994,8 +994,12 @@ export async function recordCheckIn(
     return { success: false, error: 'รูปแบบวันที่ไม่ถูกต้อง (YYYY-MM-DD)' };
   }
 
-  // หากพนักงานยังไม่ผ่านโปร 120 วัน ห้าม Check-in แบบ WFH หรือ WFA
-  if (input.workLocation === 'wfh' || input.workLocation === 'wfa') {
+  // หากพนักงานยังไม่ผ่านโปร 119 วัน ห้าม Check-in แบบ WFH หรือ WFA (ยกเว้น C-Level และ Admin)
+  if (
+    actor.role !== 'c_level' &&
+    actor.role !== 'admin' &&
+    (input.workLocation === 'wfh' || input.workLocation === 'wfa')
+  ) {
     const prob = checkProbationLeaveEligibility(
       actor.startDate,
       input.workLocation,

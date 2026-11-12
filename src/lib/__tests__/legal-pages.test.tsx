@@ -115,7 +115,7 @@ describe('Enterprise Legal Pages (/privacy & /terms) Verification', () => {
       // Attendance and Leave accuracy
       expect(html).toContain('ความถูกต้องในการบันทึกเวลาและการยื่นคำขอลา');
       expect(html).toContain('Check-in');
-      expect(html).toContain('Probation 120 วัน');
+      expect(html).toContain('Probation 119 วัน');
 
       // Intellectual property
       expect(html).toContain('ทรัพย์สินทางปัญญาและลิขสิทธิ์');
