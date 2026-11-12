@@ -1,0 +1,135 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Google Sans", "Google Sans Thai", "Google Sans Text", "Noto Sans Thai", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --color-dbc-navy: #0a2540;
+  --color-dbc-navy-dark: #07192c;
+  --color-dbc-blue: #0066ff;
+  --color-dbc-royal: #1d4ed8;
+  --color-dbc-gold: #f59e0b;
+}
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0a2540;
+  --dbc-navy: #0a2540;
+  --dbc-blue: #0066ff;
+  --dbc-gold: #f59e0b;
+}
+
+/* Local system alias and fallback for Google Sans Thai */
+@font-face {
+  font-family: 'Google Sans Thai';
+  src: local('Google Sans Thai'), local('Noto Sans Thai');
+  font-display: swap;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family:
+    "Google Sans",
+    "Google Sans Thai",
+    "Google Sans Text",
+    "Noto Sans Thai",
+    "Plus Jakarta Sans",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  line-height: 1.6;
+}
+
+/* Custom sleek scrollbar for clean visual experience without eye strain */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Glass & Card subtle elevation */
+.card-soft {
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  box-shadow: 0 1px 3px 0 rgba(10, 37, 64, 0.04), 0 1px 2px -1px rgba(10, 37, 64, 0.03);
+}
+
+.card-soft-hover {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-soft-hover:hover {
+  border-color: rgba(191, 219, 254, 0.9);
+  box-shadow: 0 4px 12px -2px rgba(0, 102, 255, 0.08), 0 2px 6px -2px rgba(10, 37, 64, 0.05);
+  transform: translateY(-1px);
+}
+
+/* iOS Safari font zoom prevention: Ensure all form inputs have font-size >= 16px on mobile */
+@media screen and (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Safe area insets for notched iPhones and modern mobile navigation */
+.pb-safe {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+}
+
+.pt-safe {
+  padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+}
+
+/* Touch manipulation optimization for tap responsiveness without 300ms delay */
+button,
+a,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+/* Smooth scrolling, mobile horizontal overflow prevention, and native iOS momentum scrolling */
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+.momentum-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbar while preserving momentum scroll functionality on mobile */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
