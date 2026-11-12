@@ -344,13 +344,13 @@ interface HrManagementViewProps {
   onUpsertEmployee: (employeeData: {
     id?: string;
     username?: string;
-    name: string;
-    englishName: string;
+    name?: string;
+    englishName?: string;
     email: string;
     role: Role;
-    department: string;
-    position: string;
-    startDate: string;
+    department?: string;
+    position?: string;
+    startDate?: string;
     quotas?: {
       sick?: number;
       personal?: number;
@@ -398,9 +398,9 @@ export default function HrManagementView({
   const [editingOriginalDepartment, setEditingOriginalDepartment] = useState<
     string | null
   >(null);
+  const [editingEnglishName, setEditingEnglishName] = useState<string>('');
   const [empCustomId, setEmpCustomId] = useState('');
   const [empName, setEmpName] = useState('');
-  const [empEnglishName, setEmpEnglishName] = useState('');
   const [empEmail, setEmpEmail] = useState('');
   const [empRole, setEmpRole] = useState<Role>('employee');
   const [empDepartment, setEmpDepartment] = useState<string>('');
@@ -413,6 +413,8 @@ export default function HrManagementView({
   );
   const [modalError, setModalError] = useState<string | null>(null);
   const deptTriggerRef = useRef<HTMLButtonElement | null>(null);
+
+  const isExecutiveRole = empRole === 'c_level' || empRole === 'admin';
 
   // Holiday Form State
   const [editingHolidayId, setEditingHolidayId] = useState<string | undefined>(
@@ -434,13 +436,13 @@ export default function HrManagementView({
     const nextId = getNextEmployeeId(users);
     setEditingEmpId(undefined);
     setEditingOriginalDepartment(null);
+    setEditingEnglishName('');
     setEmpCustomId(nextId);
     setEmpName('');
-    setEmpEnglishName('');
     setEmpEmail('');
     setEmpRole('employee');
     setEmpDepartment('');
-    setEmpPosition('Staff');
+    setEmpPosition('');
     setEmpStartDate(today);
     setIsDeptDropdownOpen(false);
     setDeptValidationError(null);
@@ -452,14 +454,14 @@ export default function HrManagementView({
     const cleanDept = (u.department || '').trim();
     setEditingEmpId(u.id);
     setEditingOriginalDepartment(cleanDept || null);
+    setEditingEnglishName(u.englishName || '');
     setEmpCustomId(u.id);
-    setEmpName(u.name);
-    setEmpEnglishName(u.englishName || '');
+    setEmpName(u.name || '');
     setEmpEmail(u.email || '');
     setEmpRole(u.role);
     setEmpDepartment(cleanDept);
-    setEmpPosition(u.position);
-    setEmpStartDate(u.startDate || '2023-01-01');
+    setEmpPosition(u.position || '');
+    setEmpStartDate(u.startDate || '');
     setIsDeptDropdownOpen(false);
     setDeptValidationError(null);
     setModalError(null);
@@ -472,8 +474,17 @@ export default function HrManagementView({
     setModalError(null);
     setDeptValidationError(null);
 
-    const trimmedDepartment = empDepartment.trim();
-    if (!trimmedDepartment) {
+    const cleanEmail = empEmail.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setModalError('กรุณากรอกอีเมล Google ที่ถูกต้องสำหรับเข้าสู่ระบบ');
+      return;
+    }
+
+    const trimmedDepartment = isExecutiveRole
+      ? 'Executive (C-Level)'
+      : empDepartment.trim();
+
+    if (!isExecutiveRole && !trimmedDepartment) {
       const msg =
         'กรุณาเลือกฝ่าย / แผนกจากรายการ (AE, สำนักงาน, Consult, Marketing&BD)';
       setDeptValidationError(msg);
@@ -483,17 +494,22 @@ export default function HrManagementView({
       return;
     }
 
+    const cleanStartDate = isExecutiveRole ? '' : empStartDate.trim();
+    if (!isExecutiveRole && !cleanStartDate) {
+      setModalError('กรุณาระบุวันเริ่มทำงานของพนักงาน');
+      return;
+    }
+
     setSavingEmp(true);
     try {
       const res = await onUpsertEmployee({
         id: editingEmpId ? editingEmpId : empCustomId.trim() || undefined,
-        name: empName.trim(),
-        englishName: empEnglishName.trim(),
-        email: empEmail.trim().toLowerCase(),
+        name: empName.trim() || undefined,
+        email: cleanEmail,
         role: empRole,
         department: trimmedDepartment,
-        position: empPosition.trim(),
-        startDate: empStartDate,
+        position: empPosition.trim() || undefined,
+        startDate: cleanStartDate,
         quotas: { ...STANDARD_LEAVE_QUOTAS },
       });
       if (!res.success) {
@@ -504,11 +520,12 @@ export default function HrManagementView({
           message: errMsg,
         });
       } else {
+        const displayLabel = empName.trim() || cleanEmail;
         setFeedback({
           type: 'success',
           message: editingEmpId
-            ? `แก้ไขข้อมูลพนักงาน ${empName} (${empEmail}) เรียบร้อยแล้ว`
-            : `เพิ่มพนักงานใหม่ ${empName} (${empEmail}) เรียบร้อยแล้ว ข้อมูลถูกบันทึกลง Google Sheet 'Users' พนักงานสามารถเข้าสู่ระบบด้วย Google ได้ทันที`,
+            ? `แก้ไขข้อมูลพนักงาน ${displayLabel} (${cleanEmail}) เรียบร้อยแล้ว`
+            : `เพิ่มพนักงานใหม่ ${displayLabel} (${cleanEmail}) เรียบร้อยแล้ว พนักงานสามารถเข้าสู่ระบบด้วย Google เพื่อซิงก์ชื่อโปรไฟล์ได้ทันที`,
         });
         setIsDeptDropdownOpen(false);
         setIsEmpModalOpen(false);
@@ -724,8 +741,14 @@ export default function HrManagementView({
                         <div className="font-bold text-blue-700">
                           {u.email}
                         </div>
-                        <div className="text-slate-500 text-xs mt-0.5 font-medium">
-                          EN: {u.englishName}
+                        <div className="text-xs mt-0.5 font-medium">
+                          {u.englishName ? (
+                            <span className="text-slate-500">EN: {u.englishName}</span>
+                          ) : (
+                            <span className="text-amber-600 font-semibold">
+                              EN: รอดึงจาก Google Login
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="py-4 px-3">
@@ -739,27 +762,35 @@ export default function HrManagementView({
                       </td>
                       <td className="py-4 px-3">
                         <div className="font-bold text-slate-800">
-                          {u.department}
+                          {u.department || (u.role === 'c_level' ? 'ผู้บริหาร (C-Level)' : '-')}
                         </div>
                         <div className="text-slate-500 text-xs mt-0.5 font-medium">
                           {u.position}
                         </div>
                       </td>
                       <td className="py-4 px-3">
-                        <div className="font-mono text-slate-800 font-bold">
-                          {u.startDate}
-                        </div>
-                        <div className="mt-1">
-                          {prob.passed ? (
-                            <span className="text-xs font-bold text-emerald-700">
-                              ✓ ผ่านโปรแล้ว ({prob.daysWorked} วัน)
-                            </span>
-                          ) : (
-                            <span className="text-xs font-bold text-amber-700">
-                              ⏳ ทดลองงาน (เหลือ {prob.daysRemaining} วัน)
-                            </span>
-                          )}
-                        </div>
+                        {u.role === 'c_level' || u.role === 'admin' || !u.startDate ? (
+                          <span className="inline-flex items-center rounded-lg bg-purple-50 border border-purple-200 px-2.5 py-1 text-xs font-bold text-purple-700">
+                            ผู้บริหาร (ไม่เช็คโปร)
+                          </span>
+                        ) : (
+                          <>
+                            <div className="font-mono text-slate-800 font-bold">
+                              {u.startDate}
+                            </div>
+                            <div className="mt-1">
+                              {prob.passed ? (
+                                <span className="text-xs font-bold text-emerald-700">
+                                  ✓ ผ่านโปรแล้ว ({prob.daysWorked} วัน)
+                                </span>
+                              ) : (
+                                <span className="text-xs font-bold text-amber-700">
+                                  ⏳ ทดลองงาน (เหลือ {prob.daysRemaining} วัน)
+                                </span>
+                              )}
+                            </div>
+                          </>
+                        )}
                       </td>
                       <td className="py-4 px-3 text-center font-bold text-slate-800 text-xs sm:text-sm">
                         {(u.quotas?.sick ?? STANDARD_LEAVE_QUOTAS.sick)} / {(u.quotas?.personal ?? STANDARD_LEAVE_QUOTAS.personal)} / {(u.quotas?.vacation ?? STANDARD_LEAVE_QUOTAS.vacation)}
@@ -1000,52 +1031,6 @@ export default function HrManagementView({
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-800 mb-1.5">
-                    ชื่อภาษาไทย <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={empName}
-                    onChange={(e) => setEmpName(e.target.value)}
-                    placeholder="เช่น สมชาย ใจดี"
-                    className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm text-slate-900 font-medium focus:border-blue-600 focus:outline-hidden"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-800 mb-1.5">
-                    ชื่อภาษาอังกฤษ (Google Profile){' '}
-                    <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={empEnglishName}
-                    onChange={(e) => setEmpEnglishName(e.target.value)}
-                    placeholder="เช่น Somchai Jaidee"
-                    className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm text-slate-900 font-medium focus:border-blue-600 focus:outline-hidden"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-800 mb-1.5">
-                    อีเมล Google สำหรับเข้าสู่ระบบ <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    value={empEmail}
-                    onChange={(e) => setEmpEmail(e.target.value)}
-                    placeholder="เช่น name@digitalbusinessconsult.asia หรือ name@gmail.com"
-                    className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm text-slate-900 font-medium focus:border-blue-600 focus:outline-hidden"
-                    required
-                  />
-                  <p className="text-xs text-slate-500 mt-1 font-medium">
-                    * รองรับทุกโดเมน (@digitalbusinessconsult.asia, @pdpathailand.co.th, @gmail.com ฯลฯ)
-                  </p>
-                </div>
-
-                <div>
                   <label
                     htmlFor="emp-role-select"
                     className="block font-bold text-slate-800 mb-1.5"
@@ -1056,7 +1041,15 @@ export default function HrManagementView({
                     <select
                       id="emp-role-select"
                       value={empRole}
-                      onChange={(e) => setEmpRole(e.target.value as Role)}
+                      onChange={(e) => {
+                        const nextRole = e.target.value as Role;
+                        setEmpRole(nextRole);
+                        if (nextRole === 'c_level' || nextRole === 'admin') {
+                          setDeptValidationError(null);
+                          setIsDeptDropdownOpen(false);
+                        }
+                        setModalError(null);
+                      }}
                       className="w-full appearance-none rounded-xl border border-slate-300 pl-4 pr-11 py-3 text-base sm:text-sm text-slate-900 bg-white font-medium hover:border-blue-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 focus:outline-hidden cursor-pointer min-h-[46px]"
                     >
                       <option value="employee">
@@ -1086,60 +1079,119 @@ export default function HrManagementView({
                   </div>
                 </div>
 
-                <div>
-                  <label
-                    id="emp-department-label"
-                    htmlFor="emp-department-trigger"
-                    className="block font-bold text-slate-800 mb-1.5"
-                  >
-                    ฝ่าย / แผนก (Department){' '}
-                    <span className="text-rose-500">*</span>
+                <div className="sm:col-span-2">
+                  <label className="block font-bold text-slate-800 mb-1.5">
+                    อีเมล Google สำหรับเข้าสู่ระบบ <span className="text-rose-500">*</span>
                   </label>
-                  <DepartmentDropdown
-                    value={empDepartment}
-                    onChange={(nextDept) => {
-                      setEmpDepartment(nextDept);
-                      setDeptValidationError(null);
-                      setModalError(null);
-                    }}
-                    legacyDepartment={editingEmpId ? editingOriginalDepartment : null}
-                    error={deptValidationError}
-                    helperText="คลิกเลือกฝ่ายจาก Dropdown ด้านบน (AE, สำนักงาน, Consult, Marketing&BD) โดยไม่ต้องพิมพ์"
-                    isOpen={isDeptDropdownOpen}
-                    onOpenChange={setIsDeptDropdownOpen}
-                    triggerRef={deptTriggerRef}
+                  <input
+                    type="email"
+                    value={empEmail}
+                    onChange={(e) => setEmpEmail(e.target.value)}
+                    placeholder="เช่น name@digitalbusinessconsult.asia หรือ name@gmail.com"
+                    className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm text-slate-900 font-medium focus:border-blue-600 focus:outline-hidden"
+                    required
+                  />
+                  <p className="text-xs text-slate-500 mt-1 font-medium">
+                    * ชื่อภาษาอังกฤษจะถูกดึงจากบัญชี Google Login ให้อัตโนมัติเมื่อพนักงานเข้าสู่ระบบครั้งแรก
+                  </p>
+                  {editingEmpId && (
+                    <div className="mt-2 inline-flex items-center gap-2 rounded-xl bg-slate-50 border border-slate-200 px-3 py-1.5 text-xs">
+                      <span className="font-bold text-slate-600">ชื่อจาก Google Login:</span>
+                      <span className="font-bold text-blue-700">
+                        {editingEnglishName || 'ยังไม่ได้เข้าสู่ระบบ (รอดึงอัตโนมัติ)'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {isExecutiveRole ? (
+                  <div className="sm:col-span-2 rounded-2xl bg-purple-50/80 border border-purple-200 px-4 py-3.5 text-xs sm:text-sm text-purple-900 font-medium flex items-start gap-2.5">
+                    <ShieldCheck className="h-4.5 w-4.5 text-purple-600 shrink-0 mt-0.5" />
+                    <div>
+                      <div className="font-extrabold text-purple-950">
+                        สิทธิ์ผู้บริหารระดับสูง (C-Level)
+                      </div>
+                      <p className="text-xs text-purple-800 mt-0.5">
+                        ไม่ต้องเลือกฝ่าย และไม่ต้องระบุวันเริ่มทำงาน (สามารถใช้สิทธิ์วันลาได้ทุกประเภททันทีโดยไม่ติดเงื่อนไขทดลองงาน 120 วัน)
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <label
+                        id="emp-department-label"
+                        htmlFor="emp-department-trigger"
+                        className="block font-bold text-slate-800 mb-1.5"
+                      >
+                        ฝ่าย / แผนก (Department){' '}
+                        <span className="text-rose-500">*</span>
+                      </label>
+                      <DepartmentDropdown
+                        value={empDepartment}
+                        onChange={(nextDept) => {
+                          setEmpDepartment(nextDept);
+                          setDeptValidationError(null);
+                          setModalError(null);
+                        }}
+                        legacyDepartment={editingEmpId ? editingOriginalDepartment : null}
+                        error={deptValidationError}
+                        helperText="คลิกเลือกฝ่ายจาก Dropdown ด้านบน (AE, สำนักงาน, Consult, Marketing&BD)"
+                        isOpen={isDeptDropdownOpen}
+                        onOpenChange={setIsDeptDropdownOpen}
+                        triggerRef={deptTriggerRef}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-800 mb-1.5">
+                        วันที่เริ่มงาน (Start Date - ใช้เช็คโปร 120 วัน){' '}
+                        <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={empStartDate}
+                        onChange={(e) => setEmpStartDate(e.target.value)}
+                        className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm text-slate-900 font-medium focus:border-blue-600 focus:outline-hidden min-h-[46px]"
+                        required
+                      />
+                      <p className="text-xs text-slate-500 mt-1 font-medium">
+                        * หากอายุงานยังไม่ครบ 120 วัน จะยังไม่สามารถขอลาพักร้อน / WFH / WFA ได้
+                      </p>
+                    </div>
+                  </>
+                )}
+
+                <div>
+                  <label className="block font-bold text-slate-800 mb-1.5">
+                    ชื่อภาษาไทย{' '}
+                    <span className="text-xs font-medium text-slate-400">(ไม่บังคับ)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={empName}
+                    onChange={(e) => setEmpName(e.target.value)}
+                    placeholder="เว้นว่างได้ (ใช้ชื่อจาก Google / อีเมล)"
+                    className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm text-slate-900 font-medium focus:border-blue-600 focus:outline-hidden"
                   />
                 </div>
 
                 <div>
                   <label className="block font-bold text-slate-800 mb-1.5">
-                    ตำแหน่ง (Position) <span className="text-rose-500">*</span>
+                    ตำแหน่ง (Position){' '}
+                    <span className="text-xs font-medium text-slate-400">(ไม่บังคับ)</span>
                   </label>
                   <input
                     type="text"
                     value={empPosition}
                     onChange={(e) => setEmpPosition(e.target.value)}
-                    placeholder="เช่น Software Engineer"
+                    placeholder={
+                      isExecutiveRole
+                        ? 'เว้นว่างได้ (ผู้บริหารระดับสูง C-Level)'
+                        : 'เว้นว่างได้ (เช่น AE / Consultant)'
+                    }
                     className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm text-slate-900 font-medium focus:border-blue-600 focus:outline-hidden"
-                    required
                   />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-800 mb-1.5">
-                    วันที่เริ่มงาน (Start Date - ใช้เช็คผ่านโปร 120 วัน){' '}
-                    <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    value={empStartDate}
-                    onChange={(e) => setEmpStartDate(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm text-slate-900 font-medium focus:border-blue-600 focus:outline-hidden"
-                    required
-                  />
-                  <p className="text-xs text-slate-500 mt-1 font-medium">
-                    * หากอายุงานยังไม่ครบ 120 วัน ระบบจะไม่อนุญาตให้กด ลาพักร้อน / WFH / WFA อัตโนมัติ
-                  </p>
                 </div>
               </div>
 

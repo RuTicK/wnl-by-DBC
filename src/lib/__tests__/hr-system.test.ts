@@ -1551,6 +1551,63 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
         expect(hrView.users.some((u) => u.department === dept)).toBe(true);
       }
     });
+
+    it('allows adding C-Level with only email (no department, no startDate, no englishName) and auto-syncs englishName on Google login', async () => {
+      // 1. Add C-Level with ONLY email + role
+      const cLevelRes = await upsertEmployee('EMP001', {
+        id: 'EMP081',
+        email: 'new.exec@digitalbusinessconsult.asia',
+        role: 'c_level',
+      });
+      expect(cLevelRes.success).toBe(true);
+      expect(cLevelRes.user?.department).toBe('Executive (C-Level)');
+      expect(cLevelRes.user?.startDate).toBe('');
+      expect(cLevelRes.user?.englishName).toBe('');
+
+      // 2. C-Level bypasses probation when requesting vacation immediately
+      const cLevelLeave = await createLeaveRequest('EMP081', {
+        leaveType: 'vacation',
+        durationType: 'full',
+        startDate: '2026-11-23',
+        endDate: '2026-11-23',
+        reason: 'ประชุมต่างประเทศ',
+      });
+      expect(cLevelLeave.success).toBe(true);
+
+      // 3. Add regular employee with ONLY email + department + startDate (no englishName, no manual name/position)
+      const regEmpRes = await upsertEmployee('EMP001', {
+        id: 'EMP082',
+        email: 'somying.ae@digitalbusinessconsult.asia',
+        role: 'employee',
+        department: 'AE',
+        startDate: '2026-11-01',
+      });
+      expect(regEmpRes.success).toBe(true);
+      expect(regEmpRes.user?.englishName).toBe('');
+      expect(regEmpRes.user?.name).toBe('somying.ae');
+      expect(regEmpRes.user?.department).toBe('AE');
+      expect(regEmpRes.user?.startDate).toBe('2026-11-01');
+
+      // 4. Require startDate for non-C-Level new employees
+      const missingStartRes = await upsertEmployee('EMP001', {
+        id: 'EMP083',
+        email: 'missing.date@digitalbusinessconsult.asia',
+        role: 'employee',
+        department: 'Consult',
+      });
+      expect(missingStartRes.success).toBe(false);
+      expect(missingStartRes.error).toContain('วันเริ่มทำงาน');
+
+      // 5. When employee logs in via Google, englishName and placeholder name auto-populate from Google profile
+      const googleLogin = await authenticateUser('', undefined, {
+        isGoogleLogin: true,
+        googleEmail: 'somying.ae@digitalbusinessconsult.asia',
+        googleEnglishName: 'Somying Rattanakorn',
+      });
+      expect(googleLogin.success).toBe(true);
+      expect(googleLogin.user?.englishName).toBe('Somying Rattanakorn');
+      expect(googleLogin.user?.name).toBe('Somying Rattanakorn');
+    });
   });
 });
 

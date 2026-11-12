@@ -291,19 +291,34 @@ export async function authenticateUser(
     }
 
     // หาก Google Login ส่งชื่อภาษาอังกฤษมาด้วย ให้ซิงก์อัปเดตลงโปรไฟล์พนักงานอัตโนมัติ
-    if (
-      options.googleEnglishName?.trim() &&
-      options.googleEnglishName.trim() !== foundByGoogle.englishName
-    ) {
-      foundByGoogle.englishName = options.googleEnglishName.trim();
-      const saved = await saveDatabaseState(state);
-      mode = saved.mode;
-      await syncToAppSheetTable(
-        'Users',
-        'Edit',
-        [userToAppSheetRow(foundByGoogle)],
-        foundByGoogle.email
-      );
+    const googleEnName = options.googleEnglishName?.trim();
+    if (googleEnName) {
+      let profileChanged = false;
+      if (googleEnName !== foundByGoogle.englishName) {
+        foundByGoogle.englishName = googleEnName;
+        profileChanged = true;
+      }
+      const emailPrefix = foundByGoogle.email
+        ? foundByGoogle.email.split('@')[0].toLowerCase()
+        : '';
+      if (
+        !foundByGoogle.name?.trim() ||
+        (emailPrefix && foundByGoogle.name.trim().toLowerCase() === emailPrefix)
+      ) {
+        foundByGoogle.name = googleEnName;
+        profileChanged = true;
+      }
+
+      if (profileChanged) {
+        const saved = await saveDatabaseState(state);
+        mode = saved.mode;
+        await syncToAppSheetTable(
+          'Users',
+          'Edit',
+          [userToAppSheetRow(foundByGoogle)],
+          foundByGoogle.email
+        );
+      }
     }
 
     return {
@@ -718,17 +733,19 @@ export async function createLeaveRequest(
     };
   }
 
-  // 1. ตรวจสอบเงื่อนไขผ่านทดลองงาน 120 วัน (Probation Check)
-  const probationCheck = checkProbationLeaveEligibility(
-    actor.startDate,
-    input.leaveType,
-    input.startDate
-  );
-  if (!probationCheck.allowed) {
-    return {
-      success: false,
-      error: probationCheck.error,
-    };
+  // 1. ตรวจสอบเงื่อนไขผ่านทดลองงาน 120 วัน (Probation Check) — ยกเว้น C-Level และ Admin
+  if (actor.role !== 'c_level' && actor.role !== 'admin') {
+    const probationCheck = checkProbationLeaveEligibility(
+      actor.startDate,
+      input.leaveType,
+      input.startDate
+    );
+    if (!probationCheck.allowed) {
+      return {
+        success: false,
+        error: probationCheck.error,
+      };
+    }
   }
 
   // 2. ตรวจสอบวันลาซ้อนทับกับใบลาเดิม (เทียบเฉพาะวันทำการจริง)
@@ -1113,12 +1130,12 @@ export async function recordCheckOut(
 export interface UpsertEmployeeInput {
   id?: string;
   username?: string;
-  name: string;
+  name?: string;
   englishName?: string;
   email?: string;
   role: Role;
-  department: string;
-  position: string;
+  department?: string;
+  position?: string;
   startDate?: string;
   quotas?: {
     sick?: number;
@@ -1152,22 +1169,70 @@ export async function upsertEmployee(
     };
   }
 
-  const name = (input.name || '').trim();
-  const department = (input.department || '').trim();
-  const position = (input.position || '').trim();
-
-  if (!name || !department || !position) {
-    return {
-      success: false,
-      error: 'กรุณากรอกข้อมูลชื่อภาษาไทย, แผนก และตำแหน่งให้ครบถ้วน',
-    };
-  }
-
   const existingIndex = input.id
     ? state.users.findIndex((u) => u.id === input.id)
     : -1;
 
+  const isExecutive = input.role === 'c_level' || input.role === 'admin';
   const cleanUsername = (input.username || '').trim();
+  const candidateEmail = (input.email || '').trim().toLowerCase();
+
+  if (existingIndex < 0 && !candidateEmail && !cleanUsername) {
+    return {
+      success: false,
+      error: 'กรุณากรอกอีเมล Google สำหรับเข้าสู่ระบบ',
+    };
+  }
+
+  if (candidateEmail && !candidateEmail.includes('@')) {
+    return {
+      success: false,
+      error: 'รูปแบบอีเมล Google ไม่ถูกต้อง',
+    };
+  }
+
+  const rawDept = (input.department || '').trim();
+  const department = isExecutive
+    ? rawDept || 'Executive (C-Level)'
+    : rawDept;
+
+  if (!isExecutive && !department) {
+    return {
+      success: false,
+      error: 'กรุณาเลือกฝ่าย / แผนกของพนักงาน',
+    };
+  }
+
+  const rawStartDate = (input.startDate || '').trim();
+  if (
+    !isExecutive &&
+    existingIndex < 0 &&
+    (!rawStartDate || !parseDateUTC(rawStartDate))
+  ) {
+    return {
+      success: false,
+      error: 'กรุณาระบุวันเริ่มทำงานของพนักงาน',
+    };
+  }
+
+  const emailPrefix = candidateEmail ? candidateEmail.split('@')[0] : '';
+  const name =
+    (input.name || '').trim() ||
+    (existingIndex >= 0
+      ? state.users[existingIndex].name
+      : emailPrefix || 'พนักงานใหม่');
+  const position =
+    (input.position || '').trim() ||
+    (existingIndex >= 0
+      ? state.users[existingIndex].position
+      : isExecutive
+        ? 'ผู้บริหารระดับสูง (C-Level)'
+        : input.role === 'manager'
+          ? 'หัวหน้าฝ่าย'
+          : input.role === 'hr'
+            ? 'ฝ่ายบุคคล (HR)'
+            : 'พนักงาน');
+
   if (cleanUsername) {
     const duplicateUsername = state.users.find(
       (u, idx) =>
@@ -1183,7 +1248,6 @@ export async function upsertEmployee(
     }
   }
 
-  const candidateEmail = (input.email || '').trim().toLowerCase();
   if (candidateEmail) {
     const duplicateEmail = state.users.find(
       (u, idx) =>
@@ -1239,15 +1303,18 @@ export async function upsertEmployee(
     const current = state.users[existingIndex];
     const updatedEmail =
       input.email !== undefined
-        ? input.email.trim() || current.email
+        ? input.email.trim().toLowerCase() || current.email
         : current.email;
     const updatedEnglishName =
       input.englishName !== undefined
         ? input.englishName.trim() || current.englishName
         : current.englishName;
-    const updatedStartDate =
-      input.startDate && parseDateUTC(input.startDate.trim())
-        ? input.startDate.trim()
+    const updatedStartDate = isExecutive
+      ? rawStartDate && parseDateUTC(rawStartDate)
+        ? rawStartDate
+        : ''
+      : rawStartDate && parseDateUTC(rawStartDate)
+        ? rawStartDate
         : current.startDate;
 
     const updated: User = {
@@ -1299,18 +1366,18 @@ export async function upsertEmployee(
 
     const derivedUsername =
       cleanUsername ||
-      (input.email?.includes('@')
-        ? input.email.split('@')[0].toLowerCase()
+      (candidateEmail.includes('@')
+        ? candidateEmail.split('@')[0]
         : newId.toLowerCase());
 
     const cleanEmail =
-      input.email?.trim() || `${derivedUsername}@company.co.th`;
-    const cleanEnglishName =
-      input.englishName?.trim() || derivedUsername;
-    const cleanStartDate =
-      input.startDate && parseDateUTC(input.startDate.trim())
-        ? input.startDate.trim()
-        : '2023-01-01';
+      candidateEmail || `${derivedUsername}@company.co.th`;
+    const cleanEnglishName = (input.englishName || '').trim();
+    const cleanStartDate = isExecutive
+      ? rawStartDate && parseDateUTC(rawStartDate)
+        ? rawStartDate
+        : ''
+      : rawStartDate;
 
     const newUser: User = {
       id: newId,

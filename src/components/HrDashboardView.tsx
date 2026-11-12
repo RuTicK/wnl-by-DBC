@@ -212,10 +212,10 @@ export default function HrDashboardView({
       if (!q) return true;
       return (
         item.user.name.toLowerCase().includes(q) ||
-        item.user.englishName.toLowerCase().includes(q) ||
+        (item.user.englishName || '').toLowerCase().includes(q) ||
         item.user.email.toLowerCase().includes(q) ||
         item.user.id.toLowerCase().includes(q) ||
-        item.user.position.toLowerCase().includes(q)
+        (item.user.position || '').toLowerCase().includes(q)
       );
     });
   }, [allQuotas, deptFilter, searchQuery]);
@@ -575,7 +575,8 @@ export default function HrDashboardView({
                       {row.user.name}
                     </div>
                     <div className="text-xs text-slate-500 font-medium mt-0.5">
-                      {row.user.englishName} • {row.user.email}
+                      {row.user.englishName ? `${row.user.englishName} • ` : ''}
+                      {row.user.email}
                     </div>
                     <div className="flex items-center gap-2 mt-1.5">
                       <span className="font-mono text-xs text-slate-400 font-bold">
@@ -592,13 +593,19 @@ export default function HrDashboardView({
                   </td>
                   <td className="py-4 px-4">
                     <div className="font-bold text-slate-800">
-                      {row.user.department}
+                      {row.user.department || 'ผู้บริหาร (C-Level)'}
                     </div>
                     <div className="text-slate-500 text-xs mt-0.5">
                       {row.user.position}
                     </div>
                     <div className="mt-1.5">
-                      {row.probation.passed ? (
+                      {row.user.role === 'c_level' ||
+                      row.user.role === 'admin' ||
+                      !row.user.startDate ? (
+                        <span className="inline-flex items-center rounded-lg bg-purple-50 border border-purple-200 px-2 py-0.5 text-xs font-bold text-purple-700">
+                          ผู้บริหาร (ไม่ติดเงื่อนไขโปร)
+                        </span>
+                      ) : row.probation.passed ? (
                         <span className="inline-flex items-center rounded-lg bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-bold text-emerald-700">
                           ผ่านโปรแล้ว ({formatThaiDate(row.user.startDate, true)})
                         </span>

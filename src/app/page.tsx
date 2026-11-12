@@ -321,13 +321,13 @@ export default function HomePage() {
   const handleUpsertEmployee = async (employeeData: {
     id?: string;
     username?: string;
-    name: string;
-    englishName: string;
+    name?: string;
+    englishName?: string;
     email: string;
     role: Role;
-    department: string;
-    position: string;
-    startDate: string;
+    department?: string;
+    position?: string;
+    startDate?: string;
     quotas?: {
       sick?: number;
       personal?: number;
@@ -441,7 +441,11 @@ export default function HomePage() {
     return <LoginView onLoginSuccess={handleLoginSuccess} />;
   }
 
-  const probation = getProbationInfo(currentUser.startDate);
+  const rawProbation = getProbationInfo(currentUser.startDate);
+  const probation =
+    currentUser.role === 'c_level' || currentUser.role === 'admin'
+      ? { ...rawProbation, passed: true, daysRemaining: 0 }
+      : rawProbation;
 
   return (
     <div className="min-h-screen bg-slate-50/80 flex flex-col md:flex-row">

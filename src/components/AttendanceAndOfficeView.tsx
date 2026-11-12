@@ -96,10 +96,13 @@ export default function AttendanceAndOfficeView({
     return () => clearInterval(timer);
   }, []);
 
-  const myProbation = useMemo(
-    () => getProbationInfo(currentUser.startDate, todayStr),
-    [currentUser.startDate, todayStr]
-  );
+  const myProbation = useMemo(() => {
+    const info = getProbationInfo(currentUser.startDate, todayStr);
+    if (currentUser.role === 'c_level' || currentUser.role === 'admin') {
+      return { ...info, passed: true, daysRemaining: 0 };
+    }
+    return info;
+  }, [currentUser.role, currentUser.startDate, todayStr]);
 
   const myTodayRecord = useMemo(
     () =>
@@ -144,9 +147,9 @@ export default function AttendanceAndOfficeView({
       if (!q) return true;
       return (
         u.name.toLowerCase().includes(q) ||
-        u.englishName.toLowerCase().includes(q) ||
+        (u.englishName || '').toLowerCase().includes(q) ||
         u.id.toLowerCase().includes(q) ||
-        u.department.toLowerCase().includes(q)
+        (u.department || '').toLowerCase().includes(q)
       );
     });
 
@@ -345,10 +348,12 @@ export default function AttendanceAndOfficeView({
                   ลงเวลาเข้า-ออกงาน ({formatThaiDate(todayStr, true)})
                 </span>
                 <h3 className="text-lg sm:text-2xl font-black text-slate-900 mt-0.5">
-                  คุณ {currentUser.name}{' '}
-                  <span className="text-xs sm:text-sm font-medium text-slate-500">
-                    ({currentUser.englishName})
-                  </span>
+                  คุณ {currentUser.name}
+                  {currentUser.englishName && (
+                    <span className="text-xs sm:text-sm font-medium text-slate-500 ml-1.5">
+                      ({currentUser.englishName})
+                    </span>
+                  )}
                 </h3>
               </div>
 
@@ -878,7 +883,8 @@ export default function AttendanceAndOfficeView({
                         {user.name}
                       </div>
                       <div className="text-xs text-slate-500 font-medium">
-                        {user.englishName} • {user.department}
+                        {user.englishName ? `${user.englishName} • ` : ''}
+                        {user.department}
                       </div>
                     </div>
                     <span className="rounded-lg bg-emerald-100 border border-emerald-200 px-2.5 py-1 text-xs font-bold text-emerald-800 shrink-0">
