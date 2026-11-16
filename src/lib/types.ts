@@ -55,6 +55,7 @@ export interface User {
   startDate: string;   // วันที่เริ่มงาน YYYY-MM-DD (ใช้ตรวจสอบผ่านโปร 119 วัน)
   quotas: LeaveQuotas;
   username?: string;   // ชื่อผู้ใช้สำรองสำหรับโหมดทดสอบ/อ้างอิง
+  cLevelApproverId?: string; // ผู้บริหารที่สังกัด (C-Level ผู้อนุมัติ) สำหรับบทบาท Manager
 }
 
 export type SafeUser = User;
@@ -105,6 +106,7 @@ export interface LeaveRequest {
   attachmentUrl?: string;  // ลิงก์หรือรูปใบรับรองแพทย์ (Base64 / URL)
   attachmentName?: string;
   status: LeaveStatus;
+  targetApproverId?: string; // กำหนด C-Level ผู้อนุมัติเฉพาะเจาะจง (กรณี Manager ยื่นลา)
   managerApproval?: ApprovalRecord; // ขั้นที่ 1 โดย Manager (กรณี Employee ลา)
   cLevelApproval?: ApprovalRecord;  // ขั้นที่ 1 โดย C-Level (กรณี Manager หรือ HR1 ลา)
   hrApproval?: ApprovalRecord;      // ขั้นที่ 2 โดย HR (หรือ HR2 กรณี HR1 ลา)

@@ -235,6 +235,7 @@ export const USER_SHEET_HEADERS = [
   'vacationQuota',
   'wfhQuota',
   'wfaQuota',
+  'cLevelApproverId',
 ];
 
 export function userToRow(u: User): (string | number)[] {
@@ -252,6 +253,7 @@ export function userToRow(u: User): (string | number)[] {
     STANDARD_LEAVE_QUOTAS.vacation,
     0,
     0,
+    u.cLevelApproverId || '',
   ];
 }
 
@@ -271,6 +273,7 @@ export function rowToUser(row: string[]): User {
     position: row[6] || 'Staff',
     startDate: row[7] || '2023-01-01',
     username: derivedUsername,
+    cLevelApproverId: row[13] || undefined,
     quotas: {
       sick: STANDARD_LEAVE_QUOTAS.sick,
       personal: STANDARD_LEAVE_QUOTAS.personal,
@@ -304,6 +307,7 @@ export const LEAVE_SHEET_HEADERS = [
   'cLevelNotifiedAt',
   'rejectedByJson',
   'createdAt',
+  'targetApproverId',
 ];
 
 export const MAX_SHEET_CELL_LENGTH = 49000;
@@ -335,6 +339,7 @@ export function leaveToRow(l: LeaveRequest): (string | number)[] {
     l.cLevelNotifiedAt || '',
     l.rejectedBy ? JSON.stringify(l.rejectedBy) : '',
     l.createdAt,
+    l.targetApproverId || '',
   ];
 }
 
@@ -370,6 +375,7 @@ export function rowToLeave(row: string[]): LeaveRequest {
     cLevelNotifiedAt: row[18] || undefined,
     rejectedBy: safeParse(row[19]),
     createdAt: row[20] || new Date().toISOString(),
+    targetApproverId: row[21] || undefined,
   };
 }
 
@@ -433,7 +439,43 @@ export function userToAppSheetRow(u: User): Record<string, string | number> {
   USER_SHEET_HEADERS.forEach((h, idx) => {
     obj[h] = row[idx] ?? '';
   });
+  obj['CLevelApproverId'] = u.cLevelApproverId || '';
   return obj;
+}
+
+export function appSheetRowToUser(row: Record<string, any>): User {
+  const email = (row.email || row.Email || '').toString().trim();
+  const derivedUsername = email.includes('@')
+    ? email.split('@')[0].split('.')[0]
+    : (row.id || row.Id || row.ID || '').toString().toLowerCase();
+
+  const cLevelApproverId = (
+    row.CLevelApproverId ||
+    row.cLevelApproverId ||
+    row.clevelapproverid ||
+    ''
+  ).toString().trim();
+
+  return {
+    id: (row.id || row.Id || row.ID || '').toString().trim(),
+    name: (row.name || row.Name || '').toString().trim(),
+    englishName: (row.englishName || row.EnglishName || '').toString().trim(),
+    email,
+    role: ((row.role || row.Role || 'employee') as Role),
+    department: ((row.department || row.Department || '').toString()).trim() || 'General',
+    position: (row.position || row.Position || 'Staff').toString().trim(),
+    startDate: (row.startDate || row.StartDate || '2023-01-01').toString().trim(),
+    username: (row.username || row.Username || derivedUsername).toString().trim(),
+    cLevelApproverId: cLevelApproverId || undefined,
+    quotas: {
+      sick: STANDARD_LEAVE_QUOTAS.sick,
+      personal: STANDARD_LEAVE_QUOTAS.personal,
+      vacation: STANDARD_LEAVE_QUOTAS.vacation,
+      wfh: 0,
+      wfa: 0,
+      offsite: 0,
+    },
+  };
 }
 
 export function leaveToAppSheetRow(
@@ -444,7 +486,74 @@ export function leaveToAppSheetRow(
   LEAVE_SHEET_HEADERS.forEach((h, idx) => {
     obj[h] = row[idx] ?? '';
   });
+  obj['TargetApproverId'] = l.targetApproverId || '';
   return obj;
+}
+
+export function appSheetRowToLeave(row: Record<string, any>): LeaveRequest {
+  const safeParse = (val?: any) => {
+    if (!val) return undefined;
+    if (typeof val === 'object') return val;
+    try {
+      return JSON.parse(val);
+    } catch {
+      return undefined;
+    }
+  };
+
+  const targetApproverId = (
+    row.TargetApproverId ||
+    row.targetApproverId ||
+    row.targetapproverid ||
+    ''
+  ).toString().trim();
+
+  return {
+    id: (row.id || row.Id || row.ID || '').toString().trim(),
+    userId: (row.userId || row.UserId || '').toString().trim(),
+    userName: (row.userName || row.UserName || '').toString().trim(),
+    requesterRole: ((row.requesterRole || row.RequesterRole || 'employee') as Role),
+    department: ((row.department || row.Department || '').toString()).trim(),
+    leaveType: ((row.leaveType || row.LeaveType || 'vacation') as LeaveType),
+    durationType: ((row.durationType || row.DurationType || 'full') as LeaveDuration),
+    startDate: (row.startDate || row.StartDate || '').toString().trim(),
+    endDate: (
+      row.endDate ||
+      row.EndDate ||
+      row.startDate ||
+      row.StartDate ||
+      ''
+    ).toString().trim(),
+    totalDays: Number(row.totalDays ?? row.TotalDays ?? 1),
+    reason: (row.reason || row.Reason || '').toString(),
+    locationDetail: (row.locationDetail || row.LocationDetail || undefined)?.toString(),
+    attachmentUrl: (row.attachmentUrl || row.AttachmentUrl || undefined)?.toString(),
+    attachmentName: (row.attachmentName || row.AttachmentName || undefined)?.toString(),
+    status: ((row.status || row.Status || 'pending_manager') as LeaveStatus),
+    targetApproverId: targetApproverId || undefined,
+    managerApproval: safeParse(
+      row.managerApproval || row.managerApprovalJson || row.ManagerApprovalJson
+    ),
+    cLevelApproval: safeParse(
+      row.cLevelApproval || row.cLevelApprovalJson || row.CLevelApprovalJson
+    ),
+    hrApproval: safeParse(
+      row.hrApproval || row.hrApprovalJson || row.HrApprovalJson
+    ),
+    cLevelNotifiedAt: (
+      row.cLevelNotifiedAt ||
+      row.CLevelNotifiedAt ||
+      undefined
+    )?.toString(),
+    rejectedBy: safeParse(
+      row.rejectedBy || row.rejectedByJson || row.RejectedByJson
+    ),
+    createdAt: (
+      row.createdAt ||
+      row.CreatedAt ||
+      new Date().toISOString()
+    ).toString(),
+  };
 }
 
 export function holidayToAppSheetRow(h: Holiday): Record<string, string> {
@@ -603,8 +712,8 @@ async function readFromGoogleSheets(): Promise<DatabaseState> {
   const res = await sheets.spreadsheets.values.batchGet({
     spreadsheetId,
     ranges: [
-      'Users!A2:M1000',
-      'LeaveRequests!A2:U5000',
+      'Users!A2:N1000',
+      'LeaveRequests!A2:V5000',
       'Holidays!A2:C500',
       'Attendance!A2:I5000',
     ],
@@ -639,8 +748,8 @@ async function writeToGoogleSheets(state: DatabaseState): Promise<void> {
     spreadsheetId,
     requestBody: {
       ranges: [
-        'Users!A1:M1000',
-        'LeaveRequests!A1:U5000',
+        'Users!A1:N1000',
+        'LeaveRequests!A1:V5000',
         'Holidays!A1:C500',
         'Attendance!A1:I5000',
       ],

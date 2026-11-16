@@ -832,8 +832,19 @@ export function filterLeavesForViewer(
   leaves: LeaveRequest[],
   viewer: SafeUser
 ): LeaveRequest[] {
-  if (viewer.role === 'admin' || viewer.role === 'hr' || viewer.role === 'c_level') {
+  if (viewer.role === 'admin' || viewer.role === 'hr') {
     return leaves.map((l) => ({ ...l, isRedacted: false }));
+  }
+
+  if (viewer.role === 'c_level') {
+    return leaves
+      .filter((l) => {
+        if (l.status === 'pending_c_level' && l.targetApproverId) {
+          return viewer.id === l.targetApproverId;
+        }
+        return true;
+      })
+      .map((l) => ({ ...l, isRedacted: false }));
   }
 
   if (viewer.role === 'manager') {
@@ -936,6 +947,13 @@ export function checkApprovalPermission(
   // ขั้นที่ 1 สำหรับ Manager และ HR: รอ C-Level (pending_c_level)
   if (leave.status === 'pending_c_level') {
     if (actor.role === 'c_level' && actor.id !== leave.userId) {
+      if (leave.targetApproverId && actor.id !== leave.targetApproverId) {
+        return {
+          allowed: false,
+          error:
+            'ใบลาของหัวหน้าฝ่ายท่านนี้ถูกกำหนดให้ผู้บริหารระดับสูงที่สังกัดเป็นผู้อนุมัติเท่านั้น',
+        };
+      }
       return {
         allowed: true,
         nextStatus: 'pending_hr',
@@ -1024,6 +1042,13 @@ export function checkRejectionPermission(
 
   if (leave.status === 'pending_c_level') {
     if (actor.role === 'c_level') {
+      if (leave.targetApproverId && actor.id !== leave.targetApproverId) {
+        return {
+          allowed: false,
+          error:
+            'ใบลาของหัวหน้าฝ่ายท่านนี้ถูกกำหนดให้ผู้บริหารระดับสูงที่สังกัดเป็นผู้พิจารณาเท่านั้น',
+        };
+      }
       return { allowed: true };
     }
     return {

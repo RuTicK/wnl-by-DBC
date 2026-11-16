@@ -814,6 +814,8 @@ export async function createLeaveRequest(
     attachmentUrl: input.attachmentUrl?.trim() || undefined,
     attachmentName: input.attachmentName?.trim() || undefined,
     status: initialStatus,
+    targetApproverId:
+      actor.role === 'manager' ? actor.cLevelApproverId : undefined,
     createdAt: new Date().toISOString(),
   };
 
@@ -1141,6 +1143,7 @@ export interface UpsertEmployeeInput {
   department?: string;
   position?: string;
   startDate?: string;
+  cLevelApproverId?: string;
   quotas?: {
     sick?: number;
     personal?: number;
@@ -1177,6 +1180,34 @@ export async function upsertEmployee(
     ? state.users.findIndex((u) => u.id === input.id)
     : -1;
 
+  const candidateTargetEmail = (
+    existingIndex >= 0 ? state.users[existingIndex].email : input.email || ''
+  )
+    .trim()
+    .toLowerCase();
+
+  // ป้องกันการลดสิทธิ์บัญชี Super Admin จากผู้อื่น
+  if (
+    existingIndex >= 0 &&
+    state.users[existingIndex].email.toLowerCase() === SUPER_ADMIN_EMAIL &&
+    input.role &&
+    input.role !== 'admin'
+  ) {
+    return {
+      success: false,
+      error: 'ไม่สามารถเปลี่ยนตำแหน่งหรือลดสิทธิ์ของผู้ดูแลระบบสูงสุดได้',
+    };
+  }
+
+  if (input.role === 'admin' && candidateTargetEmail !== SUPER_ADMIN_EMAIL) {
+    if (actor.role !== 'admin') {
+      return {
+        success: false,
+        error: `ตำแหน่ง Admin สงวนสิทธิ์เฉพาะผู้ดูแลระบบสูงสุด (${SUPER_ADMIN_EMAIL}) หรือผู้ดูแลระบบ (Admin) เท่านั้นที่สามารถแต่งตั้งได้`,
+      };
+    }
+  }
+
   const isExecutive = input.role === 'c_level' || input.role === 'admin';
   const cleanUsername = (input.username || '').trim();
   const candidateEmail = (input.email || '').trim().toLowerCase();
@@ -1195,7 +1226,13 @@ export async function upsertEmployee(
     };
   }
 
-  const rawDept = (input.department || '').trim();
+  const rawDept = (
+    input.department !== undefined
+      ? input.department
+      : existingIndex >= 0
+        ? state.users[existingIndex].department
+        : ''
+  ).trim();
   const department = isExecutive
     ? rawDept || 'Executive (C-Level)'
     : rawDept;
@@ -1207,7 +1244,13 @@ export async function upsertEmployee(
     };
   }
 
-  const rawStartDate = (input.startDate || '').trim();
+  const rawStartDate = (
+    input.startDate !== undefined
+      ? input.startDate
+      : existingIndex >= 0
+        ? state.users[existingIndex].startDate
+        : ''
+  ).trim();
   if (
     !isExecutive &&
     existingIndex < 0 &&
@@ -1267,33 +1310,6 @@ export async function upsertEmployee(
     }
   }
 
-  const candidateTargetEmail = (
-    existingIndex >= 0 ? state.users[existingIndex].email : input.email || ''
-  )
-    .trim()
-    .toLowerCase();
-
-  if (input.role === 'admin' && candidateTargetEmail !== SUPER_ADMIN_EMAIL) {
-    return {
-      success: false,
-      error: `ตำแหน่ง Admin สงวนสิทธิ์เฉพาะผู้ดูแลระบบสูงสุด (${SUPER_ADMIN_EMAIL}) เท่านั้น`,
-    };
-  }
-
-  // ป้องกันการลดสิทธิ์บัญชี Super Admin จากผู้อื่น
-  if (
-    existingIndex >= 0 &&
-    state.users[existingIndex].email.toLowerCase() === SUPER_ADMIN_EMAIL &&
-    actor.email.toLowerCase() !== SUPER_ADMIN_EMAIL &&
-    input.role &&
-    input.role !== 'admin'
-  ) {
-    return {
-      success: false,
-      error: 'ไม่สามารถเปลี่ยนตำแหน่งหรือลดสิทธิ์ของผู้ดูแลระบบสูงสุดได้',
-    };
-  }
-
   const cleanQuotas = {
     sick: STANDARD_LEAVE_QUOTAS.sick,
     personal: STANDARD_LEAVE_QUOTAS.personal,
@@ -1320,6 +1336,12 @@ export async function upsertEmployee(
       : rawStartDate && parseDateUTC(rawStartDate)
         ? rawStartDate
         : current.startDate;
+    const updatedCLevelApproverId =
+      input.role === 'manager'
+        ? input.cLevelApproverId !== undefined
+          ? input.cLevelApproverId.trim() || undefined
+          : current.cLevelApproverId
+        : undefined;
 
     const updated: User = {
       ...current,
@@ -1331,6 +1353,7 @@ export async function upsertEmployee(
       department,
       position,
       startDate: updatedStartDate,
+      cLevelApproverId: updatedCLevelApproverId,
       quotas: cleanQuotas,
     };
     state.users[existingIndex] = updated;
@@ -1382,6 +1405,10 @@ export async function upsertEmployee(
         ? rawStartDate
         : ''
       : rawStartDate;
+    const newCLevelApproverId =
+      input.role === 'manager' && input.cLevelApproverId
+        ? input.cLevelApproverId.trim() || undefined
+        : undefined;
 
     const newUser: User = {
       id: newId,
@@ -1393,6 +1420,7 @@ export async function upsertEmployee(
       department,
       position,
       startDate: cleanStartDate,
+      cLevelApproverId: newCLevelApproverId,
       quotas: cleanQuotas,
     };
 

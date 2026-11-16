@@ -1,84 +1,25 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import PrivacyPolicyPage, { metadata as privacyMetadata } from '@/app/privacy/page';
-import TermsOfServicePage, { metadata as termsMetadata } from '@/app/terms/page';
 import fs from 'fs';
 import path from 'path';
 
+// Mock Next.js navigation redirect
+vi.mock('next/navigation', () => ({
+  redirect: vi.fn(),
+}));
+
+import PrivacyPolicyPage from '@/app/privacy/page';
+import TermsOfServicePage, { metadata as termsMetadata } from '@/app/terms/page';
+import { redirect } from 'next/navigation';
+
 describe('Enterprise Legal Pages (/privacy & /terms) Verification', () => {
   describe('1. Privacy Policy Page (/privacy)', () => {
-    it('exports proper metadata for SEO and Google OAuth Consent Screen', () => {
-      expect(privacyMetadata).toBeDefined();
-      expect(privacyMetadata.title).toContain('นโยบายความเป็นส่วนตัว');
-      expect(privacyMetadata.title).toContain('วันนี้ลา by DBC');
-      expect(privacyMetadata.description).toContain('PDPA');
-      expect(privacyMetadata.description).toContain('Google API Services User Data Policy');
-    });
-
-    it('renders with all required enterprise PDPA and Google OAuth disclosures', () => {
-      const html = renderToStaticMarkup(<PrivacyPolicyPage />);
-
-      // Data controller
-      expect(html).toContain('Digital Business Consult');
-      expect(html).toContain('DBC');
-      expect(html).toContain('Wan-Nee-La by DBC');
-
-      // Contact email & DPO
-      expect(html).toContain('rut.wa@digitalbusinessconsult.asia');
-
-      // Google OAuth Scopes (Non-sensitive)
-      expect(html).toContain('openid');
-      expect(html).toContain('email');
-      expect(html).toContain('profile');
-      expect(html).toContain('Non-sensitive');
-
-      // No sensitive scopes statement
-      expect(html).toContain('ไม่มีการขอสิทธิ์');
-
-      // Google API Services User Data Policy & Official English Limited Use Statement
-      expect(html).toContain('Google API Services User Data Policy');
-      expect(html).toContain('Limited Use');
-      expect(html).toContain('Wan-Nee-La by DBC');
-      expect(html).toContain('adhere to');
-      expect(html).toContain('ไม่มีการจำหน่ายหรือแลกเปลี่ยนข้อมูล');
-      expect(html).toContain('ไม่มีการใช้เพื่อการโฆษณา');
-      expect(html).toContain('ไม่มีการนำไปเทรน AI Models');
-
-      // Data Minimization items
-      expect(html).toContain('ชื่อ-นามสกุล');
-      expect(html).toContain('รูปโปรไฟล์จาก Google OAuth');
-      expect(html).toContain('ประวัติการลงเวลา Check-in');
-      expect(html).toContain('คำขอลา');
-
-      // Explicit non-collection items
-      expect(html).toContain('หมายเลขโทรศัพท์ส่วนบุคคล');
-      expect(html).toContain('เลขบัตรประจำตัวประชาชน');
-
-      // Role-based privacy redaction
-      expect(html).toContain('PDPA Data Redaction');
-      expect(html).toContain('เหตุผลส่วนตัว (ซ่อนข้อมูล)');
-
-      // Complete PDPA Rights (Access, Rectification, Erasure, Data Portability, etc.)
-      expect(html).toContain('สิทธิของเจ้าของข้อมูลส่วนบุคคล');
-      expect(html).toContain('สิทธิขอเข้าถึงและรับสำเนาข้อมูล');
-      expect(html).toContain('สิทธิขอแก้ไขข้อมูลให้ถูกต้อง');
-      expect(html).toContain('สิทธิขอลบหรือทำลายข้อมูล');
-      expect(html).toContain('สิทธิขอถ่ายโอนข้อมูลส่วนบุคคล');
-      expect(html).toContain('Right to Data Portability');
-      expect(html).toContain('สิทธิคัดค้านการประมวลผล');
-      expect(html).toContain('สิทธิขอให้ระงับการใช้ข้อมูล');
-      expect(html).toContain('สิทธิเพิกถอนความยินยอม');
-      expect(html).toContain('สิทธิในการร้องเรียน');
-
-      // User Data Deletion callback instructions & Google account permissions link
-      expect(html).toContain('การขอลบข้อมูลผู้ใช้งาน');
-      expect(html).toContain('https://myaccount.google.com/permissions');
-
-      // Navigation & Responsive layout
-      expect(html).toContain('กลับสู่หน้าหลัก');
-      expect(html).toContain('/terms');
-      expect(html).toContain('href="/"');
+    it('redirects immediately to dbcgroup.asia official privacy notice URL', () => {
+      PrivacyPolicyPage();
+      expect(redirect).toHaveBeenCalledWith(
+        'https://dbcgroup.asia/privacy-notice-employee-applicant/'
+      );
     });
   });
 
@@ -156,4 +97,3 @@ describe('Enterprise Legal Pages (/privacy & /terms) Verification', () => {
     });
   });
 });
-

@@ -448,7 +448,7 @@ export default function LeaveRequestModal({
             {leaveType === 'personal' && (
               <ul className="space-y-1 text-slate-700 font-medium list-disc list-inside">
                 <li>ส่งใบลาแจ้งทางหัวหน้างานทราบ และได้รับการอนุมัติล่วงหน้าไม่น้อยกว่า <strong>3 วันทำงาน</strong></li>
-                <li>กรณีลาครบ 3 วันในปีนั้นๆ แล้ว มีเหตุหรือกิจที่ต้องลา ต้องได้รับการอนุมัติจากผู้บังคับบัญชาเป็นกรณีๆ ไป</li>
+                <li>กรณีลาครบ 3 วันในปีนั้นๆ แล้ว มีเหตุหรือกิจที่ต้องลา ต้องได้รับการอนุมัติเป็นกรณีพิเศษจากผู้บริหาร</li>
               </ul>
             )}
             {leaveType === 'vacation' && (

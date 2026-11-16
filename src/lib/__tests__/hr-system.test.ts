@@ -40,6 +40,8 @@ import {
 } from '../hr-service';
 import {
   ATTENDANCE_SHEET_HEADERS,
+  appSheetRowToLeave,
+  appSheetRowToUser,
   attendanceToAppSheetRow,
   attendanceToRow,
   getRuntimeAppConfig,
@@ -1607,6 +1609,213 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
       expect(googleLogin.success).toBe(true);
       expect(googleLogin.user?.englishName).toBe('Somying Rattanakorn');
       expect(googleLogin.user?.name).toBe('Somying Rattanakorn');
+    });
+
+    it('supports multiple Super Admins with root account protection, self-promotion hierarchy, and deletion safeguards', async () => {
+      // 0. Ensure root Super Admin (Rut) exists
+      const seedRut = await upsertEmployee('EMP001', {
+        id: 'EMP011',
+        name: 'รุจน์ วัชรประดิษฐ์',
+        englishName: 'Rut (Rut) Watcharapadit',
+        email: 'rut.wa@digitalbusinessconsult.asia',
+        role: 'admin',
+        department: 'Management (Admin)',
+        position: 'System Administrator (Admin)',
+        startDate: '2023-01-01',
+      });
+      expect(seedRut.success).toBe(true);
+
+      // 1. Root Super Admin (Rut) adds a second Super Admin
+      const secondAdminRes = await upsertEmployee('EMP011', {
+        id: 'EMP020',
+        name: 'แอดมินคนที่สอง',
+        englishName: 'Second Super Admin',
+        email: 'second.admin@digitalbusinessconsult.asia',
+        role: 'admin',
+        department: 'Management (Admin)',
+        position: 'Co-Administrator',
+        startDate: '2024-01-01',
+      });
+      expect(secondAdminRes.success).toBe(true);
+      expect(secondAdminRes.user?.role).toBe('admin');
+
+      // 2. The second Super Admin can promote a third employee to Super Admin
+      const thirdAdminRes = await upsertEmployee('EMP020', {
+        id: 'EMP021',
+        name: 'แอดมินคนที่สาม',
+        englishName: 'Third Super Admin',
+        email: 'third.admin@digitalbusinessconsult.asia',
+        role: 'admin',
+        department: 'Management (Admin)',
+        position: 'Assistant Admin',
+        startDate: '2024-06-01',
+      });
+      expect(thirdAdminRes.success).toBe(true);
+      expect(thirdAdminRes.user?.role).toBe('admin');
+
+      // 3. Attempting to demote root Super Admin (rut.wa@digitalbusinessconsult.asia) is blocked
+      const demoteRoot = await upsertEmployee('EMP020', {
+        id: 'EMP011',
+        email: 'rut.wa@digitalbusinessconsult.asia',
+        role: 'employee',
+      });
+      expect(demoteRoot.success).toBe(false);
+      expect(demoteRoot.error).toContain('ไม่สามารถเปลี่ยนตำแหน่งหรือลดสิทธิ์ของผู้ดูแลระบบสูงสุดได้');
+
+      // 4. Attempting to delete root Super Admin is blocked
+      const deleteRoot = await deleteEmployee('EMP020', 'EMP011');
+      expect(deleteRoot.success).toBe(false);
+      expect(deleteRoot.error).toContain('ไม่สามารถลบบัญชีผู้ดูแลระบบสูงสุด');
+
+      // 5. Deleting a non-root Super Admin by another admin succeeds
+      const deleteThird = await deleteEmployee('EMP020', 'EMP021');
+      expect(deleteThird.success).toBe(true);
+    });
+
+    it('enforces designated C-Level routing for Manager leave requests, permission checks, and viewer filtering', async () => {
+      // Setup Root Admin (EMP011)
+      await upsertEmployee('EMP001', {
+        id: 'EMP011',
+        name: 'รุจน์ วัชรประดิษฐ์',
+        englishName: 'Rut (Rut) Watcharapadit',
+        email: 'rut.wa@digitalbusinessconsult.asia',
+        role: 'admin',
+        department: 'Management (Admin)',
+        position: 'System Administrator (Admin)',
+        startDate: '2023-01-01',
+      });
+
+      // Setup C-Level 1 (EMP009) and C-Level 2 (EMP010)
+      const cLevel2Res = await upsertEmployee('EMP001', {
+        id: 'EMP010',
+        name: 'ดร.สมเกียรติ วิสัยทัศน์กว้าง (C-Level 2)',
+        englishName: 'Dr. Somkiat Wisaithatkwang',
+        email: 'somkiat.coo@company.co.th',
+        role: 'c_level',
+      });
+      expect(cLevel2Res.success).toBe(true);
+
+      // Create Manager A with designated approver EMP009
+      const mgrARes = await upsertEmployee('EMP001', {
+        id: 'EMP030',
+        name: 'ผู้จัดการ เอ',
+        englishName: 'Manager A',
+        email: 'manager.a@company.co.th',
+        role: 'manager',
+        department: 'Consult',
+        position: 'Consulting Manager',
+        startDate: '2022-01-01',
+        cLevelApproverId: 'EMP009',
+      });
+      expect(mgrARes.success).toBe(true);
+      expect(mgrARes.user?.cLevelApproverId).toBe('EMP009');
+
+      // Create Manager B without designated approver (fallback)
+      const mgrBRes = await upsertEmployee('EMP001', {
+        id: 'EMP031',
+        name: 'ผู้จัดการ บี',
+        englishName: 'Manager B',
+        email: 'manager.b@company.co.th',
+        role: 'manager',
+        department: 'AE',
+        position: 'AE Manager',
+        startDate: '2022-01-01',
+      });
+      expect(mgrBRes.success).toBe(true);
+      expect(mgrBRes.user?.cLevelApproverId).toBeUndefined();
+
+      // Manager A submits leave -> targetApproverId is automatically EMP009
+      const leaveARes = await createLeaveRequest('EMP030', {
+        leaveType: 'vacation',
+        durationType: 'full',
+        startDate: '2026-12-21',
+        endDate: '2026-12-21',
+        reason: 'พักผ่อนประจำปี',
+      });
+      expect(leaveARes.success).toBe(true);
+      const leaveA = leaveARes.leave!;
+      expect(leaveA.targetApproverId).toBe('EMP009');
+      expect(leaveA.status).toBe('pending_c_level');
+
+      // Manager B submits leave -> targetApproverId is undefined
+      const leaveBRes = await createLeaveRequest('EMP031', {
+        leaveType: 'vacation',
+        durationType: 'full',
+        startDate: '2026-12-22',
+        endDate: '2026-12-22',
+        reason: 'พักผ่อนประจำปี',
+      });
+      expect(leaveBRes.success).toBe(true);
+      const leaveB = leaveBRes.leave!;
+      expect(leaveB.targetApproverId).toBeUndefined();
+
+      // Check approval permission on Leave A:
+      // Designated C-Level (EMP009) -> Allowed
+      const c1OnA = checkApprovalPermission(leaveA, (await getSystemDataForUser('EMP009', 2026)).currentUser);
+      expect(c1OnA.allowed).toBe(true);
+      expect(c1OnA.nextStatus).toBe('pending_hr');
+
+      // Non-designated C-Level (EMP010) -> Disallowed
+      const c2OnA = checkApprovalPermission(leaveA, (await getSystemDataForUser('EMP010', 2026)).currentUser);
+      expect(c2OnA.allowed).toBe(false);
+      expect(c2OnA.error).toContain('ผู้บริหารระดับสูงที่สังกัด');
+
+      // Super Admin (EMP011) -> Allowed
+      const adminOnA = checkApprovalPermission(leaveA, (await getSystemDataForUser('EMP011', 2026)).currentUser);
+      expect(adminOnA.allowed).toBe(true);
+
+      // Check rejection permission on Leave A:
+      const c2RejectA = checkRejectionPermission(leaveA, (await getSystemDataForUser('EMP010', 2026)).currentUser);
+      expect(c2RejectA.allowed).toBe(false);
+      const c1RejectA = checkRejectionPermission(leaveA, (await getSystemDataForUser('EMP009', 2026)).currentUser);
+      expect(c1RejectA.allowed).toBe(true);
+
+      // Check fallback on Leave B (no targetApproverId): both C-Levels can approve
+      const c1OnB = checkApprovalPermission(leaveB, (await getSystemDataForUser('EMP009', 2026)).currentUser);
+      expect(c1OnB.allowed).toBe(true);
+      const c2OnB = checkApprovalPermission(leaveB, (await getSystemDataForUser('EMP010', 2026)).currentUser);
+      expect(c2OnB.allowed).toBe(true);
+
+      // Check filterLeavesForViewer:
+      const c1Viewer = (await getSystemDataForUser('EMP009', 2026)).currentUser;
+      const c2Viewer = (await getSystemDataForUser('EMP010', 2026)).currentUser;
+      const adminViewer = (await getSystemDataForUser('EMP011', 2026)).currentUser;
+
+      const c1Visible = filterLeavesForViewer([leaveA, leaveB], c1Viewer);
+      expect(c1Visible.some((l) => l.id === leaveA.id)).toBe(true);
+      expect(c1Visible.some((l) => l.id === leaveB.id)).toBe(true);
+
+      const c2Visible = filterLeavesForViewer([leaveA, leaveB], c2Viewer);
+      expect(c2Visible.some((l) => l.id === leaveA.id)).toBe(false);
+      expect(c2Visible.some((l) => l.id === leaveB.id)).toBe(true);
+
+      const adminVisible = filterLeavesForViewer([leaveA, leaveB], adminViewer);
+      expect(adminVisible.some((l) => l.id === leaveA.id)).toBe(true);
+      expect(adminVisible.some((l) => l.id === leaveB.id)).toBe(true);
+    });
+
+    it('serializes and deserializes AppSheet rows with CLevelApproverId and TargetApproverId', () => {
+      const sampleUser = {
+        ...INITIAL_USERS[1], // manager
+        cLevelApproverId: 'EMP009',
+      };
+      const userAppSheetObj = userToAppSheetRow(sampleUser);
+      expect(userAppSheetObj.CLevelApproverId).toBe('EMP009');
+
+      const deserializedUser = appSheetRowToUser(userAppSheetObj);
+      expect(deserializedUser.id).toBe(sampleUser.id);
+      expect(deserializedUser.cLevelApproverId).toBe('EMP009');
+
+      const sampleLeave = {
+        ...INITIAL_LEAVE_REQUESTS[0],
+        targetApproverId: 'EMP009',
+      };
+      const leaveAppSheetObj = leaveToAppSheetRow(sampleLeave);
+      expect(leaveAppSheetObj.TargetApproverId).toBe('EMP009');
+
+      const deserializedLeave = appSheetRowToLeave(leaveAppSheetObj);
+      expect(deserializedLeave.id).toBe(sampleLeave.id);
+      expect(deserializedLeave.targetApproverId).toBe('EMP009');
     });
   });
 });

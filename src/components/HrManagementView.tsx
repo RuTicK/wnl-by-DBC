@@ -351,6 +351,7 @@ interface HrManagementViewProps {
     department?: string;
     position?: string;
     startDate?: string;
+    cLevelApproverId?: string;
     quotas?: {
       sick?: number;
       personal?: number;
@@ -406,6 +407,7 @@ export default function HrManagementView({
   const [empDepartment, setEmpDepartment] = useState<string>('');
   const [empPosition, setEmpPosition] = useState('');
   const [empStartDate, setEmpStartDate] = useState('2024-01-15');
+  const [empCLevelApproverId, setEmpCLevelApproverId] = useState<string>('');
   const [savingEmp, setSavingEmp] = useState(false);
   const [isDeptDropdownOpen, setIsDeptDropdownOpen] = useState(false);
   const [deptValidationError, setDeptValidationError] = useState<string | null>(
@@ -444,6 +446,7 @@ export default function HrManagementView({
     setEmpDepartment('');
     setEmpPosition('');
     setEmpStartDate(today);
+    setEmpCLevelApproverId('');
     setIsDeptDropdownOpen(false);
     setDeptValidationError(null);
     setModalError(null);
@@ -462,6 +465,7 @@ export default function HrManagementView({
     setEmpDepartment(cleanDept);
     setEmpPosition(u.position || '');
     setEmpStartDate(u.startDate || '');
+    setEmpCLevelApproverId(u.cLevelApproverId || '');
     setIsDeptDropdownOpen(false);
     setDeptValidationError(null);
     setModalError(null);
@@ -510,6 +514,10 @@ export default function HrManagementView({
         department: trimmedDepartment,
         position: empPosition.trim() || undefined,
         startDate: cleanStartDate,
+        cLevelApproverId:
+          empRole === 'manager'
+            ? empCLevelApproverId.trim() || undefined
+            : undefined,
         quotas: { ...STANDARD_LEAVE_QUOTAS },
       });
       if (!res.success) {
@@ -758,6 +766,13 @@ export default function HrManagementView({
                         <div className="text-slate-500 text-xs mt-0.5 font-medium">
                           {u.position}
                         </div>
+                        {u.role === 'manager' && u.cLevelApproverId && (
+                          <div className="text-[11px] text-blue-700 font-semibold mt-0.5">
+                            C-Level:{' '}
+                            {users.find((c) => c.id === u.cLevelApproverId)
+                              ?.name.split(' ')[0] || u.cLevelApproverId}
+                          </div>
+                        )}
                       </td>
                       <td className="py-4 px-3">
                         {u.role === 'c_level' || u.role === 'admin' || !u.startDate ? (
@@ -1036,8 +1051,9 @@ export default function HrManagementView({
                       <option value="manager">หัวหน้าฝ่าย (Manager)</option>
                       <option value="hr">ฝ่ายบุคคล (HR)</option>
                       <option value="c_level">ผู้บริหารระดับสูง (C-Level)</option>
-                      {empEmail.trim().toLowerCase() ===
-                        'rut.wa@digitalbusinessconsult.asia' && (
+                      {(currentUser.role === 'admin' ||
+                        empEmail.trim().toLowerCase() ===
+                          'rut.wa@digitalbusinessconsult.asia') && (
                         <option value="admin">
                           👑 ผู้ดูแลระบบสูงสุด (Super Admin)
                         </option>
@@ -1050,6 +1066,43 @@ export default function HrManagementView({
                     </span>
                   </div>
                 </div>
+
+                {empRole === 'manager' && (
+                  <div className="sm:col-span-2">
+                    <label
+                      htmlFor="emp-clevel-approver-select"
+                      className="block font-bold text-slate-800 mb-1.5"
+                    >
+                      ผู้บริหารที่สังกัด (C-Level ผู้อนุมัติ)
+                    </label>
+                    <div className="relative">
+                      <select
+                        id="emp-clevel-approver-select"
+                        value={empCLevelApproverId}
+                        onChange={(e) => setEmpCLevelApproverId(e.target.value)}
+                        className="w-full appearance-none rounded-xl border border-slate-300 pl-4 pr-11 py-3 text-base sm:text-sm text-slate-900 bg-white font-medium hover:border-blue-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 focus:outline-hidden cursor-pointer min-h-[46px]"
+                      >
+                        <option value="">-- ไม่ระบุ (ผู้บริหาร C-Level ท่านใดก็ได้) --</option>
+                        {users
+                          .filter(
+                            (u) =>
+                              u.role === 'c_level' &&
+                              (!editingEmpId || u.id !== editingEmpId)
+                          )
+                          .map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name} {c.englishName ? `(${c.englishName})` : ''} - {c.position || 'C-Level'}
+                            </option>
+                          ))}
+                      </select>
+                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5">
+                        <span className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-1.5 py-1 text-slate-600">
+                          <ChevronDown className="h-4 w-4" />
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 <div className="sm:col-span-2">
                   <label className="block font-bold text-slate-800 mb-1.5">

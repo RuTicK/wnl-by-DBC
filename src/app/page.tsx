@@ -328,6 +328,7 @@ export default function HomePage() {
     department?: string;
     position?: string;
     startDate?: string;
+    cLevelApproverId?: string;
     quotas?: {
       sick?: number;
       personal?: number;
@@ -835,13 +836,13 @@ export default function HomePage() {
                 {activeTab === 'OFFICE' && (
                   <>
                     <MapPin className="h-5 w-5 text-emerald-600 shrink-0" />
-                    <span>ลงเวลาเข้างาน (Check-in) &amp; ใครอยู่ออฟฟิศวันนี้</span>
+                    <span>ลงเวลาเข้างาน &amp; สถานะออฟฟิศ</span>
                   </>
                 )}
                 {activeTab === 'CALENDAR' && (
                   <>
                     <Calendar className="h-5 w-5 text-blue-600 shrink-0" />
-                    <span>ปฏิทินวันลา &amp; โควต้าคงเหลือ</span>
+                    <span>ปฏิทินวันลา &amp; โควต้า</span>
                   </>
                 )}
                 {activeTab === 'APPROVALS' && (
@@ -850,20 +851,20 @@ export default function HomePage() {
                     <span>
                       {currentUser.role === 'employee'
                         ? 'ประวัติการลาของฉัน'
-                        : 'อนุมัติใบลา & ประวัติคำขอ'}
+                        : 'อนุมัติใบลา &amp; ประวัติคำขอ'}
                     </span>
                   </>
                 )}
                 {activeTab === 'DASHBOARD' && (
                   <>
                     <BarChart3 className="h-5 w-5 text-blue-600 shrink-0" />
-                    <span>สถิติ &amp; รายงานวันลาภาพรวมบริษัท</span>
+                    <span>สถิติ &amp; รายงานวันลา</span>
                   </>
                 )}
                 {activeTab === 'MANAGEMENT' && (
                   <>
                     <Settings className="h-5 w-5 text-slate-700 shrink-0" />
-                    <span>จัดการฐานข้อมูลพนักงาน &amp; วันหยุดบริษัท</span>
+                    <span>จัดการพนักงาน &amp; วันหยุด</span>
                   </>
                 )}
               </div>

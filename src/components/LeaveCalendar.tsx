@@ -511,7 +511,7 @@ export default function LeaveCalendar({
             }}
             className="w-full xl:hidden bg-blue-50/90 hover:bg-blue-100 border-t border-blue-100 p-3 text-center text-xs font-bold text-blue-800 transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-99 min-h-[44px]"
           >
-            <span>👇 ดูรายละเอียด {formatThaiDate(selectedDate)} (มี {selectedDayInfo.dayLeaves.length} รายการ)</span>
+            <span>ดูรายละเอียดวันที่เลือก ({selectedDayInfo.dayLeaves.length} รายการ)</span>
           </button>
         </div>
 
@@ -537,22 +537,19 @@ export default function LeaveCalendar({
           </div>
 
           {selectedDayInfo.holiday && (
-            <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-xs sm:text-sm text-emerald-950 flex items-start gap-3 shadow-2xs">
-              <Sparkles className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
-              <div>
-                <div className="font-black text-emerald-950">วันหยุดนักขัตฤกษ์ / วันหยุดบริษัท</div>
-                <div className="mt-0.5 font-bold text-emerald-900">{selectedDayInfo.holiday.name}</div>
-                <div className="text-xs text-emerald-700 mt-1 font-medium">
-                  * ระบบตัดวันนี้ออกจากการคำนวณวันลาอัตโนมัติ (ไม่เสียโควต้าวันลา)
-                </div>
+            <div className="rounded-2xl bg-emerald-50/90 border border-emerald-200 px-4 py-3 text-xs sm:text-sm text-emerald-950 flex items-center justify-between shadow-2xs">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-emerald-600 shrink-0" />
+                <span className="font-bold text-emerald-900">{selectedDayInfo.holiday.name}</span>
               </div>
+              <span className="text-xs text-emerald-700 font-semibold bg-emerald-100/80 px-2 py-0.5 rounded-md">วันหยุด</span>
             </div>
           )}
 
           {selectedDayInfo.isWeekend && !selectedDayInfo.holiday && (
-            <div className="rounded-2xl bg-slate-100/90 border border-slate-200 px-4 py-3 text-xs sm:text-sm text-slate-700 flex items-center justify-between">
-              <strong className="font-bold text-slate-900">วันหยุดสุดสัปดาห์ (เสาร์ - อาทิตย์)</strong>
-              <span className="text-xs text-slate-500 font-medium">ไม่นับเป็นวันลา</span>
+            <div className="rounded-2xl bg-slate-100/90 border border-slate-200 px-4 py-2.5 text-xs sm:text-sm text-slate-700 flex items-center justify-between">
+              <strong className="font-bold text-slate-900">วันหยุดสุดสัปดาห์</strong>
+              <span className="text-xs text-slate-500 font-medium">เสาร์ - อาทิตย์</span>
             </div>
           )}
 
@@ -560,13 +557,13 @@ export default function LeaveCalendar({
           <div className="space-y-3">
             <div className="text-sm font-black text-slate-900 flex items-center justify-between">
               <span>
-                ผู้ลางาน / WFH / ปฏิบัติงานนอกสถานที่ ({selectedDayInfo.dayLeaves.length} คน)
+                รายการลางานและปฏิบัติงาน ({selectedDayInfo.dayLeaves.length})
               </span>
             </div>
 
             {selectedDayInfo.dayLeaves.length === 0 ? (
-              <div className="rounded-2xl border-2 border-dashed border-slate-200 py-10 px-4 text-center text-sm text-slate-400 font-medium">
-                ไม่มีรายการลางานหรือปฏิบัติงานนอกสถานที่ในวันที่เลือก
+              <div className="rounded-2xl border-2 border-dashed border-slate-200 py-8 px-4 text-center text-xs sm:text-sm text-slate-400 font-medium">
+                ไม่มีรายการลาหรือปฏิบัติงานนอกสถานที่ในวันนี้
               </div>
             ) : (
               <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1">

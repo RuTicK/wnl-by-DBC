@@ -376,4 +376,111 @@ describe('LeaveCalendar & Departmental Approval Isolation UI Tests', () => {
     const approvalsContent = fs.readFileSync(approvalsPath, 'utf-8');
     expect(approvalsContent).not.toContain('ผังสายการอนุมัติวันลาตามบทบาท');
   });
+
+  it('routes Manager leave to designated C-Level approver and isolates action queue from other C-Levels', () => {
+    const cLevelOther: SafeUser = {
+      id: 'EMP010',
+      name: 'ดร.สมเกียรติ วิสัยทัศน์กว้าง',
+      englishName: 'Dr. Somkiat Wisaithatkwang',
+      email: 'somkiat.coo@company.co.th',
+      role: 'c_level',
+      department: 'Executive (C-Level)',
+      position: 'COO',
+      startDate: '2020-01-01',
+      quotas: STANDARD_LEAVE_QUOTAS,
+    };
+
+    const adminUser: SafeUser = {
+      id: 'EMP011',
+      name: 'รุจน์ วัชรประดิษฐ์',
+      englishName: 'Rut (Rut) Watcharapadit',
+      email: 'rut.wa@digitalbusinessconsult.asia',
+      role: 'admin',
+      department: 'Management (Admin)',
+      position: 'Admin',
+      startDate: '2023-01-01',
+      quotas: STANDARD_LEAVE_QUOTAS,
+    };
+
+    const managerLeaveWithDesignatedCLevel: LeaveRequest = {
+      id: 'LV-MGR-001',
+      userId: 'EMP002', // IT Manager
+      userName: 'กิตติพงศ์ วรโชติ',
+      requesterRole: 'manager',
+      department: 'IT & Digital',
+      leaveType: 'vacation',
+      durationType: 'full',
+      startDate: '2026-12-25',
+      endDate: '2026-12-25',
+      totalDays: 1,
+      reason: 'พักผ่อนวันคริสต์มาส',
+      status: 'pending_c_level',
+      targetApproverId: 'EMP009', // Designated to Dr. Anan
+      createdAt: '2026-12-20T08:00:00.000Z',
+    };
+
+    // 1. Designated C-Level (EMP009) sees the leave in Action Queue with approval buttons
+    const cLevelHtml = renderToStaticMarkup(
+      <ApprovalAndHistoryView
+        currentUser={cLevelUser}
+        leaves={[managerLeaveWithDesignatedCLevel]}
+        onProcessLeaveAction={dummyAction}
+      />
+    );
+    expect(cLevelHtml).toContain('กิตติพงศ์ วรโชติ');
+    expect(cLevelHtml).toContain('อนุมัติขั้นที่ 1 (C-Level -&gt; HR)');
+
+    // 2. Other non-designated C-Level (EMP010) does NOT see it in Action Queue
+    const otherCLevelHtml = renderToStaticMarkup(
+      <ApprovalAndHistoryView
+        currentUser={cLevelOther}
+        leaves={[managerLeaveWithDesignatedCLevel]}
+        onProcessLeaveAction={dummyAction}
+      />
+    );
+    expect(otherCLevelHtml).toContain('ไม่มีรายการใบลาในหมวดหมู่นี้');
+    expect(otherCLevelHtml).not.toContain('อนุมัติขั้นที่ 1 (C-Level -&gt; HR)');
+
+    // 3. Super Admin (EMP011) sees it in Action Queue and can approve
+    const adminHtml = renderToStaticMarkup(
+      <ApprovalAndHistoryView
+        currentUser={adminUser}
+        leaves={[managerLeaveWithDesignatedCLevel]}
+        onProcessLeaveAction={dummyAction}
+      />
+    );
+    expect(adminHtml).toContain('กิตติพงศ์ วรโชติ');
+    expect(adminHtml).toContain('อนุมัติขั้นที่ 1 (C-Level -&gt; HR)');
+  });
+
+  it('removes visual clutter, verbose helper text, and old bureaucratic policy phrases across user views', () => {
+    // 1. LeaveCalendar clutter removal
+    expect(calendarContent).not.toContain('จองวันลา');
+    expect(calendarContent).not.toContain('คลิกเลือกวันที่บนปฏิทินเพื่อดูรายชื่อผู้ลา / WFH / WFA / ปฏิบัติงานนอกสถานที่ หรือ กดปุ่ม \'+ จองวันลา\'');
+    expect(calendarContent).not.toContain('* ระบบตัดวันนี้ออกจากการคำนวณวันลาอัตโนมัติ');
+
+    // 2. HrManagementView designated C-Level and Super Admin role options
+    const hrMgmtPath = path.resolve(__dirname, '../../components/HrManagementView.tsx');
+    const hrMgmtContent = fs.readFileSync(hrMgmtPath, 'utf-8');
+    expect(hrMgmtContent).toContain('ผู้บริหารที่สังกัด (C-Level ผู้อนุมัติ)');
+    expect(hrMgmtContent).toContain('👑 ผู้ดูแลระบบสูงสุด (Super Admin)');
+
+    // 3. Modern friendly policy wording in LeavePolicyModal & LeaveRequestModal
+    const policyPath = path.resolve(__dirname, '../../components/LeavePolicyModal.tsx');
+    const policyContent = fs.readFileSync(policyPath, 'utf-8');
+    expect(policyContent).toContain('ต้องได้รับการอนุมัติเป็นกรณีพิเศษจากผู้บริหาร');
+    expect(policyContent).not.toContain('ต้องได้รับการอนุมัติจากผู้บังคับบัญชา');
+    expect(policyContent).not.toContain('การอนุมัติจากผู้บังคับบัญชา');
+
+    const requestPath = path.resolve(__dirname, '../../components/LeaveRequestModal.tsx');
+    const requestContent = fs.readFileSync(requestPath, 'utf-8');
+    expect(requestContent).toContain('ต้องได้รับการอนุมัติเป็นกรณีพิเศษจากผู้บริหาร');
+    expect(requestContent).not.toContain('ต้องได้รับการอนุมัติจากผู้บังคับบัญชา');
+
+    // 4. Scratch manual wording
+    const manualPath = path.resolve(__dirname, '../../../scratch/manual.html');
+    const manualContent = fs.readFileSync(manualPath, 'utf-8');
+    expect(manualContent).toContain('ต้องได้รับการอนุมัติเป็นกรณีพิเศษจากผู้บริหาร');
+    expect(manualContent).not.toContain('หากครบ 3 วันแล้วต้องได้รับอนุมัติเป็นกรณีๆ ไป');
+  });
 });

@@ -1,0 +1,560 @@
+﻿<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>คู่มือการใช้งานระบบ วันนี้ลา by DBC</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 12mm 13mm 13mm 13mm;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Noto Sans Thai', 'Leelawadee UI', 'Segoe UI', Tahoma, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.55;
+      color: #1e293b;
+      background: #ffffff;
+    }
+
+    /* Header Banner */
+    .doc-cover {
+      background: linear-gradient(135deg, #0a2540 0%, #0052cc 65%, #0066ff 100%);
+      color: #ffffff;
+      border-radius: 16px;
+      padding: 22px 26px;
+      margin-bottom: 16px;
+    }
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .brand-badge {
+      display: inline-block;
+      background: linear-gradient(90deg, #f59e0b, #d97706);
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 9pt;
+      padding: 3px 10px;
+      border-radius: 999px;
+      letter-spacing: 0.4px;
+    }
+
+    .brand-pill {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.16);
+      color: #e0f2fe;
+      font-weight: 600;
+      font-size: 8.5pt;
+      padding: 3px 10px;
+      border-radius: 999px;
+    }
+
+    .doc-cover h1 {
+      margin: 0 0 6px 0;
+      font-size: 19pt;
+      font-weight: 800;
+      line-height: 1.25;
+      letter-spacing: -0.2px;
+    }
+
+    .doc-cover p {
+      margin: 0;
+      font-size: 10pt;
+      color: #dbeafe;
+    }
+
+    /* Section Headings */
+    .section {
+      margin-bottom: 13px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 6px;
+      margin: 18px 0 10px 0;
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13pt;
+      font-weight: 800;
+      color: #0a2540;
+      margin: 0;
+    }
+
+    .num-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 7px;
+      background: #0066ff;
+      color: #ffffff;
+      font-size: 10pt;
+      font-weight: 800;
+    }
+
+    .role-tag {
+      font-size: 8.5pt;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .role-all {
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+    }
+    .role-hr {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+
+    h3 {
+      font-size: 10.8pt;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 10px 0 5px 0;
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+
+    ul, ol {
+      margin: 4px 0 8px 0;
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 4px;
+    }
+
+    strong {
+      color: #0f172a;
+    }
+
+    code {
+      font-family: 'Plus Jakarta Sans', 'Noto Sans Thai', monospace;
+      background: #f1f5f9;
+      color: #0f172a;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 9.2pt;
+      border: 1px solid #e2e8f0;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0 12px 0;
+      font-size: 9.3pt;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    th {
+      background: #f8fafc;
+      color: #0a2540;
+      font-weight: 700;
+      text-align: left;
+      padding: 7px 9px;
+      border: 1px solid #cbd5e1;
+    }
+
+    td {
+      padding: 6px 9px;
+      border: 1px solid #cbd5e1;
+      vertical-align: top;
+    }
+
+    tr:nth-child(even) td {
+      background: #fcfdff;
+    }
+
+    /* Callouts */
+    .callout {
+      border-radius: 10px;
+      padding: 9px 12px;
+      margin: 8px 0 10px 0;
+      font-size: 9.5pt;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .callout-blue {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e3a8a;
+    }
+
+    .callout-amber {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      color: #92400e;
+    }
+
+    .callout-emerald {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #065f46;
+    }
+
+    .callout-title {
+      font-weight: 800;
+      margin-bottom: 3px;
+      display: block;
+    }
+
+    /* Grid cards */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 6px 0 10px 0;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .card {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: #f8fafc;
+    }
+
+    .card-title {
+      font-weight: 800;
+      font-size: 10pt;
+      color: #0a2540;
+      margin-bottom: 4px;
+    }
+
+    .page-break {
+      page-break-before: always;
+      break-before: page;
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      padding-top: 10px;
+      border-top: 1px solid #cbd5e1;
+      text-align: center;
+      font-size: 8.5pt;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- COVER BANNER -->
+  <div class="doc-cover">
+    <div class="brand-row">
+      <span class="brand-badge">วันนี้ลา by DBC</span>
+      <span class="brand-pill">PDPA Compliant • Google Sheets Live Sync</span>
+    </div>
+    <h1>คู่มือการใช้งานระบบบริหารจัดการวันลาและลงเวลาเข้างาน</h1>
+    <p>บริษัท ดิจิทัล บิซิเนส คอนซัลท์ จำกัด (Digital Business Consult Co., Ltd.) • ครอบคลุมทุกเมนูและสิทธิ์การใช้งาน</p>
+  </div>
+
+  <!-- ROLE MATRIX OVERVIEW -->
+  <div class="section">
+    <h3>ภาพรวมสิทธิ์การใช้งานแบ่งตามบทบาท (Role Access Matrix)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 24%;">บทบาท (Role)</th>
+          <th style="width: 34%;">เมนูที่มองเห็น</th>
+          <th style="width: 42%;">ขอบเขตสิทธิ์หลัก</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Employee</strong><br />(พนักงานทั่วไป)</td>
+          <td>1. Check-in &amp; ออฟฟิศ<br />2. ปฏิทินวันลา &amp; โควต้า<br />3. ประวัติการลาของฉัน</td>
+          <td>ลงเวลาเข้า-ออกงาน, ยื่นใบลา, ดูใบลาเพื่อนร่วม<strong>แผนกเดียวกัน</strong> (ซ่อนเหตุผล/ไฟล์แนบตาม PDPA), ยกเลิกใบลาที่ยังรออนุมัติ</td>
+        </tr>
+        <tr>
+          <td><strong>Manager</strong><br />(หัวหน้าฝ่าย)</td>
+          <td>1. Check-in &amp; ออฟฟิศ<br />2. ปฏิทินวันลา &amp; โควต้า<br />3. อนุมัติใบลา &amp; ประวัติ</td>
+          <td>อนุมัติ/ไม่อนุมัติใบลาขั้นที่ 1 เฉพาะลูกทีม<strong>ในฝ่ายเดียวกัน</strong> (AE / สำนักงาน / Consult / Marketing&amp;BD) และดูใบลาในฝ่าย</td>
+        </tr>
+        <tr>
+          <td><strong>HR</strong><br />(ฝ่ายบุคคล)</td>
+          <td>เห็นครบทั้ง <strong>5 เมนู</strong><br />(รวมสถิติ &amp; จัดการพนักงาน)</td>
+          <td>อนุมัติ/ไม่อนุมัติขั้นที่ 2 (ตัดโควต้า), ดูสถิติ &amp; Export CSV, เพิ่ม/แก้ไข/ลบพนักงานและวันหยุด <em>(ห้ามอนุมัติใบลาตัวเอง)</em></td>
+        </tr>
+        <tr>
+          <td><strong>C-Level / Admin</strong><br />(ผู้บริหาร / ผู้ดูแล)</td>
+          <td>เห็นครบทั้ง <strong>5 เมนู</strong><br />(รวมสถิติ &amp; จัดการพนักงาน)</td>
+          <td>อนุมัติขั้นที่ 1 ให้ Manager/HR, รับทราบใบลาทั้งบริษัท, ไม่ติดเงื่อนไขทดลองงาน 119 วัน <em>(Admin อนุมัติได้ทุกขั้นตอน)</em></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 1: LOGIN -->
+  <div class="section">
+    <div class="section-header">
+      <h2 class="section-title"><span class="num-badge">1</span> หน้าเข้าสู่ระบบ (Login)</h2>
+      <span class="role-tag role-all">ทุกบทบาท</span>
+    </div>
+    <ul>
+      <li><strong>เข้าสู่ระบบด้วย Google:</strong> กดปุ่ม <strong>"เข้าสู่ระบบด้วย Google"</strong> (หรือปุ่ม Sign in with Google) เพื่อยืนยันตัวตนด้วยบัญชี Google ของคุณ ระบบขอสิทธิ์เฉพาะข้อมูลพื้นฐาน (<code>openid</code>, <code>email</code>, <code>profile</code>) โดยไม่เข้าถึง Gmail หรือ Google Drive</li>
+      <li><strong>ระบบความปลอดภัยแบบ Whitelist:</strong> เฉพาะอีเมลที่ HR หรือ C-Level ลงทะเบียนไว้ในระบบแล้วเท่านั้นจึงจะเข้าใช้งานได้ หากยังไม่พบอีเมล หน้าจอจะแสดง <em>Access Denied</em> พร้อมแนะนำให้ติดต่อฝ่ายบุคคล</li>
+      <li><strong>ซิงก์ชื่อภาษาอังกฤษอัตโนมัติ:</strong> เมื่อเข้าสู่ระบบด้วย Google สำเร็จ ระบบจะดึงชื่อภาษาอังกฤษจากโปรไฟล์ Google มาอัปเดตลงระบบให้อัตโนมัติ</li>
+      <li><strong>เอกสาร PDPA:</strong> สามารถคลิกอ่าน <strong>นโยบายความเป็นส่วนตัว</strong> (<code>/privacy</code>) และ <strong>ข้อกำหนดการใช้งาน</strong> (<code>/terms</code>) ได้จากด้านล่างหน้าจอ</li>
+    </ul>
+  </div>
+
+  <!-- SECTION 2: NAVBAR & QUOTA -->
+  <div class="section">
+    <div class="section-header">
+      <h2 class="section-title"><span class="num-badge">2</span> แถบนำทางและตัวแสดงโควต้า (Navbar &amp; Quota)</h2>
+      <span class="role-tag role-all">Desktop &amp; Mobile</span>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">บนคอมพิวเตอร์ (Desktop)</div>
+        <ul>
+          <li><strong>Sidebar ด้านซ้าย:</strong> มีปุ่มลัด <strong>"+ ยื่นใบลา / WFH"</strong>, เมนูหลัก, เมนูผู้ดูแล (สำหรับ HR/C-Level)</li>
+          <li><strong>กล่องโควต้าคงเหลือ:</strong> แสดงคงเหลือและแถบ Progress Bar ของ <strong>ป่วย (/30)</strong>, <strong>กิจ (/3)</strong>, <strong>พักร้อน (/6)</strong> พร้อมปุ่มดู <strong>"เงื่อนไข"</strong></li>
+          <li><strong>Top Header ด้านบน:</strong> แสดงสถานะ Check-in วันนี้ และ Quick Quota Pill มุมขวาบน</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">บนมือถือ (Mobile)</div>
+        <ul>
+          <li><strong>แถบด้านบน:</strong> แสดงชื่อผู้ใช้ ปุ่ม <strong>"ยื่นใบลา"</strong> ปุ่มรีเฟรช และปุ่มออก</li>
+          <li><strong>แถบโควต้าด่วน 3 ช่อง:</strong> แสดงยอด <code>ป่วย</code>, <code>กิจ</code>, <code>พักร้อน</code> สามารถ<strong>แตะที่ช่องโควต้า</strong>เพื่อกางหน้าต่างดูรายละเอียดและกดปุ่มปิดหรือแตะนอกกรอบได้</li>
+          <li><strong>Bottom Bar ด้านล่าง:</strong> สลับเมนูหลักได้อย่างรวดเร็วด้วยมือเดียว</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: OFFICE & CHECK-IN -->
+  <div class="section">
+    <div class="section-header">
+      <h2 class="section-title"><span class="num-badge">3</span> เมนู "Check-in &amp; ออฟฟิศ"</h2>
+      <span class="role-tag role-all">ทุกบทบาท</span>
+    </div>
+    <h3>3.1 การลงเวลาเข้า-ออกงาน (ฝั่งซ้าย)</h3>
+    <ul>
+      <li><strong>เลือก 1 ใน 4 สถานที่แบบคลิกเดียว:</strong> <code>เข้า Office</code> (สำนักงาน), <code>WFH</code> (ทำงานที่บ้าน), <code>นอกสถานที่</code> (พบลูกค้า/ออกบูธ), หรือ <code>WFA</code> (ทำงานนอกสถานที่ทำงาน)</li>
+      <li><strong>การเก็บข้อมูลตาม PDPA:</strong> ระบบไม่ระบุพิกัด GPS และไม่บันทึกภาพถ่ายใบหน้า</li>
+      <li><strong>เงื่อนไขทดลองงาน (&lt; 119 วัน):</strong> พนักงานที่ยังไม่ผ่านโปร 119 วัน ปุ่ม <code>WFH</code> และ <code>WFA</code> จะถูกล็อกชั่วคราว (ยังกด <code>เข้า Office</code> และ <code>นอกสถานที่</code> ได้ปกติ; C-Level/Admin ไม่ติดเงื่อนไขโปร)</li>
+      <li><strong>กรณีกด "นอกสถานที่":</strong> <strong>บังคับ</strong>ต้องพิมพ์สถานที่หรือชื่อลูกค้าในช่องหมายเหตุก่อนกดปุ่ม</li>
+      <li><strong>หลัง Check-in:</strong> แสดงเวลาเข้างานและชั่วโมงทำงานสด กดปุ่มสีแดง <strong>"กด Check-out เลิกงาน"</strong> เมื่อเลิกงาน หรือกด <strong>"ต้องการเปลี่ยนสถานที่ หรือ แก้ไขหมายเหตุวันนี้?"</strong> เพื่อปรับปรุงข้อมูลระหว่างวัน</li>
+    </ul>
+    <h3>3.2 กระดานสถานะพนักงานรายวัน (ฝั่งขวา)</h3>
+    <ul>
+      <li>แสดงตัวเลขสรุป 5 สถานะ (<code>อยู่ Office</code>, <code>WFH / WFA</code>, <code>พบลูกค้า</code>, <code>ลางานวันนี้</code>, <code>ยังไม่ลงเวลา</code>) พร้อมแถบเปอร์เซ็นต์การลงเวลา</li>
+      <li>เลือกดูวันที่จากปฏิทินเล็ก (มีปุ่ม <strong>"วันนี้"</strong>), กรองตามฝ่าย (<code>AE</code>, <code>สำนักงาน</code>, <code>Consult</code>, <code>Marketing&amp;BD</code>) หรือค้นหาจากชื่อ/รหัสพนักงานได้</li>
+      <li>แยกดูรายชื่อเป็น 3 กลุ่ม: 1) อยู่ Office 2) WFH / WFA &amp; พบลูกค้า 3) ลางาน &amp; รอลงเวลา <em>(บนมือถือสลับดูผ่านแท็บ 3 ปุ่ม)</em></li>
+    </ul>
+  </div>
+
+  <!-- SECTION 4: CALENDAR & LEAVE REQUEST -->
+  <div class="section">
+    <div class="section-header">
+      <h2 class="section-title"><span class="num-badge">4</span> เมนู "ปฏิทินวันลา &amp; โควต้า"</h2>
+      <span class="role-tag role-all">ทุกบทบาท</span>
+    </div>
+    <h3>4.1 ปฏิทินวันลา &amp; รายละเอียดวันที่เลือก (Day Inspector)</h3>
+    <ul>
+      <li><strong>แถบเครื่องมือบนปฏิทิน:</strong> กด <code>&lt;</code> / <code>&gt;</code> เพื่อเปลี่ยนเดือน, กด <strong>"วันนี้"</strong>, กรองสถานะ (<code>ทั้งหมดที่ใช้งาน</code> / <code>เฉพาะที่อนุมัติแล้ว</code>), กรองแผนก <em>(เฉพาะ HR / C-Level / Admin)</em>, กด <strong>"เงื่อนไข"</strong> หรือกด <strong>"+ ยื่นใบลา"</strong></li>
+      <li><strong>คลิกดูรายวัน:</strong> แตะวันที่ใดก็ได้บนปฏิทินเพื่อดูรายชื่อผู้ลา/WFH/นอกสถานที่ และไฟล์แนบทางด้านขวา พร้อมปุ่มลัด <strong>"ทำรายการวันนี้"</strong></li>
+      <li><strong>การซ่อนข้อมูลตาม PDPA:</strong> พนักงานทั่วไปจะเห็นเฉพาะใบลาของตนเองและเพื่อนร่วม<strong>แผนกเดียวกัน</strong> โดยระบบจะซ่อนเหตุผลการลาและไฟล์แนบของเพื่อนร่วมงานอัตโนมัติ</li>
+    </ul>
+
+    <h3>4.2 โควต้ามาตรฐาน &amp; ระเบียบการลา (Policy &amp; Leave Request)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 22%;">ประเภทการลา</th>
+          <th style="width: 16%;">โควต้า/ปี</th>
+          <th style="width: 18%;">โปร 119 วัน</th>
+          <th style="width: 44%;">เงื่อนไขและระเบียบปฏิบัติของบริษัท</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>ลาป่วย</strong> (Sick)</td>
+          <td><strong>30 วัน</strong></td>
+          <td>ขอลาได้ทันที</td>
+          <td>แจ้งโดยเร็วที่สุดในวันแรกที่หยุดงาน กลับมาทำงานให้ส่งใบลาย้อนหลัง ลาป่วยตั้งแต่ <strong>3 วันทำงานขึ้นไป</strong> ให้แนบใบรับรองแพทย์</td>
+        </tr>
+        <tr>
+          <td><strong>ลากิจ</strong> (Personal)</td>
+          <td><strong>3 วัน</strong></td>
+          <td>ขอลาได้ทันที</td>
+          <td>ส่งใบลาและได้รับอนุมัติล่วงหน้าไม่น้อยกว่า <strong>3 วันทำงาน</strong> หากครบ 3 วันแล้วต้องได้รับการอนุมัติเป็นกรณีพิเศษจากผู้บริหาร</td>
+        </tr>
+        <tr>
+          <td><strong>ลาพักร้อน</strong> (Vacation)</td>
+          <td><strong>6 วัน</strong></td>
+          <td><strong>ล็อกจนกว่าครบ 119 วัน</strong></td>
+          <td>อนุมัติล่วงหน้า ≥ 3 วันทำงาน, ใช้ได้เมื่อปฏิบัติงานครบ 1 ปี (Prorate), และไม่สามารถสะสมไปปีถัดไปได้</td>
+        </tr>
+        <tr>
+          <td><strong>WFH / WFA</strong></td>
+          <td><strong>ไม่จำกัด</strong></td>
+          <td><strong>ล็อกจนกว่าครบ 119 วัน</strong></td>
+          <td>ได้รับอนุมัติจากหัวหน้างาน มีเหตุผลสมเหตุสมผล ทำงานได้ตามปกติ และ<strong>เปิดหน้าจอ Google Meet</strong> ตลอดเวลาทำงาน</td>
+        </tr>
+        <tr>
+          <td><strong>ทำงานนอกสถานที่</strong></td>
+          <td><strong>ไม่จำกัด</strong></td>
+          <td>ขอลาได้ทันที</td>
+          <td>ไปพบลูกค้า/ประชุมนอกสถานที่/ออกบูธ <strong>ระบบบังคับระบุสถานที่หรือชื่อลูกค้า</strong>ทุกครั้ง</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-blue">
+      <span class="callout-title">การคำนวณวันลาและการแนบเอกสาร</span>
+      • เลือกได้ทั้ง <strong>เต็มวัน</strong> และ <strong>ครึ่งวันเช้า / ครึ่งวันบ่าย</strong> (0.5 วัน) • ระบบ<strong>ตัดวันเสาร์-อาทิตย์และวันหยุดบริษัท</strong>ออกให้อัตโนมัติ<br />
+      • ระบบป้องกันการยื่นวันซ้อนทับกัน ยกเว้น <strong>ครึ่งเช้า + ครึ่งบ่าย</strong> ในวันเดียวกัน • รองรับไฟล์ภาพ/PDF ขนาดไม่เกิน <strong>3 MB</strong> (หากเป็น PDF ขนาดใหญ่แนะนำให้วางเป็นลิงก์ URL ของ Google Drive แทน เพื่อให้บันทึกเข้า Google Sheets ได้ครบถ้วน)
+    </div>
+  </div>
+
+  <!-- SECTION 5: APPROVALS & HISTORY -->
+  <div class="section">
+    <div class="section-header">
+      <h2 class="section-title"><span class="num-badge">5</span> เมนู "อนุมัติใบลา &amp; ประวัติ"</h2>
+      <span class="role-tag role-all">ทุกบทบาท (ตามสิทธิ์)</span>
+    </div>
+    <h3>5.1 สายการอนุมัติ 2 ขั้นตอนแยกตามฝ่าย (Chain of Command)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 24%;">ผู้ยื่นคำขอ</th>
+          <th style="width: 30%;">ขั้นที่ 1 (Step 1)</th>
+          <th style="width: 30%;">ขั้นที่ 2 (Step 2)</th>
+          <th style="width: 16%;">ผลลัพธ์</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Employee</strong> (พนักงาน)</td>
+          <td><strong>Manager เฉพาะฝ่ายเดียวกันเท่านั้น</strong></td>
+          <td><strong>HR</strong> ตรวจสอบและตัดโควต้า</td>
+          <td>อนุมัติ + แจ้ง C-Level</td>
+        </tr>
+        <tr>
+          <td><strong>Manager</strong> (หัวหน้าฝ่าย)</td>
+          <td><strong>C-Level ผู้บริหารที่สังกัด</strong> (หรือ C-Level ผู้มีอำนาจ)</td>
+          <td><strong>HR</strong> ตรวจสอบและตัดโควต้า</td>
+          <td>อนุมัติ + แจ้ง C-Level</td>
+        </tr>
+        <tr>
+          <td><strong>HR</strong> (ฝ่ายบุคคล)</td>
+          <td><strong>C-Level</strong></td>
+          <td><strong>HR อีกท่าน</strong> <em>(ห้ามอนุมัติตัวเอง)</em></td>
+          <td>อนุมัติสมบูรณ์</td>
+        </tr>
+        <tr>
+          <td><strong>C-Level / Admin</strong></td>
+          <td><em>(ข้ามขั้นที่ 1)</em></td>
+          <td><strong>HR</strong> บันทึกข้อมูล</td>
+          <td>อนุมัติสมบูรณ์</td>
+        </tr>
+      </tbody>
+    </table>
+    <ul>
+      <li><strong>แท็บย่อยสำหรับผู้อนุมัติ:</strong> 1) <code>รอฉันอนุมัติ</code> (แสดงเฉพาะใบลาที่ถึงคิวของคุณจริงๆ) 2) <code>ประวัติการลาของฉัน</code> 3) <code>ใบลาในแผนก</code> (Manager) / <code>ใบลาทั้งบริษัท</code> (HR, C-Level, Admin) ส่วนพนักงานทั่วไปจะเห็นเฉพาะหน้า <strong>ประวัติการลาของฉัน</strong></li>
+      <li><strong>การดำเนินการ:</strong> พิมพ์หมายเหตุความเห็น แล้วกด <strong>อนุมัติ</strong> หรือ <strong>ไม่อนุมัติ</strong> (มีกล่องยืนยันทุกครั้ง) สำหรับเจ้าของใบลาสามารถกด <strong>"ยกเลิกใบลาของฉัน"</strong> ได้ระหว่างที่คำขอยังรออนุมัติ</li>
+    </ul>
+  </div>
+
+  <!-- SECTION 6: HR DASHBOARD -->
+  <div class="section">
+    <div class="section-header">
+      <h2 class="section-title"><span class="num-badge">6</span> เมนู "สถิติ &amp; รายงานวันลา"</h2>
+      <span class="role-tag role-hr">เฉพาะ HR / C-Level / Admin</span>
+    </div>
+    <ul>
+      <li><strong>การ์ดสรุป 4 KPIs:</strong> ยอดวันลาอนุมัติแล้วรวม (ปีปัจจุบัน), รายการรอขั้นที่ 1, รายการรอ HR ขั้นที่ 2 <em>(คลิกที่การ์ดรออนุมัติเพื่อกระโดดไปหน้าอนุมัติได้ทันที)</em>, และจำนวนพนักงานทั้งหมด</li>
+      <li><strong>กราฟวิเคราะห์ 2 ชุด:</strong> กราฟแท่งเปรียบเทียบวันลารายเดือน (ม.ค.-ธ.ค.) และกราฟสรุปวันลาแยกตามฝ่าย</li>
+      <li><strong>ตารางสรุปโควต้ารายบุคคล:</strong> ค้นหาจากชื่อ/รหัส/อีเมล/ตำแหน่ง และกรองตามแผนก แสดงโควต้าคงเหลือ ใช้ไป รออนุมัติ และสถานะโปร 119 วัน</li>
+      <li><strong>ปุ่มส่งออก Excel/CSV 2 ปุ่ม</strong> (รองรับภาษาไทยใน Excel):
+        <ul>
+          <li><code>Export สรุปโควต้า (Excel/CSV)</code>: ส่งออกตามรายชื่อที่กรองอยู่บนหน้าจอ</li>
+          <li><code>Export ประวัติการลา (Excel/CSV)</code>: ส่งออกประวัติใบลาทั้งหมดในระบบ พร้อมชื่อผู้อนุมัติขั้น 1 และ 2</li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+
+  <!-- SECTION 7: HR MANAGEMENT -->
+  <div class="section">
+    <div class="section-header">
+      <h2 class="section-title"><span class="num-badge">7</span> เมนู "จัดการพนักงาน &amp; วันหยุด"</h2>
+      <span class="role-tag role-hr">เฉพาะ HR / C-Level / Admin</span>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">แท็บ 1: จัดการพนักงาน (Whitelist)</div>
+        <ul>
+          <li>กด <strong>"เพิ่มพนักงานใหม่"</strong> ระบบจะรันรหัสพนักงานให้อัตโนมัติ (เช่น <code>EMP012</code>)</li>
+          <li><strong>ไม่ต้องกรอกชื่อภาษาอังกฤษเอง:</strong> กรอกเฉพาะ <strong>อีเมล Google</strong> และเลือก <strong>บทบาท (Role)</strong> ระบบจะดึงชื่อภาษาอังกฤษจาก Google Login มาเติมให้อัตโนมัติ</li>
+          <li><strong>กรณีพนักงาน / Manager / HR:</strong> เลือก<strong>ฝ่าย</strong>จาก Dropdown แบบล็อก 4 ฝ่าย (<code>AE</code>, <code>สำนักงาน</code>, <code>Consult</code>, <code>Marketing&amp;BD</code>) และระบุ <strong>วันที่เริ่มงาน</strong></li>
+          <li><strong>กรณีเลือก C-Level:</strong> ระบบจะ<strong>ซ่อนช่องฝ่ายและวันเริ่มทำงานอัตโนมัติ</strong> (ไม่ติดเงื่อนไขโปร 119 วัน)</li>
+          <li><strong>กรณีหัวหน้าฝ่าย (Manager):</strong> สามารถเลือกกำหนด <strong>"ผู้บริหารที่สังกัด (C-Level ผู้อนุมัติ)"</strong> ได้</li>
+          <li><strong>ผู้ดูแลระบบสูงสุด (Super Admin):</strong> Admin สามารถแต่งตั้งพนักงานอื่นเป็น Super Admin ได้ โดยบัญชีหลักได้รับการคุ้มครอง</li>
+          <li>ช่อง<em>ชื่อภาษาไทย</em>และ<em>ตำแหน่ง</em>เป็นข้อมูลเสริม (ไม่บังคับกรอก)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">แท็บ 2: จัดการวันหยุดบริษัท</div>
+        <ul>
+          <li>เลือก <strong>วันที่หยุด</strong> และพิมพ์ <strong>ชื่อวันหยุดนักขัตฤกษ์ / วันหยุดพิเศษ</strong> แล้วกดเพิ่มเข้าปฏิทินบริษัท</li>
+          <li>สามารถกด <strong>แก้ไข</strong> หรือ <strong>ลบ</strong> วันหยุดเดิมได้จากรายการด้านขวา (ระบบป้องกันการใส่วันหยุดซ้ำวันเดียวกัน)</li>
+          <li><strong>คำนวณวันลาใหม่อัตโนมัติ:</strong> เมื่อเพิ่ม แก้ไข หรือลบวันหยุด ระบบจะปรับปรุงจำนวนวันลาสุทธิ (<code>totalDays</code>) ของใบลาที่ยังใช้งานอยู่ให้ตรงกับวันหยุดใหม่ทันที</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout callout-amber">
+      <span class="callout-title">ข้อควรระวังในการแก้ไข / ลบพนักงาน</span>
+      • ป้องกันการลบบัญชีของตนเองที่กำลังใช้งานอยู่ และห้ามลบบัญชี Super Admin • หากกดลบพนักงาน ข้อมูลใบลาและประวัติลงเวลาของพนักงานคนนั้นจะถูกลบออกด้วย • เมื่อแก้ไขชื่อหรือฝ่าย ระบบจะอัปเดตประวัติใบลาและการลงเวลาเดิมให้สอดคล้องกันอัตโนมัติ
+    </div>
+  </div>
+
+  <div class="footer-note">
+    ระบบบริหารจัดการวันลาออนไลน์ <strong>วันนี้ลา by DBC</strong> • Digital Business Consult Co., Ltd. • ข้อมูลสอดคล้องกับมาตรฐาน PDPA
+  </div>
+
+</body>
+</html>
+

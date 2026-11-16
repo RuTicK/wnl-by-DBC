@@ -156,7 +156,7 @@ export default function LeavePolicyModal({
                   <li className="flex items-start gap-2">
                     <span className="text-amber-500 font-bold shrink-0 mt-0.5">•</span>
                     <span>
-                      กรณีลาครบ 3 วันในปีนั้นๆ แล้ว มีเหตุหรือกิจที่ต้องลา ต้องได้รับการอนุมัติจากผู้บังคับบัญชาเป็นกรณีๆ ไป
+                      กรณีลาครบ 3 วันในปีนั้นๆ แล้ว มีเหตุหรือกิจที่ต้องลา ต้องได้รับการอนุมัติเป็นกรณีพิเศษจากผู้บริหาร
                     </span>
                   </li>
                 </ul>
