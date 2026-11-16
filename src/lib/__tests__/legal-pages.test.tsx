@@ -38,7 +38,8 @@ describe('Enterprise Legal Pages (/privacy & /terms) Verification', () => {
       expect(html).toContain('Digital Business Consult');
       expect(html).toContain('DBC');
       expect(html).toContain('Wan-Nee-La by DBC');
-      expect(html).toContain('rut.wa@digitalbusinessconsult.asia');
+      expect(html).not.toContain('rut.wa@digitalbusinessconsult.asia');
+      expect(html).not.toContain('@');
 
       // English Executive Summary
       expect(html).toContain('Terms of Service Summary (English Version)');

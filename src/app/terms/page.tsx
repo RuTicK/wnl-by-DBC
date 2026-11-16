@@ -9,7 +9,6 @@ import {
   Scale,
   Building2,
   Lock,
-  Mail,
   UserCheck,
   HelpCircle,
   Clock,
@@ -201,7 +200,7 @@ export default function TermsOfServicePage() {
             <ul className="list-disc pl-5 space-y-1.5 text-slate-600">
               <li><strong>การรักษาความลับของบัญชี:</strong> ผู้ใช้งานมีหน้าที่รักษาความปลอดภัยของบัญชี Google Workspace อุปกรณ์ และรหัสผ่านของตนเองอย่างเคร่งครัด</li>
               <li><strong>ห้ามใช้บัญชีแทนกัน:</strong> ห้ามมิให้ส่งต่อ อนุญาต หรือยินยอมให้บุคคลอื่นเข้าถึงหรือใช้งานบัญชีของตนเองเพื่อทำการบันทึกเวลา Check-in หรือยื่นคำขอลาแทนกันโดยเด็ดขาด</li>
-              <li><strong>การแจ้งเหตุผิดปกติ:</strong> หากพบหรือสงสัยว่ามีบุคคลอื่นเข้าถึงบัญชีของท่านโดยมิได้รับอนุญาต ต้องแจ้งผู้ดูแลระบบที่ <code className="text-blue-600 font-mono">rut.wa@digitalbusinessconsult.asia</code> ทันที</li>
+              <li><strong>การแจ้งเหตุผิดปกติ:</strong> หากพบหรือสงสัยว่ามีบุคคลอื่นเข้าถึงบัญชีของท่านโดยมิได้รับอนุญาต ต้องแจ้งฝ่ายทรัพยากรบุคคล (HR) หรือผู้ดูแลระบบขององค์กรทันที</li>
             </ul>
           </section>
 
@@ -301,7 +300,7 @@ export default function TermsOfServicePage() {
           {/* Section 10: Contact Information */}
           <section className="space-y-3 pt-2">
             <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2.5 pb-2 border-b border-slate-100">
-              <Mail className="w-5 h-5 text-blue-600 shrink-0" />
+              <Building2 className="w-5 h-5 text-blue-600 shrink-0" />
               <span>10. ช่องทางการติดต่อ (Contact Information)</span>
             </h2>
             <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-sky-50 border border-blue-100 p-5 space-y-3">
@@ -310,15 +309,7 @@ export default function TermsOfServicePage() {
               </p>
               <div className="space-y-1.5 text-xs sm:text-sm text-slate-700">
                 <p><strong>ผู้ให้บริการ:</strong> บริษัท ดิจิทัล บิสิเนส คอนซัลท์ จำกัด (Digital Business Consult Co., Ltd. / DBC)</p>
-                <p>
-                  <strong>อีเมลผู้ดูแลระบบ / ผู้พัฒนา:</strong>{' '}
-                  <a
-                    href="mailto:rut.wa@digitalbusinessconsult.asia"
-                    className="font-mono font-bold text-blue-600 hover:text-blue-800 underline"
-                  >
-                    rut.wa@digitalbusinessconsult.asia
-                  </a>
-                </p>
+                <p><strong>หน่วยงานรับผิดชอบ:</strong> ฝ่ายทรัพยากรบุคคล (HR Department) และทีมผู้ดูแลระบบขององค์กร</p>
                 <p><strong>ระบบ:</strong> วันนี้ลา by DBC (HR Leave &amp; Attendance Management System)</p>
               </div>
             </div>
