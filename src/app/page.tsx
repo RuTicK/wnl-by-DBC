@@ -735,9 +735,18 @@ export default function HomePage() {
           {/* User Profile Info Card */}
           <div className="rounded-2xl bg-white border border-slate-200/80 p-3 shadow-2xs space-y-2">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-[#0A2540] to-[#0066FF] text-white font-extrabold text-sm shrink-0 shadow-2xs">
-                {currentUser.name.slice(0, 2)}
-              </div>
+              {currentUser.avatarUrl ? (
+                <img
+                  src={currentUser.avatarUrl}
+                  alt={currentUser.name}
+                  className="h-9 w-9 rounded-xl object-cover shrink-0 shadow-2xs border border-slate-200"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-[#0A2540] to-[#0066FF] text-white font-extrabold text-sm shrink-0 shadow-2xs">
+                  {currentUser.name.slice(0, 2)}
+                </div>
+              )}
               <div className="min-w-0 flex-1">
                 <div className="text-xs font-bold text-slate-900 truncate">
                   {currentUser.name}

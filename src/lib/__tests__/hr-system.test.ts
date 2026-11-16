@@ -852,11 +852,15 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
         isGoogleLogin: true,
         googleEmail: 'somchai.it@company.co.th',
         googleEnglishName: 'Somchai Jaidee (Google Verified)',
+        googlePicture: 'https://lh3.googleusercontent.com/a/somchai-photo',
       });
       expect(googleAuth.success).toBe(true);
       expect(googleAuth.user?.id).toBe('EMP003');
       expect(googleAuth.user?.englishName).toBe(
         'Somchai Jaidee (Google Verified)'
+      );
+      expect(googleAuth.user?.avatarUrl).toBe(
+        'https://lh3.googleusercontent.com/a/somchai-photo'
       );
     });
 

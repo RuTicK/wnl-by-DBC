@@ -164,25 +164,40 @@ export default function LeaveRequestModal({
       const img = new window.Image();
       img.onload = () => {
         try {
-          const maxDim = 720;
-          let width = img.width || 600;
-          let height = img.height || 600;
-          if (width > maxDim || height > maxDim) {
-            const ratio = Math.min(maxDim / width, maxDim / height);
-            width = Math.round(width * ratio);
-            height = Math.round(height * ratio);
-          }
           const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
           const ctx = canvas.getContext('2d');
           if (!ctx) {
             resolve(dataUrl);
             return;
           }
-          ctx.drawImage(img, 0, 0, width, height);
-          const compressed = canvas.toDataURL('image/jpeg', 0.55);
-          resolve(compressed.length < dataUrl.length ? compressed : dataUrl);
+
+          let maxDim = 680;
+          let quality = 0.55;
+          let result = dataUrl;
+
+          // บีบอัดภาพให้อยู่ในเกณฑ์ปลอดภัยของ Google Sheets (<= 45,000 ตัวอักษร)
+          for (let attempt = 0; attempt < 3; attempt++) {
+            let width = img.width || 600;
+            let height = img.height || 600;
+            if (width > maxDim || height > maxDim) {
+              const ratio = Math.min(maxDim / width, maxDim / height);
+              width = Math.round(width * ratio);
+              height = Math.round(height * ratio);
+            }
+            canvas.width = width;
+            canvas.height = height;
+            ctx.clearRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+            const compressed = canvas.toDataURL('image/jpeg', quality);
+            result = compressed;
+            if (compressed.length <= 45000) {
+              break;
+            }
+            maxDim = Math.round(maxDim * 0.8);
+            quality = Math.max(0.35, quality - 0.1);
+          }
+
+          resolve(result.length < dataUrl.length ? result : dataUrl);
         } catch {
           resolve(dataUrl);
         }
@@ -196,8 +211,13 @@ export default function LeaveRequestModal({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 3 * 1024 * 1024) {
-      setError('ขนาดไฟล์รูปใบรับรองแพทย์ต้องไม่เกิน 3 MB');
+    if (file.size > 5 * 1024 * 1024) {
+      setError('ขนาดไฟล์รูปใบรับรองแพทย์ต้องไม่เกิน 5 MB');
+      return;
+    }
+
+    if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+      setError('ระบบแนะนำให้อัปโหลดไฟล์รูปภาพ (JPG/PNG) หรือหากเป็นไฟล์ PDF กรุณาวางลิงก์ Google Drive ในช่องด้านขวา');
       return;
     }
 

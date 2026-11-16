@@ -291,10 +291,10 @@ export async function authenticateUser(
       };
     }
 
-    // หาก Google Login ส่งชื่อภาษาอังกฤษมาด้วย ให้ซิงก์อัปเดตลงโปรไฟล์พนักงานอัตโนมัติ
+    // หาก Google Login ส่งชื่อภาษาอังกฤษ หรือรูปภาพโปรไฟล์มาด้วย ให้ซิงก์อัปเดตลงโปรไฟล์พนักงานอัตโนมัติ
+    let profileChanged = false;
     const googleEnName = options.googleEnglishName?.trim();
     if (googleEnName) {
-      let profileChanged = false;
       if (googleEnName !== foundByGoogle.englishName) {
         foundByGoogle.englishName = googleEnName;
         profileChanged = true;
@@ -309,17 +309,23 @@ export async function authenticateUser(
         foundByGoogle.name = googleEnName;
         profileChanged = true;
       }
+    }
 
-      if (profileChanged) {
-        const saved = await saveDatabaseState(state);
-        mode = saved.mode;
-        await syncToAppSheetTable(
-          'Users',
-          'Edit',
-          [userToAppSheetRow(foundByGoogle)],
-          foundByGoogle.email
-        );
-      }
+    const googlePic = options.googlePicture?.trim();
+    if (googlePic && googlePic !== foundByGoogle.avatarUrl) {
+      foundByGoogle.avatarUrl = googlePic;
+      profileChanged = true;
+    }
+
+    if (profileChanged) {
+      const saved = await saveDatabaseState(state);
+      mode = saved.mode;
+      await syncToAppSheetTable(
+        'Users',
+        'Edit',
+        [userToAppSheetRow(foundByGoogle)],
+        foundByGoogle.email
+      );
     }
 
     return {

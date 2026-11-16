@@ -56,6 +56,7 @@ export interface User {
   quotas: LeaveQuotas;
   username?: string;   // ชื่อผู้ใช้สำรองสำหรับโหมดทดสอบ/อ้างอิง
   cLevelApproverId?: string; // ผู้บริหารที่สังกัด (C-Level ผู้อนุมัติ) สำหรับบทบาท Manager
+  avatarUrl?: string;  // รูปโปรไฟล์จาก Google Login
 }
 
 export type SafeUser = User;

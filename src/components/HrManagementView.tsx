@@ -733,9 +733,25 @@ export default function HrManagementView({
                   return (
                     <tr key={u.id} className="hover:bg-slate-50/70 transition">
                       <td className="py-4 px-5">
-                        <div className="font-extrabold text-sm sm:text-base text-slate-900">{u.name}</div>
-                        <div className="font-mono text-xs text-slate-400 font-bold mt-0.5">
-                          {u.id}
+                        <div className="flex items-center gap-3">
+                          {u.avatarUrl ? (
+                            <img
+                              src={u.avatarUrl}
+                              alt={u.name}
+                              className="h-9 w-9 rounded-full object-cover shrink-0 border border-slate-200"
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <div className="h-9 w-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-xs text-slate-600 shrink-0">
+                              {u.name.slice(0, 2)}
+                            </div>
+                          )}
+                          <div>
+                            <div className="font-extrabold text-sm sm:text-base text-slate-900">{u.name}</div>
+                            <div className="font-mono text-xs text-slate-400 font-bold mt-0.5">
+                              {u.id}
+                            </div>
+                          </div>
                         </div>
                       </td>
                       <td className="py-4 px-4">

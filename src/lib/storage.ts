@@ -236,6 +236,7 @@ export const USER_SHEET_HEADERS = [
   'wfhQuota',
   'wfaQuota',
   'cLevelApproverId',
+  'avatarUrl',
 ];
 
 export function userToRow(u: User): (string | number)[] {
@@ -254,6 +255,7 @@ export function userToRow(u: User): (string | number)[] {
     0,
     0,
     u.cLevelApproverId || '',
+    u.avatarUrl || '',
   ];
 }
 
@@ -274,6 +276,7 @@ export function rowToUser(row: string[]): User {
     startDate: row[7] || '2023-01-01',
     username: derivedUsername,
     cLevelApproverId: row[13] || undefined,
+    avatarUrl: row[14] || undefined,
     quotas: {
       sick: STANDARD_LEAVE_QUOTAS.sick,
       personal: STANDARD_LEAVE_QUOTAS.personal,
@@ -467,6 +470,7 @@ export function appSheetRowToUser(row: Record<string, any>): User {
     startDate: (row.startDate || row.StartDate || '2023-01-01').toString().trim(),
     username: (row.username || row.Username || derivedUsername).toString().trim(),
     cLevelApproverId: cLevelApproverId || undefined,
+    avatarUrl: (row.avatarUrl || row.AvatarUrl || '').toString().trim() || undefined,
     quotas: {
       sick: STANDARD_LEAVE_QUOTAS.sick,
       personal: STANDARD_LEAVE_QUOTAS.personal,
@@ -748,7 +752,7 @@ async function writeToGoogleSheets(state: DatabaseState): Promise<void> {
     spreadsheetId,
     requestBody: {
       ranges: [
-        'Users!A1:N1000',
+        'Users!A1:O1000',
         'LeaveRequests!A1:V5000',
         'Holidays!A1:C500',
         'Attendance!A1:I5000',
