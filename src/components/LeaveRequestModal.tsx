@@ -23,6 +23,7 @@ import {
   DURATION_TYPE_META,
   formatThaiDate,
   getApprovalFlowLabel,
+  getBangkokNow,
   LEAVE_TYPE_META,
 } from '@/lib/leave-utils';
 import LeavePolicyModal from './LeavePolicyModal';
@@ -66,11 +67,7 @@ export default function LeaveRequestModal({
   onSubmitLeave,
 }: LeaveRequestModalProps) {
   const todayStr = useMemo(() => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+    return getBangkokNow().dateStr;
   }, []);
 
   const [leaveType, setLeaveType] = useState<LeaveType>('vacation');

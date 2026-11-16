@@ -6,6 +6,7 @@ import {
   checkRejectionPermission,
   filterLeavesForViewer,
   findOverlappingLeave,
+  getBangkokNow,
   getInitialLeaveStatus,
   LEAVE_TYPE_META,
   parseDateUTC,
@@ -435,11 +436,7 @@ export async function registerGoogleUser(
     };
   }
 
-  const now = new Date();
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
-    2,
-    '0'
-  )}-${String(now.getDate()).padStart(2, '0')}`;
+  const todayStr = getBangkokNow().dateStr;
   const cleanStartDate =
     input.startDate && parseDateUTC(input.startDate.trim())
       ? input.startDate.trim()
@@ -992,9 +989,9 @@ export async function recordCheckIn(
     return { success: false, error: 'ไม่พบผู้ใช้งานในระบบ' };
   }
 
-  const now = new Date();
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  const currentHm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const bangkok = getBangkokNow();
+  const todayStr = bangkok.dateStr;
+  const currentHm = bangkok.timeStr;
 
   const targetDate = (input.date || '').trim() || todayStr;
   if (!parseDateUTC(targetDate)) {
@@ -1094,9 +1091,9 @@ export async function recordCheckOut(
     return { success: false, error: 'ไม่พบผู้ใช้งานในระบบ' };
   }
 
-  const now = new Date();
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  const currentHm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const bangkok = getBangkokNow();
+  const todayStr = bangkok.dateStr;
+  const currentHm = bangkok.timeStr;
 
   const targetDate = (input?.date || '').trim() || todayStr;
   const timeStr = (input?.checkOutTime || '').trim() || currentHm;

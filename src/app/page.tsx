@@ -33,6 +33,7 @@ import {
   ROLE_META,
   WORK_LOCATION_META,
   checkApprovalPermission,
+  getBangkokNow,
   getProbationInfo,
 } from '@/lib/leave-utils';
 import { DashboardPayload } from '@/lib/hr-service';
@@ -200,11 +201,7 @@ export default function HomePage() {
   }, [systemData, currentUser]);
 
   const todayStr = useMemo(() => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+    return getBangkokNow().dateStr;
   }, []);
 
   const myTodayAttendance = useMemo(() => {
@@ -277,15 +274,20 @@ export default function HomePage() {
   };
 
   const handleCheckIn = async (payload: {
+    date?: string;
+    checkInTime?: string;
     workLocation: WorkLocationType;
     note?: string;
   }): Promise<{ success: boolean; error?: string }> => {
     if (!currentUser) return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    const bkk = getBangkokNow();
     const res = await fetch('/api/attendance', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         actorId: currentUser.id,
+        date: payload.date || bkk.dateStr,
+        checkInTime: payload.checkInTime || bkk.timeStr,
         workLocation: payload.workLocation,
         note: payload.note,
       }),
@@ -299,14 +301,19 @@ export default function HomePage() {
   };
 
   const handleCheckOut = async (payload: {
+    date?: string;
+    checkOutTime?: string;
     note?: string;
   }): Promise<{ success: boolean; error?: string }> => {
     if (!currentUser) return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
+    const bkk = getBangkokNow();
     const res = await fetch('/api/attendance', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         actorId: currentUser.id,
+        date: payload.date || bkk.dateStr,
+        checkOutTime: payload.checkOutTime || bkk.timeStr,
         note: payload.note,
       }),
     });

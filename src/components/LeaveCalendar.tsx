@@ -17,6 +17,7 @@ import {
 import {
   DURATION_TYPE_META,
   formatThaiDate,
+  getBangkokNow,
   LEAVE_TYPE_META,
   STATUS_META,
 } from '@/lib/leave-utils';
@@ -59,14 +60,14 @@ export default function LeaveCalendar({
   onOpenRequestModal,
   onOpenPolicyModal,
 }: LeaveCalendarProps) {
-  const now = new Date();
-  const [viewYear, setViewYear] = useState<number>(now.getFullYear());
-  const [viewMonth, setViewMonth] = useState<number>(now.getMonth()); // 0-11
+  const todayStr = useMemo(() => getBangkokNow().dateStr, []);
+  const [viewYear, setViewYear] = useState<number>(() => getBangkokNow().year);
+  const [viewMonth, setViewMonth] = useState<number>(() => {
+    const [, m] = getBangkokNow().dateStr.split('-').map(Number);
+    return m - 1;
+  }); // 0-11
   const [selectedDate, setSelectedDate] = useState<string>(() => {
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+    return getBangkokNow().dateStr;
   });
   const [deptFilter, setDeptFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ACTIVE' | 'APPROVED_ONLY'>(
@@ -199,13 +200,11 @@ export default function LeaveCalendar({
   };
 
   const handleToday = () => {
-    const today = new Date();
-    setViewYear(today.getFullYear());
-    setViewMonth(today.getMonth());
-    const y = today.getFullYear();
-    const m = String(today.getMonth() + 1).padStart(2, '0');
-    const d = String(today.getDate()).padStart(2, '0');
-    setSelectedDate(`${y}-${m}-${d}`);
+    const bkk = getBangkokNow();
+    setViewYear(bkk.year);
+    const [, m] = bkk.dateStr.split('-').map(Number);
+    setViewMonth(m - 1);
+    setSelectedDate(bkk.dateStr);
   };
 
   return (
@@ -368,12 +367,7 @@ export default function LeaveCalendar({
               }
 
               const isSelected = cell.dateStr === selectedDate;
-              const isToday =
-                cell.dateStr ===
-                `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
-                  2,
-                  '0'
-                )}-${String(now.getDate()).padStart(2, '0')}`;
+              const isToday = cell.dateStr === todayStr;
 
               const maxBadges = 3;
               const leaveBadges = cell.dayLeaves.slice(0, maxBadges);

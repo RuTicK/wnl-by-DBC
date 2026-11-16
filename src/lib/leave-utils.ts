@@ -360,6 +360,47 @@ export function formatThaiDate(dateStr: string, short = false): string {
 }
 
 /**
+ * ดึงวันและเวลาปัจจุบันตามโซนเวลาประเทศไทย (Asia/Bangkok, UTC+7)
+ * เพื่อป้องกันปัญหาเวลาคลาดเคลื่อนเมื่อรันบน Serverless / Vercel (UTC)
+ */
+export function getBangkokNow(): {
+  dateStr: string; // YYYY-MM-DD
+  timeStr: string; // HH:mm
+  year: number;
+} {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Bangkok',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+
+  const parts = formatter.formatToParts(new Date());
+  let year = '';
+  let month = '';
+  let day = '';
+  let hour = '';
+  let minute = '';
+  for (const p of parts) {
+    if (p.type === 'year') year = p.value;
+    else if (p.type === 'month') month = p.value;
+    else if (p.type === 'day') day = p.value;
+    else if (p.type === 'hour') hour = p.value;
+    else if (p.type === 'minute') minute = p.value;
+  }
+  if (hour === '24') hour = '00';
+
+  return {
+    dateStr: `${year}-${month}-${day}`,
+    timeStr: `${hour}:${minute}`,
+    year: parseInt(year, 10),
+  };
+}
+
+/**
  * คำนวณสถานะการผ่านทดลองงาน 119 วัน จากวันที่เริ่มงาน (startDate)
  */
 export function getProbationInfo(
@@ -370,8 +411,7 @@ export function getProbationInfo(
   const cleanStart = startDateStr && parseDateUTC(startDateStr) ? startDateStr : fallbackStart;
   const startDt = parseDateUTC(cleanStart)!;
 
-  const now = new Date();
-  const defaultRef = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const defaultRef = getBangkokNow().dateStr;
   const refDt =
     (referenceDateStr && parseDateUTC(referenceDateStr)) ||
     parseDateUTC(defaultRef)!;

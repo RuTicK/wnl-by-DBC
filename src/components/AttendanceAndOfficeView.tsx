@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import {
   formatThaiDate,
+  getBangkokNow,
   getProbationInfo,
   LEAVE_TYPE_META,
   ROLE_META,
@@ -58,11 +59,7 @@ export default function AttendanceAndOfficeView({
   onCheckOut,
 }: AttendanceAndOfficeViewProps) {
   const todayStr = useMemo(() => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+    return getBangkokNow().dateStr;
   }, []);
 
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
@@ -78,12 +75,13 @@ export default function AttendanceAndOfficeView({
   } | null>(null);
   const [mobileBoardTab, setMobileBoardTab] = useState<'office' | 'remote' | 'leaves'>('office');
 
-  // Real-time clock update
+  // Real-time clock update (Thailand time Asia/Bangkok)
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
       setLiveTime(
         now.toLocaleTimeString('th-TH', {
+          timeZone: 'Asia/Bangkok',
           hour: '2-digit',
           minute: '2-digit',
           second: '2-digit',
@@ -224,9 +222,10 @@ export default function AttendanceAndOfficeView({
       endH = oH;
       endM = oM;
     } else {
-      const now = new Date();
-      endH = now.getHours();
-      endM = now.getMinutes();
+      const bkk = getBangkokNow();
+      const [bH, bM] = bkk.timeStr.split(':').map(Number);
+      endH = bH;
+      endM = bM;
     }
     const totalMinutes = Math.max(0, (endH * 60 + endM) - (inH * 60 + inM));
     const hours = Math.floor(totalMinutes / 60);
@@ -267,8 +266,10 @@ export default function AttendanceAndOfficeView({
     }
     setSubmitting(true);
     try {
+      const bkk = getBangkokNow();
       const res = await onCheckIn({
-        date: todayStr,
+        date: todayStr || bkk.dateStr,
+        checkInTime: bkk.timeStr,
         workLocation: loc,
         note: note.trim() || undefined,
       });
@@ -294,8 +295,10 @@ export default function AttendanceAndOfficeView({
     setFeedback(null);
     setSubmitting(true);
     try {
+      const bkk = getBangkokNow();
       const res = await onCheckOut({
-        date: todayStr,
+        date: todayStr || bkk.dateStr,
+        checkOutTime: bkk.timeStr,
         note: note.trim() || undefined,
       });
       if (!res.success) {

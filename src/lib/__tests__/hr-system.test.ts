@@ -19,6 +19,7 @@ import {
   generateAttendanceCsv,
   generateLeavesCsv,
   generateQuotaSummaryCsv,
+  getBangkokNow,
   getProbationInfo,
   STANDARD_LEAVE_QUOTAS,
 } from '../leave-utils';
@@ -785,20 +786,46 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
           actorId: 'EMP004',
           workLocation: 'office',
           note: 'เข้าออฟฟิศชั้น 12',
+          date: '2026-11-16',
+          checkInTime: '08:45',
         }),
       });
       const postRes = await attendancePost(postReq);
       expect(postRes.status).toBe(200);
+      const postData = await postRes.json();
+      expect(postData.record.checkInTime).toBe('08:45');
+      expect(postData.record.date).toBe('2026-11-16');
 
       const patchReq = new NextRequest('http://localhost:3000/api/attendance', {
         method: 'PATCH',
         body: JSON.stringify({
           actorId: 'EMP004',
+          date: '2026-11-16',
+          checkOutTime: '17:30',
           note: 'เลิกงานแล้วค่ะ',
         }),
       });
       const patchRes = await attendancePatch(patchReq);
       expect(patchRes.status).toBe(200);
+      const patchData = await patchRes.json();
+      expect(patchData.record.checkOutTime).toBe('17:30');
+
+      // Verify automatic Thailand (Asia/Bangkok) time stamping when client does not supply explicit time
+      const bkkNow = getBangkokNow();
+      expect(bkkNow.dateStr).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(bkkNow.timeStr).toMatch(/^\d{2}:\d{2}$/);
+      expect(bkkNow.year).toBeGreaterThanOrEqual(2026);
+
+      const autoCheckIn = await recordCheckIn('EMP005', {
+        workLocation: 'office',
+      });
+      expect(autoCheckIn.success).toBe(true);
+      expect(autoCheckIn.record?.checkInTime).toBe(bkkNow.timeStr);
+      expect(autoCheckIn.record?.date).toBe(bkkNow.dateStr);
+
+      const autoCheckOut = await recordCheckOut('EMP005');
+      expect(autoCheckOut.success).toBe(true);
+      expect(autoCheckOut.record?.checkOutTime).toBe(bkkNow.timeStr);
 
       const sysData = await getSystemDataForUser('EMP001', 2026);
       const attCsv = generateAttendanceCsv(sysData.attendance);
