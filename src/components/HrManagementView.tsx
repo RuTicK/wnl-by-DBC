@@ -23,6 +23,7 @@ import {
   STANDARD_LEAVE_QUOTAS,
 } from '@/lib/leave-utils';
 import { COMPANY_DEPARTMENTS, Holiday, Role, SafeUser } from '@/lib/types';
+import UserAvatar from '@/components/UserAvatar';
 
 export interface DepartmentDropdownProps {
   value: string;
@@ -734,18 +735,14 @@ export default function HrManagementView({
                     <tr key={u.id} className="hover:bg-slate-50/70 transition">
                       <td className="py-4 px-5">
                         <div className="flex items-center gap-3">
-                          {u.avatarUrl ? (
-                            <img
-                              src={u.avatarUrl}
-                              alt={u.name}
-                              className="h-9 w-9 rounded-full object-cover shrink-0 border border-slate-200"
-                              referrerPolicy="no-referrer"
-                            />
-                          ) : (
-                            <div className="h-9 w-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-xs text-slate-600 shrink-0">
-                              {u.name.slice(0, 2)}
-                            </div>
-                          )}
+                          <UserAvatar
+                            name={u.name}
+                            avatarUrl={u.avatarUrl}
+                            sizeClass="h-9 w-9"
+                            roundedClass="rounded-full"
+                            textClass="text-xs"
+                            fallbackBgClass="bg-slate-100 border border-slate-200 text-slate-600"
+                          />
                           <div>
                             <div className="font-extrabold text-sm sm:text-base text-slate-900">{u.name}</div>
                             <div className="font-mono text-xs text-slate-400 font-bold mt-0.5">

@@ -31,6 +31,7 @@ import {
   SafeUser,
   WorkLocationType,
 } from '@/lib/types';
+import UserAvatar from '@/components/UserAvatar';
 
 interface AttendanceAndOfficeViewProps {
   currentUser: SafeUser;
@@ -346,18 +347,27 @@ export default function AttendanceAndOfficeView({
           <div className="space-y-4">
             {/* Header: Date + Live Clock Display */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-              <div>
-                <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">
-                  ลงเวลาเข้า-ออกงาน
-                </span>
-                <h3 className="text-lg sm:text-2xl font-black text-slate-900 mt-0.5">
-                  คุณ {currentUser.name}
-                  {currentUser.englishName && (
-                    <span className="text-xs sm:text-sm font-medium text-slate-500 ml-1.5">
-                      ({currentUser.englishName})
-                    </span>
-                  )}
-                </h3>
+              <div className="flex items-center gap-3 min-w-0">
+                <UserAvatar
+                  name={currentUser.name}
+                  avatarUrl={currentUser.avatarUrl}
+                  sizeClass="h-11 w-11 sm:h-12 sm:w-12"
+                  roundedClass="rounded-2xl"
+                  textClass="text-sm sm:text-base"
+                />
+                <div className="min-w-0">
+                  <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">
+                    ลงเวลาเข้า-ออกงาน
+                  </span>
+                  <h3 className="text-lg sm:text-2xl font-black text-slate-900 mt-0.5 truncate">
+                    คุณ {currentUser.name}
+                    {currentUser.englishName && (
+                      <span className="text-xs sm:text-sm font-medium text-slate-500 ml-1.5">
+                        ({currentUser.englishName})
+                      </span>
+                    )}
+                  </h3>
+                </div>
               </div>
 
               {/* Big Digital Clock Display */}
@@ -868,13 +878,22 @@ export default function AttendanceAndOfficeView({
                   className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 space-y-2"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="font-bold text-sm text-slate-900">
-                        {user.name}
-                      </div>
-                      <div className="text-xs text-slate-500 font-medium">
-                        {user.englishName ? `${user.englishName} • ` : ''}
-                        {user.department}
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <UserAvatar
+                        name={user.name}
+                        avatarUrl={user.avatarUrl}
+                        sizeClass="h-8 w-8"
+                        roundedClass="rounded-full"
+                        textClass="text-xs"
+                      />
+                      <div className="min-w-0">
+                        <div className="font-bold text-sm text-slate-900 truncate">
+                          {user.name}
+                        </div>
+                        <div className="text-xs text-slate-500 font-medium truncate">
+                          {user.englishName ? `${user.englishName} • ` : ''}
+                          {user.department}
+                        </div>
                       </div>
                     </div>
                     <span className="rounded-lg bg-emerald-100 border border-emerald-200 px-2.5 py-1 text-xs font-bold text-emerald-800 shrink-0">
@@ -923,12 +942,21 @@ export default function AttendanceAndOfficeView({
                     className="rounded-xl border border-teal-200/80 bg-teal-50/40 p-3.5 space-y-2"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="font-bold text-sm text-slate-900">
-                          {user.name}
-                        </div>
-                        <div className="text-xs text-slate-500 font-medium">
-                          {user.department} • {user.position}
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <UserAvatar
+                          name={user.name}
+                          avatarUrl={user.avatarUrl}
+                          sizeClass="h-8 w-8"
+                          roundedClass="rounded-full"
+                          textClass="text-xs"
+                        />
+                        <div className="min-w-0">
+                          <div className="font-bold text-sm text-slate-900 truncate">
+                            {user.name}
+                          </div>
+                          <div className="text-xs text-slate-500 font-medium truncate">
+                            {user.department} • {user.position}
+                          </div>
                         </div>
                       </div>
                       <span className="rounded-lg bg-teal-100 border border-teal-200 px-2.5 py-1 text-xs font-bold text-teal-800 shrink-0">
@@ -955,12 +983,21 @@ export default function AttendanceAndOfficeView({
                       className="rounded-xl border border-blue-100 bg-blue-50/40 p-3.5 space-y-2"
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="font-bold text-sm text-slate-900">
-                            {user.name}
-                          </div>
-                          <div className="text-xs text-slate-500 font-medium">
-                            {user.department} • {user.position}
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <UserAvatar
+                            name={user.name}
+                            avatarUrl={user.avatarUrl}
+                            sizeClass="h-8 w-8"
+                            roundedClass="rounded-full"
+                            textClass="text-xs"
+                          />
+                          <div className="min-w-0">
+                            <div className="font-bold text-sm text-slate-900 truncate">
+                              {user.name}
+                            </div>
+                            <div className="text-xs text-slate-500 font-medium truncate">
+                              {user.department} • {user.position}
+                            </div>
                           </div>
                         </div>
                         <span
@@ -1014,9 +1051,18 @@ export default function AttendanceAndOfficeView({
                     className="rounded-xl border border-rose-200/80 bg-rose-50/50 p-3.5 space-y-1.5"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-bold text-sm text-slate-900">
-                        {user.name}
-                      </span>
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <UserAvatar
+                          name={user.name}
+                          avatarUrl={user.avatarUrl}
+                          sizeClass="h-8 w-8"
+                          roundedClass="rounded-full"
+                          textClass="text-xs"
+                        />
+                        <span className="font-bold text-sm text-slate-900 truncate">
+                          {user.name}
+                        </span>
+                      </div>
                       <span
                         className={`rounded-lg border px-2.5 py-0.5 text-xs font-bold ${
                           LEAVE_TYPE_META[leave.leaveType].badgeClass
@@ -1036,15 +1082,24 @@ export default function AttendanceAndOfficeView({
                     key={`wait-${user.id}`}
                     className="rounded-xl border border-slate-200/80 bg-slate-50/60 p-3.5 flex items-center justify-between gap-2"
                   >
-                    <div>
-                      <div className="font-bold text-sm text-slate-800">
-                        {user.name}
-                      </div>
-                      <div className="text-xs text-slate-500 font-medium">
-                        {user.englishName ? `${user.englishName} • ` : ''}{user.department} •{' '}
-                        <span className="text-slate-400">
-                          {ROLE_META[user.role].label}
-                        </span>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <UserAvatar
+                        name={user.name}
+                        avatarUrl={user.avatarUrl}
+                        sizeClass="h-8 w-8"
+                        roundedClass="rounded-full"
+                        textClass="text-xs"
+                      />
+                      <div className="min-w-0">
+                        <div className="font-bold text-sm text-slate-800 truncate">
+                          {user.name}
+                        </div>
+                        <div className="text-xs text-slate-500 font-medium truncate">
+                          {user.englishName ? `${user.englishName} • ` : ''}{user.department} •{' '}
+                          <span className="text-slate-400">
+                            {ROLE_META[user.role].label}
+                          </span>
+                        </div>
                       </div>
                     </div>
                     <span className="rounded-lg bg-slate-200/80 px-2.5 py-1 text-xs font-semibold text-slate-600">

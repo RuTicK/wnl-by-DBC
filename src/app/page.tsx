@@ -27,6 +27,7 @@ import LeaveCalendar from '@/components/LeaveCalendar';
 import LeavePolicyModal from '@/components/LeavePolicyModal';
 import LeaveRequestModal from '@/components/LeaveRequestModal';
 import LoginView from '@/components/LoginView';
+import UserAvatar from '@/components/UserAvatar';
 import {
   LEAVE_TYPE_META,
   PROBATION_RESTRICTED_TYPES,
@@ -735,18 +736,13 @@ export default function HomePage() {
           {/* User Profile Info Card */}
           <div className="rounded-2xl bg-white border border-slate-200/80 p-3 shadow-2xs space-y-2">
             <div className="flex items-center gap-2.5">
-              {currentUser.avatarUrl ? (
-                <img
-                  src={currentUser.avatarUrl}
-                  alt={currentUser.name}
-                  className="h-9 w-9 rounded-xl object-cover shrink-0 shadow-2xs border border-slate-200"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-[#0A2540] to-[#0066FF] text-white font-extrabold text-sm shrink-0 shadow-2xs">
-                  {currentUser.name.slice(0, 2)}
-                </div>
-              )}
+              <UserAvatar
+                name={currentUser.name}
+                avatarUrl={currentUser.avatarUrl}
+                sizeClass="h-9 w-9"
+                roundedClass="rounded-xl"
+                textClass="text-sm"
+              />
               <div className="min-w-0 flex-1">
                 <div className="text-xs font-bold text-slate-900 truncate">
                   {currentUser.name}
@@ -838,9 +834,13 @@ export default function HomePage() {
           <div className="relative z-40 px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-3 bg-white">
             {/* Mobile Branding (only visible on mobile) */}
             <div className="flex md:hidden items-center gap-2 sm:gap-2.5 min-w-0">
-              <div className="flex h-8.5 w-8.5 sm:h-9 sm:w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-[#0A2540] to-[#0066FF] text-white shadow-xs shrink-0">
-                <Calendar className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
-              </div>
+              <UserAvatar
+                name={currentUser.name}
+                avatarUrl={currentUser.avatarUrl}
+                sizeClass="h-8.5 w-8.5 sm:h-9 sm:w-9"
+                roundedClass="rounded-xl"
+                textClass="text-xs"
+              />
               <div className="min-w-0">
                 <div className="flex items-center gap-1 sm:gap-1.5">
                   <span className="text-sm font-black text-slate-900 truncate">

@@ -276,7 +276,7 @@ export function rowToUser(row: string[]): User {
     startDate: row[7] || '2023-01-01',
     username: derivedUsername,
     cLevelApproverId: row[13] || undefined,
-    avatarUrl: row[14] || undefined,
+    avatarUrl: (row[14] || '').trim() || undefined,
     quotas: {
       sick: STANDARD_LEAVE_QUOTAS.sick,
       personal: STANDARD_LEAVE_QUOTAS.personal,
@@ -443,6 +443,7 @@ export function userToAppSheetRow(u: User): Record<string, string | number> {
     obj[h] = row[idx] ?? '';
   });
   obj['CLevelApproverId'] = u.cLevelApproverId || '';
+  obj['AvatarUrl'] = u.avatarUrl || '';
   return obj;
 }
 
@@ -716,7 +717,7 @@ async function readFromGoogleSheets(): Promise<DatabaseState> {
   const res = await sheets.spreadsheets.values.batchGet({
     spreadsheetId,
     ranges: [
-      'Users!A2:N1000',
+      'Users!A2:O1000',
       'LeaveRequests!A2:V5000',
       'Holidays!A2:C500',
       'Attendance!A2:I5000',

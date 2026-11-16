@@ -71,6 +71,7 @@ import {
   PROD_USERS,
 } from '../mock-data';
 import fs from 'fs';
+import path from 'path';
 
 describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
   const sampleHolidays: Holiday[] = [
@@ -867,11 +868,25 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
     it('round-trips User, LeaveRequest, Holiday, and Attendance through Google Sheets row mappers', async () => {
       const hrData = await getSystemDataForUser('EMP001', 2026);
 
-      const sampleUser = INITIAL_USERS[0];
+      const sampleUser = {
+        ...INITIAL_USERS[0],
+        avatarUrl: 'https://lh3.googleusercontent.com/a/test-avatar',
+      };
       const mappedUser = rowToUser(userToRow(sampleUser).map(String));
       expect(mappedUser.id).toBe(sampleUser.id);
       expect(mappedUser.englishName).toBe(sampleUser.englishName);
       expect(mappedUser.startDate).toBe(sampleUser.startDate);
+      expect(mappedUser.avatarUrl).toBe(sampleUser.avatarUrl);
+
+      const appSheetUser = appSheetRowToUser(userToAppSheetRow(sampleUser));
+      expect(appSheetUser.avatarUrl).toBe(sampleUser.avatarUrl);
+
+      const storageContent = fs.readFileSync(
+        path.resolve(__dirname, '../storage.ts'),
+        'utf-8'
+      );
+      expect(storageContent).toContain("'Users!A2:O1000'");
+      expect(storageContent).not.toContain("'Users!A2:N1000'");
 
       const sampleLeave = hrData.leaves[0];
       const mappedLeave = rowToLeave(leaveToRow(sampleLeave).map(String));
