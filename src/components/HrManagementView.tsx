@@ -484,11 +484,13 @@ export default function HrManagementView({
       return;
     }
 
-    const trimmedDepartment = isExecutiveRole
-      ? 'Executive (C-Level)'
-      : empDepartment.trim();
+    const trimmedDepartment =
+      empRole === 'c_level' || empRole === 'admin'
+        ? empDepartment.trim() ||
+          (empRole === 'admin' ? 'Executive (Admin)' : 'Executive (C-Level)')
+        : empDepartment.trim();
 
-    if (!isExecutiveRole && !trimmedDepartment) {
+    if (empRole !== 'c_level' && empRole !== 'admin' && !trimmedDepartment) {
       const msg =
         'กรุณาเลือกฝ่าย / แผนกจากรายการ (AE, สำนักงาน, Consult, Marketing&BD)';
       setDeptValidationError(msg);
@@ -498,8 +500,8 @@ export default function HrManagementView({
       return;
     }
 
-    const cleanStartDate = isExecutiveRole ? '' : empStartDate.trim();
-    if (!isExecutiveRole && !cleanStartDate) {
+    const cleanStartDate = empStartDate.trim();
+    if (empRole !== 'c_level' && empRole !== 'admin' && !cleanStartDate) {
       setModalError('กรุณาระบุวันเริ่มทำงานของพนักงาน');
       return;
     }
@@ -761,7 +763,18 @@ export default function HrManagementView({
                       </td>
                       <td className="py-4 px-3">
                         <div className="font-bold text-slate-800">
-                          {u.department || (u.role === 'c_level' ? 'ผู้บริหาร (C-Level)' : '-')}
+                          {u.department &&
+                          u.department !== 'Executive (C-Level)' &&
+                          u.department !== 'Executive (Admin)' &&
+                          u.department !== 'ผู้บริหาร (C-Level)'
+                            ? u.role === 'c_level'
+                              ? `${u.department} (Manager)`
+                              : u.department
+                            : u.role === 'c_level'
+                              ? 'ผู้บริหารภาพรวม'
+                              : u.role === 'admin'
+                                ? 'ผู้ดูแลระบบสูงสุด'
+                                : '-'}
                         </div>
                         <div className="text-slate-500 text-xs mt-0.5 font-medium">
                           {u.position}
@@ -1136,51 +1149,86 @@ export default function HrManagementView({
                   )}
                 </div>
 
-                {isExecutiveRole ? (
-                  <div className="sm:col-span-2 rounded-2xl bg-purple-50/80 border border-purple-200 px-4 py-3 text-xs sm:text-sm text-purple-950 font-bold flex items-center gap-2">
-                    <ShieldCheck className="h-4 w-4 text-purple-600 shrink-0" />
-                    <span>C-Level: ไม่ต้องเลือกฝ่ายและไม่ต้องระบุวันเริ่มทำงาน</span>
-                  </div>
-                ) : (
-                  <>
-                    <div>
-                      <label
-                        id="emp-department-label"
-                        htmlFor="emp-department-trigger"
-                        className="block font-bold text-slate-800 mb-1.5"
-                      >
-                        ฝ่าย / แผนก <span className="text-rose-500">*</span>
-                      </label>
-                      <DepartmentDropdown
-                        value={empDepartment}
-                        onChange={(nextDept) => {
-                          setEmpDepartment(nextDept);
-                          setDeptValidationError(null);
-                          setModalError(null);
-                        }}
-                        legacyDepartment={editingEmpId ? editingOriginalDepartment : null}
-                        error={deptValidationError}
-                        isOpen={isDeptDropdownOpen}
-                        onOpenChange={setIsDeptDropdownOpen}
-                        triggerRef={deptTriggerRef}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-slate-800 mb-1.5">
-                        วันที่เริ่มงาน (โปร 119 วัน){' '}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label
+                      id="emp-department-label"
+                      htmlFor="emp-department-trigger"
+                      className="block font-bold text-slate-800"
+                    >
+                      ฝ่าย / แผนก{' '}
+                      {isExecutiveRole ? (
+                        <span className="text-xs font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-md ml-1">
+                          เป็น Manager ร่วมด้วย
+                        </span>
+                      ) : (
                         <span className="text-rose-500">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        value={empStartDate}
-                        onChange={(e) => setEmpStartDate(e.target.value)}
-                        className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm text-slate-900 font-medium focus:border-blue-600 focus:outline-hidden min-h-[46px]"
-                        required
-                      />
-                    </div>
-                  </>
-                )}
+                      )}
+                    </label>
+                    {isExecutiveRole && empDepartment && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmpDepartment('');
+                          setDeptValidationError(null);
+                        }}
+                        className="text-xs text-slate-500 hover:text-rose-600 underline cursor-pointer"
+                      >
+                        ล้างฝ่าย (ผู้บริหารภาพรวม)
+                      </button>
+                    )}
+                  </div>
+                  <DepartmentDropdown
+                    value={
+                      empDepartment === 'Executive (C-Level)' ||
+                      empDepartment === 'Executive (Admin)' ||
+                      empDepartment === 'ผู้บริหาร (C-Level)'
+                        ? ''
+                        : empDepartment
+                    }
+                    onChange={(nextDept) => {
+                      setEmpDepartment(nextDept);
+                      setDeptValidationError(null);
+                      setModalError(null);
+                    }}
+                    legacyDepartment={editingEmpId ? editingOriginalDepartment : null}
+                    error={deptValidationError}
+                    isOpen={isDeptDropdownOpen}
+                    onOpenChange={setIsDeptDropdownOpen}
+                    triggerRef={deptTriggerRef}
+                  />
+                  {empRole === 'c_level' && (
+                    <p className="mt-1.5 text-xs text-slate-500">
+                      {empDepartment &&
+                      empDepartment !== 'Executive (C-Level)' &&
+                      empDepartment !== 'ผู้บริหาร (C-Level)'
+                        ? `👑 ผู้บริหารท่านนี้จะทำหน้าที่เป็นหัวหน้าฝ่าย (Manager) ดูแลและอนุมัติใบลาขั้นที่ 1 ของฝ่าย "${empDepartment}" ด้วย`
+                        : 'C-Level: ไม่ต้องเลือกฝ่ายและไม่ต้องระบุวันเริ่มทำงาน (หากต้องการเป็น Manager ประจำฝ่าย ให้เลือกฝ่ายด้านบน)'}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-800 mb-1.5">
+                    วันที่เริ่มงาน{' '}
+                    {isExecutiveRole ? (
+                      <span className="text-xs font-normal text-slate-400">
+                        (ไม่บังคับสำหรับผู้บริหาร)
+                      </span>
+                    ) : (
+                      <span className="text-xs font-normal text-slate-500">
+                        (โปร 119 วัน) <span className="text-rose-500">*</span>
+                      </span>
+                    )}
+                  </label>
+                  <input
+                    type="date"
+                    value={empStartDate}
+                    onChange={(e) => setEmpStartDate(e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm text-slate-900 font-medium focus:border-blue-600 focus:outline-hidden min-h-[46px]"
+                    required={!isExecutiveRole}
+                  />
+                </div>
 
                 <div>
                   <label className="block font-bold text-slate-800 mb-1.5">

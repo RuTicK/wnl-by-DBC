@@ -958,19 +958,26 @@ export function checkApprovalPermission(
 
   // ขั้นที่ 1 สำหรับ Employee: รอหัวหน้าแผนก (pending_manager)
   if (leave.status === 'pending_manager') {
-    if (actor.role === 'manager') {
-      const actorDept = (actor.department || '').trim().toLowerCase();
-      const leaveDept = (leave.department || '').trim().toLowerCase();
-      if (!actorDept || !leaveDept || actorDept !== leaveDept) {
-        return {
-          allowed: false,
-          error: `เฉพาะหัวหน้าแผนกในสังกัดเท่านั้นที่สามารถอนุมัติขั้นที่ 1 ได้ (หัวหน้าแผนก ${actor.department || '-'} ไม่สามารถอนุมัติใบลาของแผนก ${leave.department || '-'})`,
-        };
-      }
+    const actorDept = (actor.department || '').trim().toLowerCase();
+    const leaveDept = (leave.department || '').trim().toLowerCase();
+    const isDeptManager =
+      (actor.role === 'manager' || actor.role === 'c_level') &&
+      Boolean(actorDept) &&
+      actorDept !== 'executive (c-level)' &&
+      actorDept !== 'executive' &&
+      actorDept !== 'ผู้บริหาร (c-level)';
+
+    if (isDeptManager) {
       if (actor.id === leave.userId) {
         return {
           allowed: false,
           error: 'ผู้ยื่นใบลาไม่สามารถกดอนุมัติใบลาของตนเองได้',
+        };
+      }
+      if (!leaveDept || actorDept !== leaveDept) {
+        return {
+          allowed: false,
+          error: `เฉพาะหัวหน้าแผนกในสังกัดเท่านั้นที่สามารถอนุมัติขั้นที่ 1 ได้ (หัวหน้าแผนก ${actor.department || '-'} ไม่สามารถอนุมัติใบลาของแผนก ${leave.department || '-'})`,
         };
       }
       return {
@@ -1064,10 +1071,17 @@ export function checkRejectionPermission(
   }
 
   if (leave.status === 'pending_manager') {
-    if (actor.role === 'manager') {
-      const actorDept = (actor.department || '').trim().toLowerCase();
-      const leaveDept = (leave.department || '').trim().toLowerCase();
-      if (actorDept && leaveDept && actorDept === leaveDept) {
+    const actorDept = (actor.department || '').trim().toLowerCase();
+    const leaveDept = (leave.department || '').trim().toLowerCase();
+    const isDeptManager =
+      (actor.role === 'manager' || actor.role === 'c_level') &&
+      Boolean(actorDept) &&
+      actorDept !== 'executive (c-level)' &&
+      actorDept !== 'executive' &&
+      actorDept !== 'ผู้บริหาร (c-level)';
+
+    if (isDeptManager) {
+      if (actorDept === leaveDept) {
         return { allowed: true };
       }
       return {

@@ -62,7 +62,7 @@ import {
   userToAppSheetRow,
   userToRow,
 } from '../storage';
-import { COMPANY_DEPARTMENTS, Holiday } from '../types';
+import { COMPANY_DEPARTMENTS, Holiday, LeaveRequest } from '../types';
 import {
   INITIAL_ATTENDANCE,
   INITIAL_HOLIDAYS,
@@ -1866,6 +1866,71 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
       const deserializedLeave = appSheetRowToLeave(leaveAppSheetObj);
       expect(deserializedLeave.id).toBe(sampleLeave.id);
       expect(deserializedLeave.targetApproverId).toBe('EMP009');
+    });
+
+    it('allows C-Level to also act as Manager of a designated department (approving pending_manager Step 1 for their department only)', async () => {
+      // 1. Create a C-Level who is also assigned as head of Consult department
+      const consultCLevel = await upsertEmployee('EMP001', {
+        id: 'EMP050',
+        name: 'พัชรา ผู้บริหารฝ่าย Consult',
+        email: 'patchara.exec@company.co.th',
+        role: 'c_level',
+        department: 'Consult',
+      });
+      expect(consultCLevel.success).toBe(true);
+      expect(consultCLevel.user?.role).toBe('c_level');
+      expect(consultCLevel.user?.department).toBe('Consult');
+
+      // 2. Create an employee in Consult
+      const consultEmp = await upsertEmployee('EMP001', {
+        id: 'EMP051',
+        name: 'สมชาย ที่ปรึกษา',
+        email: 'somchai.consult@company.co.th',
+        role: 'employee',
+        department: 'Consult',
+        startDate: '2025-01-01',
+      });
+      expect(consultEmp.success).toBe(true);
+
+      // 3. Consult employee requests leave -> pending_manager
+      const leaveRes = await createLeaveRequest('EMP051', {
+        leaveType: 'sick',
+        durationType: 'full',
+        startDate: '2026-11-20',
+        endDate: '2026-11-20',
+        reason: 'ปวดศีรษะ พักผ่อนตามคำสั่งแพทย์',
+      });
+      expect(leaveRes.success).toBe(true);
+      expect(leaveRes.leave?.status).toBe('pending_manager');
+
+      // 4. Consult C-Level can approve Step 1 for their department
+      const consultPerm = checkApprovalPermission(leaveRes.leave!, consultCLevel.user!);
+      expect(consultPerm.allowed).toBe(true);
+      expect(consultPerm.nextStatus).toBe('pending_hr');
+
+      const approveRes = await processLeaveAction('EMP050', leaveRes.leave!.id, 'approve');
+      expect(approveRes.success).toBe(true);
+      expect(approveRes.leave?.status).toBe('pending_hr');
+
+      // 5. Consult C-Level CANNOT approve Step 1 for IT & Digital employee (department isolation preserved)
+      const itEmployeeLeave: LeaveRequest = {
+        id: 'LV-TEST-IT-001',
+        userId: 'EMP003',
+        userName: 'อนุชา ไอที',
+        requesterRole: 'employee',
+        department: 'IT & Digital',
+        leaveType: 'personal',
+        durationType: 'full',
+        startDate: '2026-11-25',
+        endDate: '2026-11-25',
+        totalDays: 1,
+        reason: 'ติดต่อราชการ',
+        status: 'pending_manager',
+        createdAt: '2026-11-16T10:00:00Z',
+      };
+      const itPerm = checkApprovalPermission(itEmployeeLeave, consultCLevel.user!);
+      expect(itPerm.allowed).toBe(false);
+      expect(itPerm.error).toContain('เฉพาะหัวหน้าแผนกในสังกัดเท่านั้น');
     });
   });
 });

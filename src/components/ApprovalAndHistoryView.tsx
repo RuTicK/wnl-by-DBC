@@ -61,6 +61,16 @@ export default function ApprovalAndHistoryView({
         const leaveDept = (l.department || '').trim().toLowerCase();
         if (!userDept || !leaveDept || userDept !== leaveDept) return false;
       }
+      if (currentUser.role === 'c_level' && l.status === 'pending_manager') {
+        const userDept = (currentUser.department || '').trim().toLowerCase();
+        const leaveDept = (l.department || '').trim().toLowerCase();
+        const isGeneralExecutive =
+          !userDept ||
+          userDept === 'executive (c-level)' ||
+          userDept === 'executive' ||
+          userDept === 'ผู้บริหาร (c-level)';
+        if (!isGeneralExecutive && userDept !== leaveDept) return false;
+      }
       return checkApprovalPermission(l, currentUser).allowed;
     });
   }, [leaves, currentUser]);
