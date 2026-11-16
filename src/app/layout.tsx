@@ -13,6 +13,14 @@ export const metadata: Metadata = {
   title: 'วันนี้ลา by DBC | ระบบบริหารจัดการวันลาออนไลน์และโควต้า',
   description:
     'วันนี้ลา by DBC - ระบบลางานออนไลน์พร้อมปฏิทินวันลา อนุมัติ 2 ขั้นตอน คำนวณวันหยุดอัตโนมัติ และเชื่อมต่อ Google Sheets',
+  icons: {
+    icon: [
+      { url: '/favicon.png', type: 'image/png', sizes: '512x512' },
+      { url: '/favicon.ico', sizes: 'any' },
+    ],
+    shortcut: '/favicon.png',
+    apple: [{ url: '/apple-icon.png', type: 'image/png', sizes: '180x180' }],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
