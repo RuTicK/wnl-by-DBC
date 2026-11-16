@@ -541,7 +541,10 @@ export async function updateOwnTestingProfile(
 
   if (input.role) {
     if (input.role === 'admin') {
-      if (user.email.toLowerCase() === SUPER_ADMIN_EMAIL) {
+      if (
+        user.email.toLowerCase() === SUPER_ADMIN_EMAIL ||
+        user.role === 'admin'
+      ) {
         user.role = 'admin';
       }
     } else if (['employee', 'manager', 'hr', 'c_level'].includes(input.role)) {
@@ -815,7 +818,9 @@ export async function createLeaveRequest(
     attachmentName: input.attachmentName?.trim() || undefined,
     status: initialStatus,
     targetApproverId:
-      actor.role === 'manager' ? actor.cLevelApproverId : undefined,
+      actor.role === 'manager'
+        ? actor.cLevelApproverId?.trim() || undefined
+        : undefined,
     createdAt: new Date().toISOString(),
   };
 
@@ -1139,7 +1144,7 @@ export interface UpsertEmployeeInput {
   name?: string;
   englishName?: string;
   email?: string;
-  role: Role;
+  role?: Role;
   department?: string;
   position?: string;
   startDate?: string;
@@ -1180,6 +1185,19 @@ export async function upsertEmployee(
     ? state.users.findIndex((u) => u.id === input.id)
     : -1;
 
+  // ป้องกันการแก้ไขหรือลดสิทธิ์บัญชี Admin โดยผู้ที่ไม่ได้เป็น Admin
+  if (
+    existingIndex >= 0 &&
+    state.users[existingIndex].role === 'admin' &&
+    actor.role !== 'admin'
+  ) {
+    return {
+      success: false,
+      error:
+        'เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่สามารถแก้ไขหรือเปลี่ยนแปลงสิทธิ์ของผู้ดูแลระบบได้',
+    };
+  }
+
   const candidateTargetEmail = (
     existingIndex >= 0 ? state.users[existingIndex].email : input.email || ''
   )
@@ -1208,9 +1226,19 @@ export async function upsertEmployee(
     }
   }
 
-  const isExecutive = input.role === 'c_level' || input.role === 'admin';
+  const effectiveRole: Role =
+    input.role ||
+    (existingIndex >= 0 ? state.users[existingIndex].role : 'employee');
+  const isExecutive = effectiveRole === 'c_level' || effectiveRole === 'admin';
   const cleanUsername = (input.username || '').trim();
   const candidateEmail = (input.email || '').trim().toLowerCase();
+
+  if (existingIndex < 0 && !input.role) {
+    return {
+      success: false,
+      error: 'กรุณาเลือกระดับบทบาท (Role) ของพนักงาน',
+    };
+  }
 
   if (existingIndex < 0 && !candidateEmail && !cleanUsername) {
     return {
@@ -1337,7 +1365,7 @@ export async function upsertEmployee(
         ? rawStartDate
         : current.startDate;
     const updatedCLevelApproverId =
-      input.role === 'manager'
+      effectiveRole === 'manager'
         ? input.cLevelApproverId !== undefined
           ? input.cLevelApproverId.trim() || undefined
           : current.cLevelApproverId
@@ -1349,7 +1377,7 @@ export async function upsertEmployee(
       name,
       englishName: updatedEnglishName,
       email: updatedEmail,
-      role: input.role,
+      role: effectiveRole,
       department,
       position,
       startDate: updatedStartDate,
@@ -1406,7 +1434,7 @@ export async function upsertEmployee(
         : ''
       : rawStartDate;
     const newCLevelApproverId =
-      input.role === 'manager' && input.cLevelApproverId
+      effectiveRole === 'manager' && input.cLevelApproverId
         ? input.cLevelApproverId.trim() || undefined
         : undefined;
 
@@ -1416,7 +1444,7 @@ export async function upsertEmployee(
       name,
       englishName: cleanEnglishName,
       email: cleanEmail,
-      role: input.role,
+      role: effectiveRole,
       department,
       position,
       startDate: cleanStartDate,
@@ -1458,6 +1486,13 @@ export async function deleteEmployee(
     return {
       success: false,
       error: 'ไม่สามารถลบบัญชีผู้ดูแลระบบสูงสุด (Admin) ได้',
+    };
+  }
+
+  if (targetUser && targetUser.role === 'admin' && actor.role !== 'admin') {
+    return {
+      success: false,
+      error: 'เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่สามารถลบบัญชีผู้ดูแลระบบได้',
     };
   }
 

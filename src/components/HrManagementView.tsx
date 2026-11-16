@@ -813,7 +813,9 @@ export default function HrManagementView({
                           </button>
                           {u.id !== currentUser.id &&
                             u.email.toLowerCase() !==
-                              'rut.wa@digitalbusinessconsult.asia' && (
+                              'rut.wa@digitalbusinessconsult.asia' &&
+                            (currentUser.role === 'admin' ||
+                              u.role !== 'admin') && (
                               <button
                                 type="button"
                                 onClick={() => handleDeleteEmployeeClick(u)}
@@ -1036,6 +1038,14 @@ export default function HrManagementView({
                     <select
                       id="emp-role-select"
                       value={empRole}
+                      disabled={
+                        Boolean(
+                          editingEmpId &&
+                            users.find((u) => u.id === editingEmpId)?.role ===
+                              'admin' &&
+                            currentUser.role !== 'admin'
+                        )
+                      }
                       onChange={(e) => {
                         const nextRole = e.target.value as Role;
                         setEmpRole(nextRole);

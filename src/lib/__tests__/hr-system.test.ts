@@ -1667,7 +1667,20 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
       expect(deleteRoot.success).toBe(false);
       expect(deleteRoot.error).toContain('ไม่สามารถลบบัญชีผู้ดูแลระบบสูงสุด');
 
-      // 5. Deleting a non-root Super Admin by another admin succeeds
+      // 5. Non-admin (HR) attempting to delete a Super Admin is blocked
+      const hrDeleteAdmin = await deleteEmployee('EMP001', 'EMP020');
+      expect(hrDeleteAdmin.success).toBe(false);
+      expect(hrDeleteAdmin.error).toContain('เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่สามารถลบบัญชีผู้ดูแลระบบได้');
+
+      // 6. Non-admin (HR) attempting to demote or edit a Super Admin is blocked
+      const hrDemoteAdmin = await upsertEmployee('EMP001', {
+        id: 'EMP020',
+        role: 'employee',
+      });
+      expect(hrDemoteAdmin.success).toBe(false);
+      expect(hrDemoteAdmin.error).toContain('เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่สามารถแก้ไขหรือเปลี่ยนแปลงสิทธิ์ของผู้ดูแลระบบได้');
+
+      // 7. Deleting a non-root Super Admin by another admin succeeds
       const deleteThird = await deleteEmployee('EMP020', 'EMP021');
       expect(deleteThird.success).toBe(true);
     });
@@ -1709,6 +1722,16 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
       });
       expect(mgrARes.success).toBe(true);
       expect(mgrARes.user?.cLevelApproverId).toBe('EMP009');
+
+      // Update Manager A position WITHOUT passing role -> role and cLevelApproverId must be preserved
+      const updateMgrPos = await upsertEmployee('EMP001', {
+        id: 'EMP030',
+        position: 'Senior Consulting Manager',
+      });
+      expect(updateMgrPos.success).toBe(true);
+      expect(updateMgrPos.user?.role).toBe('manager');
+      expect(updateMgrPos.user?.cLevelApproverId).toBe('EMP009');
+      expect(updateMgrPos.user?.position).toBe('Senior Consulting Manager');
 
       // Create Manager B without designated approver (fallback)
       const mgrBRes = await upsertEmployee('EMP001', {

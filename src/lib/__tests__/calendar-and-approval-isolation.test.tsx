@@ -482,5 +482,23 @@ describe('LeaveCalendar & Departmental Approval Isolation UI Tests', () => {
     const manualContent = fs.readFileSync(manualPath, 'utf-8');
     expect(manualContent).toContain('ต้องได้รับการอนุมัติเป็นกรณีพิเศษจากผู้บริหาร');
     expect(manualContent).not.toContain('หากครบ 3 วันแล้วต้องได้รับอนุมัติเป็นกรณีๆ ไป');
+
+    // 5. AttendanceAndOfficeView clutter removal
+    const attendancePath = path.resolve(__dirname, '../../components/AttendanceAndOfficeView.tsx');
+    const attendanceContent = fs.readFileSync(attendancePath, 'utf-8');
+    expect(attendanceContent).not.toContain('(พิมพ์ก่อนแตะปุ่ม Check-in ด้านบน):');
+    expect(attendanceContent).not.toContain('ต้องการเปลี่ยนสถานที่ หรือ แก้ไขหมายเหตุวันนี้?');
+    expect(attendanceContent).not.toContain('สถานะวันนี้ของคุณ:');
+    expect(attendanceContent).not.toContain('เวลาออกงาน / ปฏิบัติงาน');
+    expect(attendanceContent).not.toContain('(จากพนักงานทั้งหมด');
+    expect(attendanceContent).toContain('หมายเหตุ / รายละเอียดสถานที่');
+
+    // 6. ApprovalAndHistoryView clutter removal
+    const approvalPath = path.resolve(__dirname, '../../components/ApprovalAndHistoryView.tsx');
+    const approvalContent = fs.readFileSync(approvalPath, 'utf-8');
+    expect(approvalContent).not.toContain('สายอนุมัติ: {getApprovalFlowLabel(lv.requesterRole)}');
+    expect(approvalContent).not.toContain('รายละเอียด / เหตุผลการลา &amp; สถานที่:');
+    expect(approvalContent).not.toContain('เหตุผลส่วนตัว (ซ่อนข้อมูลสำหรับเพื่อนร่วมแผนกตาม PDPA)');
+    expect(approvalContent).toContain('เหตุผลส่วนตัว (ซ่อนข้อมูลตาม PDPA)');
   });
 });

@@ -839,6 +839,7 @@ export function filterLeavesForViewer(
   if (viewer.role === 'c_level') {
     return leaves
       .filter((l) => {
+        if (l.userId === viewer.id) return true;
         if (l.status === 'pending_c_level' && l.targetApproverId) {
           return viewer.id === l.targetApproverId;
         }

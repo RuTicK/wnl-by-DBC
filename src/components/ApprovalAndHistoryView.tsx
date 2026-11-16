@@ -173,7 +173,7 @@ export default function ApprovalAndHistoryView({
         <div className="flex items-center justify-between border-b border-slate-200/90 pb-3.5">
           <div className="flex items-center gap-2 text-base font-extrabold text-slate-900">
             <Clock className="h-5 w-5 text-blue-600" />
-            <span>ประวัติคำขอวันลาของฉัน ({myLeaves.length} รายการ)</span>
+            <span>ประวัติการลาของฉัน ({myLeaves.length})</span>
           </div>
         </div>
       ) : (
@@ -227,8 +227,8 @@ export default function ApprovalAndHistoryView({
               {currentUser.role === 'admin' ||
               currentUser.role === 'hr' ||
               currentUser.role === 'c_level'
-                ? `ใบลาทั้งบริษัท (${leaves.length})`
-                : `ใบลาในแผนก ${currentUser.department} (${deptLeaves.length})`}
+                ? `ทั้งหมด (${leaves.length})`
+                : `แผนก ${currentUser.department} (${deptLeaves.length})`}
             </span>
           </button>
         </div>
@@ -320,9 +320,6 @@ export default function ApprovalAndHistoryView({
                           รวมสุทธิ {lv.totalDays} วันทำการ
                         </strong>
                       </div>
-                      <div className="text-xs text-slate-400 mt-0.5">
-                        สายอนุมัติ: {getApprovalFlowLabel(lv.requesterRole)}
-                      </div>
                     </div>
                   </div>
 
@@ -346,8 +343,8 @@ export default function ApprovalAndHistoryView({
                   {/* Left: Reason & Location */}
                   <div className="lg:col-span-5 space-y-2 rounded-2xl bg-slate-50 p-4 border border-slate-100 flex flex-col justify-between">
                     <div className="space-y-2">
-                      <div className="font-bold text-slate-700">
-                        รายละเอียด / เหตุผลการลา &amp; สถานที่:
+                      <div className="font-bold text-slate-700 text-xs">
+                        เหตุผลการลา:
                       </div>
 
                       {lv.locationDetail && (
@@ -361,7 +358,7 @@ export default function ApprovalAndHistoryView({
                         <div className="flex items-center gap-1.5 text-slate-400 italic">
                           <EyeOff className="h-4 w-4" />
                           <span>
-                            เหตุผลส่วนตัว (ซ่อนข้อมูลสำหรับเพื่อนร่วมแผนกตาม PDPA)
+                            เหตุผลส่วนตัว (ซ่อนข้อมูลตาม PDPA)
                           </span>
                         </div>
                       ) : (
@@ -386,7 +383,7 @@ export default function ApprovalAndHistoryView({
                           >
                             <FileText className="h-4 w-4" />
                             <span>
-                              เปิดดูรูปใบรับรองแพทย์ ({lv.attachmentName})
+                              ดูรูปใบรับรองแพทย์
                             </span>
                           </button>
                         ) : (
@@ -398,8 +395,7 @@ export default function ApprovalAndHistoryView({
                           >
                             <FileText className="h-4 w-4" />
                             <span>
-                              เปิดลิงก์ใบรับรองแพทย์ / เอกสารแนบ (
-                              {lv.attachmentName || 'คลิกเพื่อเปิด'})
+                              ดูเอกสารแนบ
                             </span>
                           </a>
                         )}
@@ -428,8 +424,8 @@ export default function ApprovalAndHistoryView({
                             </span>
                             <span>
                               {isCLevelStep1Workflow
-                                ? 'ขั้นที่ 1: ผู้บริหาร (C-Level)'
-                                : 'ขั้นที่ 1: หัวหน้าแผนก'}
+                                ? 'ขั้น 1: ผู้บริหาร (C-Level)'
+                                : 'ขั้น 1: หัวหน้าแผนก'}
                             </span>
                           </span>
                           {step1Approval ? (
@@ -485,8 +481,8 @@ export default function ApprovalAndHistoryView({
                             </span>
                             <span>
                               {lv.requesterRole === 'hr'
-                                ? 'ขั้นที่ 2: HR สำรอง (HR 2)'
-                                : 'ขั้นที่ 2: ฝ่ายบุคคล (HR)'}
+                                ? 'ขั้น 2: HR สำรอง'
+                                : 'ขั้น 2: ฝ่ายบุคคล (HR)'}
                             </span>
                           </span>
                           {lv.hrApproval ? (
@@ -499,7 +495,7 @@ export default function ApprovalAndHistoryView({
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 text-slate-500 font-medium text-xs bg-slate-200/70 px-2 py-0.5 rounded-md">
-                              รอผ่านขั้นที่ 1
+                              รอขั้น 1
                             </span>
                           )}
                         </div>
@@ -524,7 +520,7 @@ export default function ApprovalAndHistoryView({
                               ? lv.requesterRole === 'hr'
                                 ? 'รอ HR สำรองอนุมัติ'
                                 : 'รอ HR อนุมัติ'
-                              : 'รอขั้นที่ 1'}
+                              : 'รอขั้น 1'}
                           </div>
                         )}
                       </div>

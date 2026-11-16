@@ -345,7 +345,7 @@ export default function AttendanceAndOfficeView({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
               <div>
                 <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">
-                  ลงเวลาเข้า-ออกงาน ({formatThaiDate(todayStr, true)})
+                  ลงเวลาเข้า-ออกงาน
                 </span>
                 <h3 className="text-lg sm:text-2xl font-black text-slate-900 mt-0.5">
                   คุณ {currentUser.name}
@@ -367,8 +367,8 @@ export default function AttendanceAndOfficeView({
             </div>
 
             {!myProbation.passed && (
-              <div className="rounded-2xl bg-amber-50 border border-amber-200 px-3.5 py-2.5 text-xs sm:text-sm text-amber-900 shadow-2xs">
-                <strong>⚠️ ทดลองงาน ({myProbation.daysWorked}/119 วัน):</strong> ยังไม่สามารถใช้ WFH / WFA ได้
+              <div className="rounded-2xl bg-amber-50 border border-amber-200 px-3.5 py-2 text-xs font-bold text-amber-900 shadow-2xs">
+                ช่วงทดลองงาน ({myProbation.daysWorked}/119 วัน): ยังไม่สามารถเลือก WFH / WFA ได้
               </div>
             )}
 
@@ -382,13 +382,8 @@ export default function AttendanceAndOfficeView({
                         <CheckCircle2 className="h-6 w-6" />
                       </div>
                       <div>
-                        <div className="text-xs sm:text-sm font-bold text-emerald-800">
-                          สถานะวันนี้ของคุณ:
-                        </div>
                         <div className="text-lg sm:text-xl font-black text-slate-900">
-                          {myTodayRecord.checkOutTime
-                            ? 'เลิกงานเรียบร้อยแล้ว'
-                            : 'เข้างานเรียบร้อยแล้ว'}
+                          {myTodayRecord.checkOutTime ? 'เลิกงานแล้ว' : 'เข้างานแล้ว'}
                         </div>
                       </div>
                     </div>
@@ -409,7 +404,7 @@ export default function AttendanceAndOfficeView({
                       </div>
                     </div>
                     <div className="rounded-2xl bg-white/95 p-3.5 border border-emerald-100 shadow-2xs">
-                      <div className="text-slate-400 font-semibold text-xs">เวลาออกงาน / ปฏิบัติงาน</div>
+                      <div className="text-slate-400 font-semibold text-xs">เวลาออกงาน</div>
                       <div className="text-lg sm:text-xl font-black font-mono mt-0.5 text-slate-800">
                         {myTodayRecord.checkOutTime
                           ? `${myTodayRecord.checkOutTime} น.`
@@ -457,12 +452,12 @@ export default function AttendanceAndOfficeView({
                     {showLocationPicker ? (
                       <>
                         <ChevronUp className="h-4 w-4" />
-                        <span>ซ่อนแบบฟอร์มแก้ไขสถานที่</span>
+                        <span>ซ่อนตัวเลือกสถานที่</span>
                       </>
                     ) : (
                       <>
                         <ChevronDown className="h-4 w-4" />
-                        <span>ต้องการเปลี่ยนสถานที่ หรือ แก้ไขหมายเหตุวันนี้?</span>
+                        <span>เปลี่ยนสถานที่ หรือ แก้ไขหมายเหตุ</span>
                       </>
                     )}
                   </button>
@@ -477,8 +472,8 @@ export default function AttendanceAndOfficeView({
                   <div className="flex items-center justify-between mb-2.5">
                     <label className="block text-sm sm:text-base font-extrabold text-slate-800">
                       {myTodayRecord
-                        ? 'เลือกสถานที่ทำงานใหม่ หรือ อัปเดตหมายเหตุ:'
-                        : 'เลือกสถานที่เพื่อลงเวลาเข้างาน:'}
+                        ? 'เลือกสถานที่ทำงานใหม่:'
+                        : 'เลือกสถานที่ลงเวลาเข้างาน:'}
                     </label>
                   </div>
                   <div className="grid grid-cols-2 gap-3 sm:gap-3.5">
@@ -625,17 +620,14 @@ export default function AttendanceAndOfficeView({
                     htmlFor="attendance-note"
                     className="block text-sm font-bold text-slate-800 mb-1.5"
                   >
-                    หมายเหตุ / ระบุสถานที่ลูกค้า / งานที่ทำวันนี้{' '}
-                    <span className="text-slate-400 font-normal">
-                      (พิมพ์ก่อนแตะปุ่ม Check-in ด้านบน):
-                    </span>
+                    หมายเหตุ / รายละเอียดสถานที่
                   </label>
                   <input
                     id="attendance-note"
                     type="text"
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
-                    placeholder="เช่น พบลูกค้า บจก. เอบีซี (สีลม) หรือ งานที่โฟกัสวันนี้..."
+                    placeholder="ระบุสถานที่ หรือ รายละเอียดงาน (ถ้ามี)..."
                     className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-base sm:text-sm text-slate-900 focus:border-blue-600 focus:outline-hidden"
                   />
                 </div>
@@ -655,8 +647,7 @@ export default function AttendanceAndOfficeView({
                 </h3>
               </div>
               <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                ข้อมูลวันที่ {formatThaiDate(selectedDate)} (จากพนักงานทั้งหมด{' '}
-                {dailyBoard.totalFiltered} คน)
+                {formatThaiDate(selectedDate)}
               </p>
             </div>
 
@@ -742,9 +733,9 @@ export default function AttendanceAndOfficeView({
           {/* Attendance Progress Bar */}
           <div className="bg-slate-50 rounded-2xl p-3.5 border border-slate-100 space-y-2">
             <div className="flex items-center justify-between text-xs sm:text-sm font-bold text-slate-700 flex-wrap gap-1">
-              <span>อัตราการลงเวลาปฏิบัติงานวันนี้:</span>
+              <span>ลงเวลาแล้ว:</span>
               <span className="text-blue-700 font-black">
-                ลงเวลาแล้ว {dailyBoard.inOffice.length + dailyBoard.remoteWfhWfa.length + dailyBoard.offsiteClient.length} / {dailyBoard.totalFiltered} คน ({Math.round(((dailyBoard.inOffice.length + dailyBoard.remoteWfhWfa.length + dailyBoard.offsiteClient.length) / (dailyBoard.totalFiltered || 1)) * 100)}%)
+                {dailyBoard.inOffice.length + dailyBoard.remoteWfhWfa.length + dailyBoard.offsiteClient.length} / {dailyBoard.totalFiltered} คน ({Math.round(((dailyBoard.inOffice.length + dailyBoard.remoteWfhWfa.length + dailyBoard.offsiteClient.length) / (dailyBoard.totalFiltered || 1)) * 100)}%)
               </span>
             </div>
             <div className="w-full bg-slate-200/80 rounded-full h-3 overflow-hidden">
@@ -792,7 +783,7 @@ export default function AttendanceAndOfficeView({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ค้นหาชื่อไทย / อังกฤษ / รหัสพนักงาน..."
+                placeholder="ค้นหาชื่อ หรือ รหัสพนักงาน..."
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3.5 py-2.5 sm:py-2 text-base sm:text-sm text-slate-900 focus:border-blue-600 focus:bg-white focus:outline-hidden min-h-[44px]"
               />
             </div>
@@ -858,7 +849,7 @@ export default function AttendanceAndOfficeView({
           <div className="bg-emerald-50/80 border-b border-emerald-200/80 px-4 sm:px-5 py-3.5 flex items-center justify-between">
             <div className="flex items-center gap-2 font-bold text-sm sm:text-base text-emerald-950">
               <Building2 className="h-5 w-5 text-emerald-600" />
-              <span>พนักงานที่อยู่ Office ({dailyBoard.inOffice.length} คน)</span>
+              <span>Office ({dailyBoard.inOffice.length})</span>
             </div>
           </div>
 
@@ -909,9 +900,8 @@ export default function AttendanceAndOfficeView({
             <div className="flex items-center gap-2 font-bold text-sm sm:text-base text-slate-900">
               <MapPin className="h-5 w-5 text-blue-600" />
               <span>
-                WFH / WFA &amp; พบลูกค้า (
-                {dailyBoard.remoteWfhWfa.length + dailyBoard.offsiteClient.length}{' '}
-                คน)
+                WFH / WFA &amp; นอกสถานที่ (
+                {dailyBoard.remoteWfhWfa.length + dailyBoard.offsiteClient.length})
               </span>
             </div>
           </div>
@@ -1002,7 +992,7 @@ export default function AttendanceAndOfficeView({
             <div className="flex items-center gap-2 font-bold text-sm sm:text-base text-slate-900">
               <UserCheck className="h-5 w-5 text-rose-600" />
               <span>
-                ลางานวันนี้ ({dailyBoard.onLeave.length}) &amp; รอลงเวลา (
+                ลางาน ({dailyBoard.onLeave.length}) &amp; ยังไม่ลงเวลา (
                 {dailyBoard.notCheckedIn.length})
               </span>
             </div>
