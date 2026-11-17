@@ -288,6 +288,7 @@ export default function HomePage() {
     date?: string;
     checkInTime?: string;
     workLocation: WorkLocationType;
+    locationName?: string;
     note?: string;
   }): Promise<{ success: boolean; error?: string }> => {
     if (!currentUser) return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
@@ -300,6 +301,7 @@ export default function HomePage() {
         date: payload.date || bkk.dateStr,
         checkInTime: payload.checkInTime || bkk.timeStr,
         workLocation: payload.workLocation,
+        locationName: payload.locationName,
         note: payload.note,
       }),
     });

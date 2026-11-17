@@ -25,6 +25,18 @@ export const ALL_LEAVE_TYPES: LeaveType[] = [
 ];
 
 /**
+ * รายการประเภทคำขอที่สามารถยื่นขออนุมัติผ่าน LeaveRequestModal ได้
+ * (การทำงานนอกสถานที่ / offsite รวมเข้าสู่ขั้นตอน Check-in โดยตรง ไม่ต้องยื่นขออนุมัติล่วงหน้า)
+ */
+export const REQUESTABLE_LEAVE_TYPES: LeaveType[] = [
+  'sick',
+  'personal',
+  'vacation',
+  'wfh',
+  'wfa',
+];
+
+/**
  * โควต้ามาตรฐานตายตัวของบริษัท (HR ไม่ต้องตั้งค่าเอง):
  * - ลาป่วย (sick): 30 วัน/ปี
  * - ลากิจ (personal): 3 วัน/ปี

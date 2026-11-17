@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  AlertCircle,
   Briefcase,
   Building2,
   CheckCircle2,
@@ -15,6 +16,7 @@ import {
   Search,
   UserCheck,
   Users,
+  X,
 } from 'lucide-react';
 import {
   formatThaiDate,
@@ -42,6 +44,7 @@ interface AttendanceAndOfficeViewProps {
     date?: string;
     checkInTime?: string;
     workLocation: WorkLocationType;
+    locationName?: string;
     note?: string;
   }) => Promise<{ success: boolean; error?: string }>;
   onCheckOut: (payload: {
@@ -75,6 +78,22 @@ export default function AttendanceAndOfficeView({
     message: string;
   } | null>(null);
   const [mobileBoardTab, setMobileBoardTab] = useState<'office' | 'remote' | 'leaves'>('office');
+  const [isOffsiteModalOpen, setIsOffsiteModalOpen] = useState<boolean>(false);
+  const [offsiteLocation, setOffsiteLocation] = useState<string>('');
+  const [offsiteNote, setOffsiteNote] = useState<string>('');
+  const [offsiteError, setOffsiteError] = useState<string | null>(null);
+
+  // Close offsite modal on Escape key press
+  useEffect(() => {
+    if (!isOffsiteModalOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !submitting) {
+        setIsOffsiteModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOffsiteModalOpen, submitting]);
 
   // Real-time clock update (Thailand time Asia/Bangkok)
   useEffect(() => {
@@ -245,6 +264,31 @@ export default function AttendanceAndOfficeView({
     });
   };
 
+  const handleOpenOffsiteModal = () => {
+    const isCurrentOffsite = myTodayRecord?.workLocation === 'offsite';
+    let initLoc = myTodayRecord?.locationName || '';
+    let initExtra = '';
+
+    if (isCurrentOffsite && myTodayRecord?.note) {
+      if (myTodayRecord.note.includes(' • ')) {
+        const parts = myTodayRecord.note.split(' • ');
+        if (!initLoc) initLoc = parts[0].trim();
+        initExtra = parts.slice(1).join(' • ').trim();
+      } else if (!initLoc) {
+        initLoc = myTodayRecord.note.trim();
+      }
+    }
+
+    if (!initLoc && note.trim()) {
+      initLoc = note.trim();
+    }
+
+    setOffsiteLocation(initLoc);
+    setOffsiteNote(initExtra);
+    setOffsiteError(null);
+    setIsOffsiteModalOpen(true);
+  };
+
   const handleDirectCheckIn = async (loc: WorkLocationType) => {
     setFeedback(null);
     if (!myProbation.passed && (loc === 'wfh' || loc === 'wfa')) {
@@ -254,23 +298,17 @@ export default function AttendanceAndOfficeView({
       });
       return;
     }
-    if (loc === 'offsite' && !note.trim()) {
-      setShowLocationPicker(true);
-      setFeedback({
-        type: 'error',
-        message: 'กรุณาระบุสถานที่ / ชื่อลูกค้า ในช่องหมายเหตุด้านล่างก่อนกด Check-in นอกสถานที่',
-      });
-      setTimeout(() => {
-        document.getElementById('attendance-note')?.focus();
-      }, 100);
+    if (loc === 'offsite') {
+      handleOpenOffsiteModal();
       return;
     }
     setSubmitting(true);
     try {
       const bkk = getBangkokNow();
+      const effectiveCheckInTime = myTodayRecord?.checkInTime || bkk.timeStr;
       const res = await onCheckIn({
         date: todayStr || bkk.dateStr,
-        checkInTime: bkk.timeStr,
+        checkInTime: effectiveCheckInTime,
         workLocation: loc,
         note: note.trim() || undefined,
       });
@@ -286,6 +324,43 @@ export default function AttendanceAndOfficeView({
         });
         setNote('');
         setShowLocationPicker(false);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleOffsiteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!offsiteLocation.trim()) {
+      setOffsiteError('กรุณาระบุสถานที่ปฏิบัติงาน หรือชื่อลูกค้า');
+      return;
+    }
+    setSubmitting(true);
+    setOffsiteError(null);
+    try {
+      const bkk = getBangkokNow();
+      const effectiveCheckInTime = myTodayRecord?.checkInTime || bkk.timeStr;
+      const res = await onCheckIn({
+        date: todayStr || bkk.dateStr,
+        checkInTime: effectiveCheckInTime,
+        workLocation: 'offsite',
+        locationName: offsiteLocation.trim(),
+        note: offsiteNote.trim() || undefined,
+      });
+      if (!res.success) {
+        setOffsiteError(res.error || 'ไม่สามารถบันทึก Check-in ได้');
+      } else {
+        setIsOffsiteModalOpen(false);
+        setOffsiteLocation('');
+        setOffsiteNote('');
+        setNote('');
+        setShowLocationPicker(false);
+        setFeedback({
+          type: 'success',
+          message:
+            'ลงเวลา Check-in นอกสถานที่สำเร็จ และส่งข้อความแจ้งเตือนเข้า Google Chat เรียบร้อยแล้ว',
+        });
       }
     } finally {
       setSubmitting(false);
@@ -426,10 +501,10 @@ export default function AttendanceAndOfficeView({
                     </div>
                   </div>
 
-                  {myTodayRecord.note && (
+                  {(myTodayRecord.note || myTodayRecord.locationName) && (
                     <div className="rounded-2xl bg-white/95 p-3.5 text-xs sm:text-sm text-slate-700 border border-emerald-100 shadow-2xs">
                       <span className="font-bold text-slate-900">หมายเหตุ / สถานที่:</span>{' '}
-                      {myTodayRecord.note}
+                      {myTodayRecord.note || myTodayRecord.locationName}
                     </div>
                   )}
 
@@ -562,7 +637,7 @@ export default function AttendanceAndOfficeView({
                     <button
                       type="button"
                       disabled={submitting}
-                      onClick={() => handleDirectCheckIn('offsite')}
+                      onClick={handleOpenOffsiteModal}
                       className={`rounded-2xl border-2 p-3.5 sm:p-4 text-left transition min-h-[82px] sm:min-h-[88px] flex flex-col justify-between shadow-2xs hover:shadow-md active:scale-98 disabled:opacity-60 disabled:cursor-not-allowed ${
                         myTodayRecord?.workLocation === 'offsite'
                           ? 'border-teal-500 bg-teal-50 ring-2 ring-teal-400/50'
@@ -968,6 +1043,7 @@ export default function AttendanceAndOfficeView({
                       📍{' '}
                       <strong>
                         {record?.note ||
+                          record?.locationName ||
                           leave?.locationDetail ||
                           leave?.reason ||
                           'ปฏิบัติงานนอกสถานที่'}
@@ -1112,6 +1188,163 @@ export default function AttendanceAndOfficeView({
           </div>
         </div>
       </div>
+
+      {/* Offsite Check-in Modal */}
+      {isOffsiteModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Check-in ปฏิบัติงานนอกสถานที่"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 p-0 sm:p-4 backdrop-blur-xs"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !submitting) {
+              setIsOffsiteModalOpen(false);
+            }
+          }}
+        >
+          <div className="relative flex h-auto max-h-[92dvh] sm:max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] sm:rounded-3xl bg-white shadow-2xl border border-slate-200">
+            {/* Modal Header */}
+            <div className="shrink-0 flex items-center justify-between border-b border-teal-500/20 bg-gradient-to-r from-[#004D40] via-[#00695C] to-[#0D9488] px-5 sm:px-6 py-4 text-white">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-2xl bg-white/20 text-white shadow-xs shrink-0">
+                  <Briefcase className="h-5 w-5 sm:h-6 sm:w-6" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-base sm:text-lg font-black tracking-tight truncate">
+                    Check-in ปฏิบัติงานนอกสถานที่
+                  </h3>
+                  <p className="text-xs text-teal-100 font-medium truncate mt-0.5">
+                    พบลูกค้า / ประชุมนอกสถานที่ / ออกบูธ
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => !submitting && setIsOffsiteModalOpen(false)}
+                className="rounded-xl bg-white/10 p-2 text-white hover:bg-white/20 transition cursor-pointer shrink-0 min-h-[40px] min-w-[40px] flex items-center justify-center"
+                aria-label="ปิดหน้าต่าง"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Modal Body Form */}
+            <form onSubmit={handleOffsiteSubmit} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 text-sm">
+              {offsiteError && (
+                <div className="flex items-start gap-2.5 rounded-2xl bg-rose-50 border border-rose-200 p-3.5 text-xs sm:text-sm text-rose-700 font-semibold shadow-2xs">
+                  <AlertCircle className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
+                  <span>{offsiteError}</span>
+                </div>
+              )}
+
+              {/* User and Time Card */}
+              <div className="rounded-2xl bg-teal-50/70 border border-teal-200/80 p-3.5 flex items-center justify-between gap-3 text-xs sm:text-sm">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <UserAvatar
+                    name={currentUser.name}
+                    avatarUrl={currentUser.avatarUrl}
+                    sizeClass="h-9 w-9"
+                    roundedClass="rounded-xl"
+                    textClass="text-xs"
+                  />
+                  <div className="min-w-0">
+                    <div className="font-black text-slate-900 truncate">
+                      {currentUser.name}
+                    </div>
+                    <div className="text-xs text-teal-800 font-medium truncate">
+                      ฝ่าย {currentUser.department || '-'}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="text-xs text-slate-500 font-semibold">เวลา Check-in</div>
+                  <div className="text-sm font-black font-mono text-teal-900">
+                    {liveTime || getBangkokNow().timeStr} น.
+                  </div>
+                </div>
+              </div>
+
+              {/* Field: Location / Client Name (Required) */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="offsite-modal-location"
+                  className="flex items-center gap-1.5 text-sm font-bold text-slate-800"
+                >
+                  <MapPin className="h-4 w-4 text-teal-600 shrink-0" />
+                  <span>
+                    สถานที่ปฏิบัติงาน / ชื่อลูกค้า / ชื่องานออกบูธ{' '}
+                    <span className="text-rose-500 font-black">*</span>
+                  </span>
+                </label>
+                <input
+                  id="offsite-modal-location"
+                  type="text"
+                  autoFocus
+                  required
+                  value={offsiteLocation}
+                  onChange={(e) => setOffsiteLocation(e.target.value)}
+                  placeholder="เช่น บจก. สยามเทค (สีลม), ศูนย์สิริกิติ์"
+                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-base sm:text-sm text-slate-900 focus:border-teal-600 focus:outline-hidden"
+                />
+              </div>
+
+              {/* Field: Extra Note (Optional) */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="offsite-modal-note"
+                  className="block text-sm font-bold text-slate-800"
+                >
+                  รายละเอียดงาน / หมายเหตุเพิ่มเติม (ถ้ามี)
+                </label>
+                <textarea
+                  id="offsite-modal-note"
+                  rows={2}
+                  value={offsiteNote}
+                  onChange={(e) => setOffsiteNote(e.target.value)}
+                  placeholder="เช่น ประชุมสรุป Requirement โครงการใหม่, ออกบูธแนะนำบริการ"
+                  className="w-full rounded-2xl border border-slate-300 px-4 py-2.5 text-base sm:text-sm text-slate-900 focus:border-teal-600 focus:outline-hidden resize-none"
+                />
+              </div>
+
+              {/* Webhook notification notice */}
+              <div className="rounded-2xl bg-amber-50/80 border border-amber-200 p-3 text-xs text-amber-900 space-y-1">
+                <div className="font-bold flex items-center gap-1.5 text-amber-950">
+                  <span className="text-sm">💬</span> แจ้งเตือนเข้า Google Chat อัตโนมัติ:
+                </div>
+                <p className="text-amber-800 leading-relaxed font-medium">
+                  เมื่อกดยืนยัน ระบบจะลงเวลาเข้างานพร้อมส่งข้อความแจ้งเตือนเข้าห้องแชทบริษัททันที โดยไม่ต้องรอส่งใบลาขออนุมัติล่วงหน้า
+                </p>
+              </div>
+
+              {/* Modal Actions */}
+              <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-slate-100">
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => setIsOffsiteModalOpen(false)}
+                  className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer min-h-[44px]"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="rounded-xl bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 text-xs sm:text-sm font-black transition cursor-pointer shadow-md hover:shadow-lg disabled:opacity-50 min-h-[44px] flex items-center justify-center gap-2"
+                >
+                  {submitting ? (
+                    'กำลังบันทึก...'
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span>ยืนยัน Check-in นอกสถานที่</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   </div>
   );

@@ -437,6 +437,12 @@ export function attendanceToRow(a: AttendanceRecord): string[] {
 }
 
 export function rowToAttendance(row: string[]): AttendanceRecord {
+  const note = row[8] || undefined;
+  const workLocation = ((row[7] as WorkLocationType) || 'office');
+  let locationName: string | undefined = undefined;
+  if (workLocation === 'offsite' && note) {
+    locationName = note.includes(' • ') ? note.split(' • ')[0].trim() : note.trim();
+  }
   return {
     id: row[0] || '',
     userId: row[1] || '',
@@ -445,8 +451,9 @@ export function rowToAttendance(row: string[]): AttendanceRecord {
     date: row[4] || '',
     checkInTime: row[5] || '',
     checkOutTime: row[6] || undefined,
-    workLocation: ((row[7] as WorkLocationType) || 'office'),
-    note: row[8] || undefined,
+    workLocation,
+    locationName,
+    note,
   };
 }
 

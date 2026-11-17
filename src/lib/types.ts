@@ -126,6 +126,7 @@ export interface AttendanceRecord {
   checkInTime: string;  // HH:mm
   checkOutTime?: string;// HH:mm
   workLocation: WorkLocationType; // 'office' | 'wfh' | 'wfa' | 'offsite'
+  locationName?: string;// สถานที่ปฏิบัติงาน / ชื่อลูกค้า (สำหรับการ Check-in นอกสถานที่)
   note?: string;        // หมายเหตุ / ชื่อลูกค้า (ไม่เก็บพิกัด GPS หรือภาพถ่ายใบหน้าตาม PDPA)
 }
 

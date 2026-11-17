@@ -4,7 +4,7 @@ import { recordCheckIn, recordCheckOut } from '@/lib/hr-service';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { actorId, date, checkInTime, workLocation, note } = body;
+    const { actorId, date, checkInTime, workLocation, locationName, note } = body;
 
     if (!actorId) {
       return NextResponse.json(
@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
       date,
       checkInTime,
       workLocation: workLocation || 'office',
+      locationName,
       note,
     });
 

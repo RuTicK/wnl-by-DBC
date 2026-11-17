@@ -983,6 +983,84 @@ export async function sendGoogleChatLeaveNotification(
   }
 }
 
+/**
+ * ส่งแจ้งเตือนการลงเวลาปฏิบัติงานนอกสถานที่เข้า Google Chat ทันที
+ * (ไม่ผ่านขั้นตอนขออนุมัติล่วงหน้า รวมเข้ากับการ Check-in โดยตรง)
+ */
+export async function sendGoogleChatOffsiteCheckInNotification(
+  record: AttendanceRecord,
+  actor: User,
+  locationName?: string,
+  extraNote?: string
+): Promise<{ sent: boolean; error?: string }> {
+  const webhookUrl = getEffectiveGoogleChatWebhookUrl();
+  if (!webhookUrl) {
+    return { sent: false };
+  }
+
+  const effectiveLocation =
+    (locationName || '').trim() ||
+    record.locationName ||
+    (record.note && record.note.includes(' • ')
+      ? record.note.split(' • ')[0].trim()
+      : record.note) ||
+    '-';
+
+  let effectiveNote = (extraNote || '').trim();
+  if (!effectiveNote && record.note) {
+    if (record.locationName && record.note.startsWith(`${record.locationName} • `)) {
+      effectiveNote = record.note.slice(record.locationName.length + 3).trim();
+    } else if (record.note.startsWith(`${effectiveLocation} • `)) {
+      effectiveNote = record.note.slice(effectiveLocation.length + 3).trim();
+    } else if (record.note !== record.locationName && record.note !== effectiveLocation) {
+      effectiveNote = record.note.trim();
+    }
+  }
+
+  const lines = [
+    '📍 *แจ้งเตือนการลงเวลาปฏิบัติงานนอกสถานที่ — วันนี้ลา by DBC*',
+    '━━━━━━━━━━━━━━━━━━━━━━',
+    `👤 *พนักงาน:* ${actor.name} (${actor.id})`,
+    `🏢 *ฝ่าย/แผนก:* ${actor.department || '-'}`,
+    `⏰ *เวลา Check-in:* ${record.checkInTime} น.`,
+    `📅 *วันที่:* ${formatThaiDate(record.date)}`,
+    `📌 *สถานที่ / ลูกค้า:* ${effectiveLocation}`,
+    ...(effectiveNote ? [`💬 *หมายเหตุ / รายละเอียดงาน:* ${effectiveNote}`] : []),
+    '✅ *สถานะ:* เช็คอินนอกสถานที่เรียบร้อยแล้ว (ไม่ต้องรออนุมัติ)',
+  ];
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 6000);
+  try {
+    const res = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: JSON.stringify({
+        text: lines.join('\n'),
+      }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      return {
+        sent: false,
+        error: `Google Chat HTTP ${res.status}: ${errText.slice(0, 200)}`,
+      };
+    }
+    return { sent: true };
+  } catch (err) {
+    return {
+      sent: false,
+      error:
+        err instanceof Error ? err.message : 'Google Chat webhook network error',
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function processLeaveAction(
   actorId: string,
   leaveId: string,
@@ -1146,7 +1224,8 @@ export interface CheckInInput {
   date?: string; // YYYY-MM-DD
   checkInTime?: string; // HH:mm
   workLocation: WorkLocationType;
-  note?: string;
+  locationName?: string; // สถานที่ปฏิบัติงาน / ชื่อลูกค้า / ชื่องานออกบูธ
+  note?: string; // หมายเหตุเพิ่มเติม
 }
 
 export async function recordCheckIn(
@@ -1191,12 +1270,35 @@ export async function recordCheckIn(
     }
   }
 
-  const note = (input.note || '').trim();
-  if (input.workLocation === 'offsite' && !note) {
+  const locationName = (input.locationName || '').trim();
+  const rawNote = (input.note || '').trim();
+
+  let effectiveLocation = locationName;
+  let effectiveExtraNote = rawNote;
+
+  if (!effectiveLocation && rawNote && input.workLocation === 'offsite') {
+    // If only note was provided (e.g. legacy caller / direct test), treat note as location
+    effectiveLocation = rawNote;
+    effectiveExtraNote = '';
+  }
+
+  if (input.workLocation === 'offsite' && !effectiveLocation) {
     return {
       success: false,
       error: 'กรุณาระบุสถานที่ / ชื่อลูกค้า สำหรับการลงเวลาทำงานนอกสถานที่',
     };
+  }
+
+  // Build the combined note to store in AttendanceRecord and Google Sheets
+  let combinedNote: string | undefined = undefined;
+  if (input.workLocation === 'offsite') {
+    if (effectiveLocation && effectiveExtraNote) {
+      combinedNote = `${effectiveLocation} • ${effectiveExtraNote}`;
+    } else {
+      combinedNote = effectiveLocation || undefined;
+    }
+  } else {
+    combinedNote = rawNote || undefined;
   }
 
   const timeStr = (input.checkInTime || '').trim() || currentHm;
@@ -1210,13 +1312,26 @@ export async function recordCheckIn(
   );
 
   if (existingIdx >= 0) {
+    const existing = state.attendance[existingIdx];
+    const isOffsite = input.workLocation === 'offsite';
+    const isSameLocation = existing.workLocation === input.workLocation;
+
+    const nextLocationName = isOffsite
+      ? effectiveLocation || (isSameLocation ? existing.locationName : undefined)
+      : undefined;
+
+    const nextNote = isOffsite
+      ? combinedNote
+      : (rawNote || (isSameLocation ? existing.note : undefined));
+
     const updated: AttendanceRecord = {
-      ...state.attendance[existingIdx],
+      ...existing,
       userName: actor.name,
       department: actor.department,
       checkInTime: timeStr,
       workLocation: input.workLocation,
-      note: note || state.attendance[existingIdx].note,
+      locationName: nextLocationName,
+      note: nextNote,
     };
     state.attendance[existingIdx] = updated;
     await saveDatabaseState(state);
@@ -1226,6 +1341,14 @@ export async function recordCheckIn(
       [attendanceToAppSheetRow(updated)],
       actor.email
     );
+    if (input.workLocation === 'offsite') {
+      await sendGoogleChatOffsiteCheckInNotification(
+        updated,
+        actor,
+        effectiveLocation,
+        effectiveExtraNote
+      );
+    }
     return { success: true, record: updated };
   }
 
@@ -1237,7 +1360,8 @@ export async function recordCheckIn(
     date: targetDate,
     checkInTime: timeStr,
     workLocation: input.workLocation,
-    note: note || undefined,
+    locationName: effectiveLocation || undefined,
+    note: combinedNote,
   };
 
   state.attendance.unshift(newRecord);
@@ -1248,6 +1372,14 @@ export async function recordCheckIn(
     [attendanceToAppSheetRow(newRecord)],
     actor.email
   );
+  if (input.workLocation === 'offsite') {
+    await sendGoogleChatOffsiteCheckInNotification(
+      newRecord,
+      actor,
+      effectiveLocation,
+      effectiveExtraNote
+    );
+  }
   return { success: true, record: newRecord };
 }
 

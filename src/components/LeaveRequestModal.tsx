@@ -16,7 +16,6 @@ import {
   X,
 } from 'lucide-react';
 import {
-  ALL_LEAVE_TYPES,
   calculateLeaveDays,
   calculateUserQuotaSummary,
   checkProbationLeaveEligibility,
@@ -25,6 +24,7 @@ import {
   getApprovalFlowLabel,
   getBangkokNow,
   LEAVE_TYPE_META,
+  REQUESTABLE_LEAVE_TYPES,
 } from '@/lib/leave-utils';
 import LeavePolicyModal from './LeavePolicyModal';
 import {
@@ -254,13 +254,6 @@ export default function LeaveRequestModal({
       return;
     }
 
-    if (leaveType === 'offsite' && !locationDetail.trim()) {
-      setError(
-        'กรุณาระบุสถานที่ปฏิบัติงาน / ชื่อลูกค้า / งานที่ไปออกบูธ สำหรับการขอทำงานนอกสถานที่'
-      );
-      return;
-    }
-
     if (!reason.trim()) {
       setError('กรุณากรอกเหตุผลการลา / รายละเอียดงาน');
       return;
@@ -362,7 +355,7 @@ export default function LeaveRequestModal({
               1. เลือกประเภท ({effectiveQuota.year}):
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
-              {ALL_LEAVE_TYPES.map((type) => {
+              {REQUESTABLE_LEAVE_TYPES.map((type) => {
                 const meta = LEAVE_TYPE_META[type];
                 const q = effectiveQuota.quotas[type];
                 const isSelected = leaveType === type;
@@ -438,6 +431,9 @@ export default function LeaveRequestModal({
                 );
               })}
             </div>
+            <p className="mt-2 text-xs text-slate-500 font-medium">
+              💡 หมายเหตุ: การทำงานนอกสถานที่ (พบลูกค้า/ออกบูธ) ไม่ต้องยื่นขออนุมัติล่วงหน้า สามารถกด Check-in นอกสถานที่ในหน้าลงเวลาเข้างานได้ทันที
+            </p>
           </div>
 
           {/* ข้อกำหนดและเงื่อนไขตามประเภทการลาที่เลือก */}
@@ -484,11 +480,6 @@ export default function LeaveRequestModal({
             {leaveType === 'wfa' && (
               <ul className="space-y-1 text-slate-700 font-medium list-disc list-inside">
                 <li>ได้รับการอนุมัติจากหัวหน้างาน สามารถดำเนินงานได้ตามปกติและติดต่อสื่อสารได้ตลอดเวลา</li>
-              </ul>
-            )}
-            {leaveType === 'offsite' && (
-              <ul className="space-y-1 text-slate-700 font-medium list-disc list-inside">
-                <li>ไม่มีโควต้าจำกัดวัน ต้องระบุสถานที่ / ชื่อลูกค้า / งานออกบูธให้ชัดเจนในช่องด้านล่าง</li>
               </ul>
             )}
           </div>
@@ -660,35 +651,23 @@ export default function LeaveRequestModal({
             )}
           </div>
 
-          {/* ช่องระบุสถานที่ / ชื่อลูกค้า (แสดงเมื่อเลือก ทำงานนอกสถานที่ / WFA / WFH) */}
-          {(leaveType === 'offsite' ||
-            leaveType === 'wfa' ||
-            leaveType === 'wfh') && (
+          {/* ช่องระบุสถานที่ปฏิบัติงาน (แสดงเมื่อเลือก WFA / WFH) */}
+          {(leaveType === 'wfa' || leaveType === 'wfh') && (
             <div className="rounded-2xl border border-teal-200 bg-teal-50/50 p-4 space-y-2">
               <label
                 htmlFor="leave-location-detail"
                 className="flex items-center gap-1.5 text-sm font-bold text-teal-950"
               >
                 <MapPin className="h-4.5 w-4.5 text-teal-600" />
-                <span>
-                  สถานที่ปฏิบัติงาน / ชื่อลูกค้า / ชื่องานออกบูธ{' '}
-                  {leaveType === 'offsite' && (
-                    <span className="text-rose-500 font-black">* (บังคับระบุ)</span>
-                  )}
-                </span>
+                <span>สถานที่ปฏิบัติงาน (WFH / WFA)</span>
               </label>
               <input
                 id="leave-location-detail"
                 type="text"
                 value={locationDetail}
                 onChange={(e) => setLocationDetail(e.target.value)}
-                placeholder={
-                  leaveType === 'offsite'
-                    ? 'เช่น ไปพบลูกค้า บจก. สยามเทค (สีลม) หรือ ออกบูธงาน Tech Expo ศูนย์สิริกิติ์'
-                    : 'เช่น ทำงานที่บ้าน หรือ ระบุจังหวัด/สถานที่ปฏิบัติงาน'
-                }
+                placeholder="เช่น ทำงานที่บ้าน หรือ ระบุจังหวัด/สถานที่ปฏิบัติงาน"
                 className="w-full rounded-xl border border-teal-300 bg-white px-4 py-3 text-base sm:text-sm text-slate-900 focus:border-teal-600 focus:outline-hidden"
-                required={leaveType === 'offsite'}
               />
             </div>
           )}
