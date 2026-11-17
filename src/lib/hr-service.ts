@@ -851,14 +851,17 @@ export async function createLeaveRequest(
 }
 
 /**
- * ตรวจสอบว่าเป็นประเภทการลางานที่ต้องแจ้งเตือนเข้า Google Chat หรือไม่
- * (แจ้งเฉพาะ ลาป่วย, ลากิจ, ลาพักร้อน — ยังไม่แจ้ง WFH / WFA / Offsite)
+ * ตรวจสอบว่าเป็นประเภทคำขอที่ต้องแจ้งเตือนเข้า Google Chat หรือไม่
+ * (แจ้งเตือน: ลาป่วย, ลากิจ, ลาพักร้อน, Work From Home, ทำงานนอกสถานที่/พบลูกค้า)
+ * ยังไม่รวม WFA (Work From Anywhere)
  */
 export function isNotifiableLeaveType(leaveType: LeaveType): boolean {
   return (
     leaveType === 'sick' ||
     leaveType === 'personal' ||
-    leaveType === 'vacation'
+    leaveType === 'vacation' ||
+    leaveType === 'wfh' ||
+    leaveType === 'offsite'
   );
 }
 
@@ -882,6 +885,8 @@ export async function sendGoogleChatLeaveNotification(
     return { sent: false };
   }
 
+  const isRemoteOrOffsite =
+    leave.leaveType === 'wfh' || leave.leaveType === 'offsite';
   const typeLabel =
     LEAVE_TYPE_META[leave.leaveType]?.label || leave.leaveType;
   const durationLabel =
@@ -894,11 +899,13 @@ export async function sendGoogleChatLeaveNotification(
         )}`;
 
   const headerMap: Record<typeof eventType, string> = {
-    created: '📢 *แจ้งเตือนคำขอลางานใหม่ — วันนี้ลา by DBC*',
-    approved_step1: '⏳ *อัปเดตสถานะใบลา (อนุมัติขั้นที่ 1) — วันนี้ลา by DBC*',
-    approved_final: '✅ *อนุมัติใบลาเรียบร้อยแล้ว — วันนี้ลา by DBC*',
-    rejected: '❌ *ไม่อนุมัติคำขอลางาน — วันนี้ลา by DBC*',
-    cancelled: '🚫 *ยกเลิกคำขอลางาน — วันนี้ลา by DBC*',
+    created: isRemoteOrOffsite
+      ? '📢 *แจ้งเตือนคำขอปฏิบัติงานนอกสถานที่/WFH ใหม่ — วันนี้ลา by DBC*'
+      : '📢 *แจ้งเตือนคำขอลางานใหม่ — วันนี้ลา by DBC*',
+    approved_step1: '⏳ *อัปเดตสถานะคำขอ (อนุมัติขั้นที่ 1) — วันนี้ลา by DBC*',
+    approved_final: '✅ *อนุมัติคำขอเรียบร้อยแล้ว — วันนี้ลา by DBC*',
+    rejected: '❌ *ไม่อนุมัติคำขอ — วันนี้ลา by DBC*',
+    cancelled: '🚫 *ยกเลิกคำขอ — วันนี้ลา by DBC*',
   };
 
   let statusLine = '';
@@ -932,9 +939,12 @@ export async function sendGoogleChatLeaveNotification(
     '━━━━━━━━━━━━━━━━━━━━━━',
     `👤 *พนักงาน:* ${leave.userName} (${leave.userId})`,
     `🏢 *ฝ่าย/แผนก:* ${leave.department || '-'}`,
-    `📌 *ประเภทการลา:* ${typeLabel} (${durationLabel})`,
-    `📅 *วันที่ลา:* ${dateRangeStr} (รวม ${leave.totalDays} วันทำการ)`,
-    `💬 *เหตุผล:* ${leave.reason || '-'}`,
+    `📌 *ประเภท:* ${typeLabel} (${durationLabel})`,
+    `📅 *ช่วงวันที่:* ${dateRangeStr} (รวม ${leave.totalDays} วันทำการ)`,
+    ...(leave.locationDetail
+      ? [`📍 *สถานที่/รายละเอียดงาน:* ${leave.locationDetail}`]
+      : []),
+    `💬 *เหตุผล/รายละเอียด:* ${leave.reason || '-'}`,
     ...(leave.attachmentUrl
       ? [`📎 *เอกสารแนบ:* ${leave.attachmentName || 'แนบเอกสารประกอบแล้ว'}`]
       : []),

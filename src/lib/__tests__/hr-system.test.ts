@@ -1954,13 +1954,13 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
       expect(itPerm.error).toContain('เฉพาะหัวหน้าแผนกในสังกัดเท่านั้น');
     });
 
-    it('sends Google Chat webhook notifications only for leave requests (sick, personal, vacation) and skips WFH/WFA/Offsite', async () => {
+    it('sends Google Chat webhook notifications for leave requests (sick, personal, vacation, wfh, offsite) and skips WFA', async () => {
       expect(isNotifiableLeaveType('sick')).toBe(true);
       expect(isNotifiableLeaveType('personal')).toBe(true);
       expect(isNotifiableLeaveType('vacation')).toBe(true);
-      expect(isNotifiableLeaveType('wfh')).toBe(false);
+      expect(isNotifiableLeaveType('wfh')).toBe(true);
+      expect(isNotifiableLeaveType('offsite')).toBe(true);
       expect(isNotifiableLeaveType('wfa')).toBe(false);
-      expect(isNotifiableLeaveType('offsite')).toBe(false);
       expect(DEFAULT_GOOGLE_CHAT_WEBHOOK_URL).toContain(
         'https://chat.googleapis.com/v1/spaces/AAQAxhyo86I/messages'
       );
@@ -1984,41 +1984,55 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
       }) as typeof fetch;
 
       try {
-        // 1. WFH request should NOT trigger Google Chat notification
-        const wfhRes = await createLeaveRequest('EMP003', {
-          leaveType: 'wfh',
-          durationType: 'full',
-          startDate: '2026-12-01',
-          endDate: '2026-12-01',
-          reason: 'ทำงานที่บ้าน',
-        });
-        expect(wfhRes.success).toBe(true);
-        expect(calls.length).toBe(0);
-
-        // 2. WFA request should NOT trigger Google Chat notification
+        // 1. WFA request should NOT trigger Google Chat notification
         const wfaRes = await createLeaveRequest('EMP003', {
           leaveType: 'wfa',
           durationType: 'full',
-          startDate: '2026-12-02',
-          endDate: '2026-12-02',
+          startDate: '2026-12-01',
+          endDate: '2026-12-01',
           reason: 'ทำงานต่างจังหวัด',
         });
         expect(wfaRes.success).toBe(true);
         expect(calls.length).toBe(0);
 
-        // 3. Sick leave request MUST trigger Google Chat notification
-        const sickRes = await createLeaveRequest('EMP003', {
-          leaveType: 'sick',
+        // 2. WFH request MUST trigger Google Chat notification
+        const wfhRes = await createLeaveRequest('EMP003', {
+          leaveType: 'wfh',
+          durationType: 'full',
+          startDate: '2026-12-02',
+          endDate: '2026-12-02',
+          reason: 'ทำงานที่บ้าน',
+        });
+        expect(wfhRes.success).toBe(true);
+        expect(calls.length).toBe(1);
+        expect(calls[0].body).toContain('Work From Home');
+
+        // 3. Offsite (พบลูกค้า) MUST trigger Google Chat notification
+        const offsiteRes = await createLeaveRequest('EMP003', {
+          leaveType: 'offsite',
           durationType: 'full',
           startDate: '2026-12-03',
           endDate: '2026-12-03',
+          locationDetail: 'บริษัท ลูกค้า ABC สาทร',
+          reason: 'ประชุม Requirement ระบบใหม่',
+        });
+        expect(offsiteRes.success).toBe(true);
+        expect(calls.length).toBe(2);
+        expect(calls[1].body).toContain('นอกสถานที่');
+        expect(calls[1].body).toContain('บริษัท ลูกค้า ABC สาทร');
+
+        // 4. Sick leave request MUST trigger Google Chat notification
+        const sickRes = await createLeaveRequest('EMP003', {
+          leaveType: 'sick',
+          durationType: 'full',
+          startDate: '2026-12-04',
+          endDate: '2026-12-04',
           reason: 'มีไข้สูง พบแพทย์',
         });
         expect(sickRes.success).toBe(true);
-        expect(calls.length).toBe(1);
-        expect(calls[0].body).toContain('แจ้งเตือนคำขอลางานใหม่');
-        expect(calls[0].body).toContain('ลาป่วย');
-        expect(calls[0].body).toContain('สมชาย ใจดี');
+        expect(calls.length).toBe(3);
+        expect(calls[2].body).toContain('ลาป่วย');
+        expect(calls[2].body).toContain('สมชาย ใจดี');
       } finally {
         global.fetch = originalFetch;
         saveRuntimeAppConfig({ googleChatWebhookUrl: '' });

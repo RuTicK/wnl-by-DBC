@@ -1122,12 +1122,12 @@ export default function HrManagementView({
                         {users
                           .filter(
                             (u) =>
-                              u.role === 'c_level' &&
+                              (u.role === 'c_level' || u.role === 'admin') &&
                               (!editingEmpId || u.id !== editingEmpId)
                           )
                           .map((c) => (
                             <option key={c.id} value={c.id}>
-                              {c.name} {c.englishName ? `(${c.englishName})` : ''} - {c.position || 'C-Level'}
+                              {c.name} {c.englishName ? `(${c.englishName})` : ''} - {c.position || (c.role === 'admin' ? 'Super Admin' : 'C-Level')}
                             </option>
                           ))}
                       </select>
