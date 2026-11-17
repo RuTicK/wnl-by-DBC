@@ -35,7 +35,11 @@ export interface RuntimeAppConfig {
   googlePrivateKey?: string;
   appsheetAppId?: string;
   appsheetAccessKey?: string;
+  googleChatWebhookUrl?: string;
 }
+
+export const DEFAULT_GOOGLE_CHAT_WEBHOOK_URL =
+  'https://chat.googleapis.com/v1/spaces/AAQAxhyo86I/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=zfFTqOIXXBO2Af_AZj3SU5Wd93vE0vj9XiL9XpVugT8';
 
 const DATA_FILE_PATH = path.join(process.cwd(), '.data', 'hr-store.json');
 const CONFIG_FILE_PATH = path.join(process.cwd(), '.data', 'app-config.json');
@@ -119,6 +123,16 @@ export function getEffectiveAppSheetConfig(): {
 
 export function isAppSheetConfigured(): boolean {
   return getEffectiveAppSheetConfig().configured;
+}
+
+export function getEffectiveGoogleChatWebhookUrl(): string {
+  const cfg = getRuntimeAppConfig();
+  const isTest = process.env.NODE_ENV === 'test' || Boolean(process.env.VITEST);
+  return (
+    process.env.GOOGLE_CHAT_WEBHOOK_URL?.trim() ||
+    cfg.googleChatWebhookUrl?.trim() ||
+    (isTest ? '' : DEFAULT_GOOGLE_CHAT_WEBHOOK_URL)
+  );
 }
 
 export function isGoogleSheetsConfigured(): boolean {

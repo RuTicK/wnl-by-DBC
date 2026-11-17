@@ -6,6 +6,7 @@ import {
 } from '@/lib/hr-service';
 import {
   getEffectiveAppSheetConfig,
+  getEffectiveGoogleChatWebhookUrl,
   getEffectiveGoogleClientId,
   getStorageMode,
   saveRuntimeAppConfig,
@@ -22,6 +23,7 @@ export async function GET(req: NextRequest) {
         googleClientId: getEffectiveGoogleClientId(),
         appsheetAppId: appSheet.appId,
         appsheetConfigured: appSheet.configured,
+        googleChatWebhookUrl: getEffectiveGoogleChatWebhookUrl(),
         storageMode: getStorageMode(),
         googleSheetId:
           process.env.GOOGLE_SHEET_ID?.trim() ||
@@ -100,6 +102,9 @@ export async function POST(req: NextRequest) {
         ...(body.googlePrivateKey !== undefined
           ? { googlePrivateKey: String(body.googlePrivateKey).trim() }
           : {}),
+        ...(body.googleChatWebhookUrl !== undefined
+          ? { googleChatWebhookUrl: String(body.googleChatWebhookUrl).trim() }
+          : {}),
       });
       const appSheet = getEffectiveAppSheetConfig();
       return NextResponse.json({
@@ -107,6 +112,7 @@ export async function POST(req: NextRequest) {
         googleClientId: getEffectiveGoogleClientId(),
         appsheetAppId: appSheet.appId,
         appsheetConfigured: appSheet.configured,
+        googleChatWebhookUrl: getEffectiveGoogleChatWebhookUrl(),
         storageMode: getStorageMode(),
       });
     }

@@ -29,6 +29,7 @@ import {
   deleteEmployee,
   deleteHoliday,
   getSystemDataForUser,
+  isNotifiableLeaveType,
   processLeaveAction,
   recordCheckIn,
   recordCheckOut,
@@ -43,6 +44,7 @@ import {
   ATTENDANCE_SHEET_HEADERS,
   appSheetRowToLeave,
   appSheetRowToUser,
+  DEFAULT_GOOGLE_CHAT_WEBHOOK_URL,
   attendanceToAppSheetRow,
   attendanceToRow,
   getRuntimeAppConfig,
@@ -1950,6 +1952,77 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
       const itPerm = checkApprovalPermission(itEmployeeLeave, consultCLevel.user!);
       expect(itPerm.allowed).toBe(false);
       expect(itPerm.error).toContain('เฉพาะหัวหน้าแผนกในสังกัดเท่านั้น');
+    });
+
+    it('sends Google Chat webhook notifications only for leave requests (sick, personal, vacation) and skips WFH/WFA/Offsite', async () => {
+      expect(isNotifiableLeaveType('sick')).toBe(true);
+      expect(isNotifiableLeaveType('personal')).toBe(true);
+      expect(isNotifiableLeaveType('vacation')).toBe(true);
+      expect(isNotifiableLeaveType('wfh')).toBe(false);
+      expect(isNotifiableLeaveType('wfa')).toBe(false);
+      expect(isNotifiableLeaveType('offsite')).toBe(false);
+      expect(DEFAULT_GOOGLE_CHAT_WEBHOOK_URL).toContain(
+        'https://chat.googleapis.com/v1/spaces/AAQAxhyo86I/messages'
+      );
+
+      const originalFetch = global.fetch;
+      const calls: { url: string; body: string }[] = [];
+
+      saveRuntimeAppConfig({
+        googleChatWebhookUrl: DEFAULT_GOOGLE_CHAT_WEBHOOK_URL,
+      });
+
+      global.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes('chat.googleapis.com')) {
+          calls.push({ url, body: String(init?.body || '') });
+          return new Response(JSON.stringify({ name: 'spaces/AAQAxhyo86I/messages/1' }), {
+            status: 200,
+          });
+        }
+        return originalFetch(input, init);
+      }) as typeof fetch;
+
+      try {
+        // 1. WFH request should NOT trigger Google Chat notification
+        const wfhRes = await createLeaveRequest('EMP003', {
+          leaveType: 'wfh',
+          durationType: 'full',
+          startDate: '2026-12-01',
+          endDate: '2026-12-01',
+          reason: 'ทำงานที่บ้าน',
+        });
+        expect(wfhRes.success).toBe(true);
+        expect(calls.length).toBe(0);
+
+        // 2. WFA request should NOT trigger Google Chat notification
+        const wfaRes = await createLeaveRequest('EMP003', {
+          leaveType: 'wfa',
+          durationType: 'full',
+          startDate: '2026-12-02',
+          endDate: '2026-12-02',
+          reason: 'ทำงานต่างจังหวัด',
+        });
+        expect(wfaRes.success).toBe(true);
+        expect(calls.length).toBe(0);
+
+        // 3. Sick leave request MUST trigger Google Chat notification
+        const sickRes = await createLeaveRequest('EMP003', {
+          leaveType: 'sick',
+          durationType: 'full',
+          startDate: '2026-12-03',
+          endDate: '2026-12-03',
+          reason: 'มีไข้สูง พบแพทย์',
+        });
+        expect(sickRes.success).toBe(true);
+        expect(calls.length).toBe(1);
+        expect(calls[0].body).toContain('แจ้งเตือนคำขอลางานใหม่');
+        expect(calls[0].body).toContain('ลาป่วย');
+        expect(calls[0].body).toContain('สมชาย ใจดี');
+      } finally {
+        global.fetch = originalFetch;
+        saveRuntimeAppConfig({ googleChatWebhookUrl: '' });
+      }
     });
   });
 });

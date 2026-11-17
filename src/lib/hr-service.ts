@@ -4,8 +4,10 @@ import {
   checkApprovalPermission,
   checkProbationLeaveEligibility,
   checkRejectionPermission,
+  DURATION_TYPE_META,
   filterLeavesForViewer,
   findOverlappingLeave,
+  formatThaiDate,
   getBangkokNow,
   getInitialLeaveStatus,
   LEAVE_TYPE_META,
@@ -16,6 +18,7 @@ import {
   attendanceToAppSheetRow,
   DatabaseState,
   getDatabaseState,
+  getEffectiveGoogleChatWebhookUrl,
   getEffectiveGoogleClientId,
   holidayToAppSheetRow,
   isAppSheetConfigured,
@@ -835,8 +838,139 @@ export async function createLeaveRequest(
     [leaveToAppSheetRow(newLeave)],
     actor.email
   );
+  if (isNotifiableLeaveType(newLeave.leaveType)) {
+    await sendGoogleChatLeaveNotification(
+      newLeave,
+      'created',
+      actor,
+      state.users
+    );
+  }
 
   return { success: true, leave: newLeave };
+}
+
+/**
+ * ตรวจสอบว่าเป็นประเภทการลางานที่ต้องแจ้งเตือนเข้า Google Chat หรือไม่
+ * (แจ้งเฉพาะ ลาป่วย, ลากิจ, ลาพักร้อน — ยังไม่แจ้ง WFH / WFA / Offsite)
+ */
+export function isNotifiableLeaveType(leaveType: LeaveType): boolean {
+  return (
+    leaveType === 'sick' ||
+    leaveType === 'personal' ||
+    leaveType === 'vacation'
+  );
+}
+
+export async function sendGoogleChatLeaveNotification(
+  leave: LeaveRequest,
+  eventType:
+    | 'created'
+    | 'approved_step1'
+    | 'approved_final'
+    | 'rejected'
+    | 'cancelled',
+  actor?: User,
+  allUsers?: User[]
+): Promise<{ sent: boolean; error?: string }> {
+  if (!isNotifiableLeaveType(leave.leaveType)) {
+    return { sent: false };
+  }
+
+  const webhookUrl = getEffectiveGoogleChatWebhookUrl();
+  if (!webhookUrl) {
+    return { sent: false };
+  }
+
+  const typeLabel =
+    LEAVE_TYPE_META[leave.leaveType]?.label || leave.leaveType;
+  const durationLabel =
+    DURATION_TYPE_META[leave.durationType]?.label || leave.durationType;
+  const dateRangeStr =
+    leave.startDate === leave.endDate
+      ? formatThaiDate(leave.startDate)
+      : `${formatThaiDate(leave.startDate)} ถึง ${formatThaiDate(
+          leave.endDate
+        )}`;
+
+  const headerMap: Record<typeof eventType, string> = {
+    created: '📢 *แจ้งเตือนคำขอลางานใหม่ — วันนี้ลา by DBC*',
+    approved_step1: '⏳ *อัปเดตสถานะใบลา (อนุมัติขั้นที่ 1) — วันนี้ลา by DBC*',
+    approved_final: '✅ *อนุมัติใบลาเรียบร้อยแล้ว — วันนี้ลา by DBC*',
+    rejected: '❌ *ไม่อนุมัติคำขอลางาน — วันนี้ลา by DBC*',
+    cancelled: '🚫 *ยกเลิกคำขอลางาน — วันนี้ลา by DBC*',
+  };
+
+  let statusLine = '';
+  if (eventType === 'created') {
+    if (leave.status === 'pending_manager') {
+      statusLine = `🔔 *สถานะ:* รอหัวหน้าฝ่าย (${leave.department || '-'}) อนุมัติขั้นที่ 1`;
+    } else if (leave.status === 'pending_c_level') {
+      const targetCLevel = allUsers?.find(
+        (u) => u.id === leave.targetApproverId
+      );
+      statusLine = `🔔 *สถานะ:* รอผู้บริหาร ${
+        targetCLevel ? `(${targetCLevel.name})` : '(C-Level)'
+      } อนุมัติขั้นที่ 1`;
+    } else if (leave.status === 'approved') {
+      statusLine = '✅ *สถานะ:* อนุมัติเรียบร้อยแล้ว';
+    }
+  } else if (eventType === 'approved_step1') {
+    statusLine = `✍️ *ผู้อนุมัติขั้นที่ 1:* ${actor?.name || '-'}\n🔔 *สถานะถัดไป:* รอฝ่ายบุคคล (HR) อนุมัติขั้นสุดท้าย`;
+  } else if (eventType === 'approved_final') {
+    statusLine = `✍️ *ผู้อนุมัติขั้นสุดท้าย:* ${actor?.name || '-'}\n✅ *สถานะ:* อนุมัติสมบูรณ์ (${leave.totalDays} วันทำการ)`;
+  } else if (eventType === 'rejected') {
+    statusLine = `✍️ *ผู้พิจารณา:* ${actor?.name || '-'}\n📝 *เหตุผลที่ไม่อนุมัติ:* ${
+      leave.rejectedBy?.reason || '-'
+    }`;
+  } else if (eventType === 'cancelled') {
+    statusLine = `✍️ *ยกเลิกโดย:* ${actor?.name || leave.userName}`;
+  }
+
+  const lines = [
+    headerMap[eventType],
+    '━━━━━━━━━━━━━━━━━━━━━━',
+    `👤 *พนักงาน:* ${leave.userName} (${leave.userId})`,
+    `🏢 *ฝ่าย/แผนก:* ${leave.department || '-'}`,
+    `📌 *ประเภทการลา:* ${typeLabel} (${durationLabel})`,
+    `📅 *วันที่ลา:* ${dateRangeStr} (รวม ${leave.totalDays} วันทำการ)`,
+    `💬 *เหตุผล:* ${leave.reason || '-'}`,
+    ...(leave.attachmentUrl
+      ? [`📎 *เอกสารแนบ:* ${leave.attachmentName || 'แนบเอกสารประกอบแล้ว'}`]
+      : []),
+    ...(statusLine ? [statusLine] : []),
+  ];
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 6000);
+  try {
+    const res = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: JSON.stringify({
+        text: lines.join('\n'),
+      }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      return {
+        sent: false,
+        error: `Google Chat HTTP ${res.status}: ${errText.slice(0, 200)}`,
+      };
+    }
+    return { sent: true };
+  } catch (err) {
+    return {
+      sent: false,
+      error:
+        err instanceof Error ? err.message : 'Google Chat webhook network error',
+    };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export async function processLeaveAction(
@@ -894,6 +1028,14 @@ export async function processLeaveAction(
       [leaveToAppSheetRow(leave)],
       actor.email
     );
+    if (isNotifiableLeaveType(leave.leaveType)) {
+      await sendGoogleChatLeaveNotification(
+        leave,
+        'cancelled',
+        actor,
+        state.users
+      );
+    }
     return { success: true, leave };
   }
 
@@ -919,6 +1061,14 @@ export async function processLeaveAction(
       [leaveToAppSheetRow(leave)],
       actor.email
     );
+    if (isNotifiableLeaveType(leave.leaveType)) {
+      await sendGoogleChatLeaveNotification(
+        leave,
+        'rejected',
+        actor,
+        state.users
+      );
+    }
     return { success: true, leave };
   }
 
@@ -964,6 +1114,14 @@ export async function processLeaveAction(
       [leaveToAppSheetRow(leave)],
       actor.email
     );
+    if (isNotifiableLeaveType(leave.leaveType)) {
+      await sendGoogleChatLeaveNotification(
+        leave,
+        leave.status === 'approved' ? 'approved_final' : 'approved_step1',
+        actor,
+        state.users
+      );
+    }
     return { success: true, leave };
   }
 
