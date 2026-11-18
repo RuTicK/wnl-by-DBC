@@ -62,7 +62,7 @@ export default function HomePage() {
     undefined
   );
 
-  const currentYear = new Date().getFullYear();
+  const currentYear = useMemo(() => getBangkokNow().year, []);
 
   const isHrOrCLevel =
     currentUser?.role === 'hr' ||
@@ -641,7 +641,7 @@ export default function HomePage() {
           <div className="pt-3 pb-1">
             <div className="flex items-center justify-between px-2 mb-2">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                โควต้าวันลาคงเหลือ
+                โควต้าวันลาคงเหลือ ({currentYear})
               </span>
               <button
                 type="button"
@@ -691,7 +691,7 @@ export default function HomePage() {
                           {meta.shortLabel}
                         </span>
                         {lockedByProbation && (
-                          <span className="rounded bg-amber-100 border border-amber-300 px-1 py-0.2 text-[10px] font-bold text-amber-800 shrink-0">
+                          <span className="rounded bg-amber-100 border border-amber-300 px-1 py-0.5 text-[10px] font-bold text-amber-800 shrink-0">
                             รอโปร
                           </span>
                         )}
@@ -717,7 +717,7 @@ export default function HomePage() {
                     <div className="flex items-center justify-between text-[10px] text-slate-500 font-medium px-0.5">
                       <span>ใช้ไป {q.usedDays} วัน</span>
                       {q.pendingDays > 0 ? (
-                        <span className="text-amber-700 font-bold bg-amber-100/80 px-1 py-0.2 rounded">
+                        <span className="text-amber-700 font-bold bg-amber-100/80 px-1 py-0.5 rounded">
                           รอ {q.pendingDays} วัน
                         </span>
                       ) : (
@@ -948,10 +948,12 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={() => handleOpenRequestModal()}
-                className="md:hidden rounded-xl bg-gradient-to-r from-[#0066FF] to-[#1D4ED8] hover:from-blue-700 hover:to-[#0A2540] px-2.5 sm:px-3 py-2 text-xs font-black text-white shadow-xs flex items-center gap-1.5 min-h-[40px] sm:min-h-[44px] active:scale-95 transition"
+                aria-label="ยื่นใบลา"
+                title="ยื่นใบลา"
+                className="md:hidden rounded-xl bg-gradient-to-r from-[#0066FF] to-[#1D4ED8] hover:from-blue-700 hover:to-[#0A2540] px-2.5 sm:px-3 py-2 text-xs font-black text-white shadow-xs flex items-center gap-1.5 min-h-[40px] sm:min-h-[44px] active:scale-95 transition cursor-pointer"
               >
                 <CalendarPlus className="h-4 w-4 shrink-0" />
-                <span className="hidden xs:inline">ยื่นใบลา</span>
+                <span className={isHrOrCLevel ? 'inline' : 'hidden xs:inline'}>ยื่นใบลา</span>
               </button>
 
               {/* Refresh button */}
@@ -1053,7 +1055,7 @@ export default function HomePage() {
             <>
               {/* Backdrop: clicking outside dismisses drawer */}
               <div
-                className="md:hidden fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-2xs transition-opacity"
+                className="md:hidden fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-xs transition-opacity"
                 onClick={() => setIsMobileQuotaOpen(false)}
                 aria-hidden="true"
               />
@@ -1133,7 +1135,7 @@ export default function HomePage() {
                               {meta.label}
                             </span>
                             {lockedByProbation && (
-                              <span className="rounded bg-amber-100 border border-amber-300 px-1.5 py-0.2 text-[10px] font-bold text-amber-800 shrink-0">
+                              <span className="rounded bg-amber-100 border border-amber-300 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 shrink-0">
                                 รอผ่านโปร (119 วัน)
                               </span>
                             )}
@@ -1154,7 +1156,7 @@ export default function HomePage() {
                         <div className="flex items-center justify-between text-[11px] text-slate-600 font-medium">
                           <span>ใช้ไปแล้ว: {q.usedDays} วัน</span>
                           {q.pendingDays > 0 ? (
-                            <span className="text-amber-800 font-bold bg-amber-100/90 px-1.5 py-0.2 rounded text-[10px]">
+                            <span className="text-amber-800 font-bold bg-amber-100/90 px-1.5 py-0.5 rounded text-[10px]">
                               รออนุมัติ {q.pendingDays} วัน
                             </span>
                           ) : (

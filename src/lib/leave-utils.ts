@@ -145,7 +145,7 @@ export const LEAVE_TYPE_META: Record<
     badgeClass: 'bg-blue-100 text-blue-800 border-blue-200',
   },
   wfa: {
-    label: 'Work From Anywhere (ทำงานนอกบ้าน)',
+    label: 'Work From Anywhere (ทำงานต่างจังหวัด/ที่อื่น)',
     shortLabel: 'WFA',
     category: 'remote_or_offsite',
     color: '#8b5cf6',
@@ -192,9 +192,9 @@ export const WORK_LOCATION_META: Record<
     color: '#0066ff',
   },
   wfa: {
-    label: 'Work From Anywhere (ทำงานนอกบ้าน)',
+    label: 'Work From Anywhere (ทำงานต่างจังหวัด/ที่อื่น)',
     shortLabel: 'WFA',
-    description: 'ปฏิบัติงานจากนอกสถานที่ / ต่างจังหวัด',
+    description: 'ปฏิบัติงานออนไลน์จากต่างจังหวัดหรือสถานที่อื่น',
     badgeClass: 'bg-violet-100 text-violet-800 border-violet-200',
     color: '#8b5cf6',
   },
@@ -367,8 +367,8 @@ export function formatThaiDate(dateStr: string, short = false): string {
   const month = short
     ? thaiMonthsShort[dt.getUTCMonth()]
     : thaiMonthsFull[dt.getUTCMonth()];
-  const buddhistYear = dt.getUTCFullYear() + 543;
-  return `${day} ${month} ${short ? String(buddhistYear).slice(-2) : buddhistYear}`;
+  const year = dt.getUTCFullYear();
+  return `${day} ${month} ${year}`;
 }
 
 /**

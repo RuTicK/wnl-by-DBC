@@ -14,13 +14,13 @@ import {
   Users,
 } from 'lucide-react';
 import {
-  ALL_LEAVE_TYPES,
   formatThaiDate,
   generateLeavesCsv,
   generateQuotaSummaryCsv,
   getLeaveDaysByMonthInYear,
   getLeaveDaysInYear,
   LEAVE_TYPE_META,
+  REQUESTABLE_LEAVE_TYPES,
   ROLE_META,
 } from '@/lib/leave-utils';
 import {
@@ -82,6 +82,7 @@ export default function HrDashboardView({
     let pendingHrCount = 0;
 
     for (const l of scopedLeaves) {
+      if (l.leaveType === 'offsite') continue;
       const daysInYear = getLeaveDaysInYear(l, year, holidays);
       if (daysInYear <= 0) continue;
 
@@ -107,7 +108,7 @@ export default function HrDashboardView({
     };
   }, [scopedLeaves, year, holidays, allQuotas]);
 
-  // สถิติการลารายเดือน (12 เดือน แยกตามประเภท 6 ประเภท)
+  // สถิติการลารายเดือน (12 เดือน แยกตามประเภทคำขอ 5 ประเภท)
   const monthlyStats = useMemo(() => {
     const months = Array.from({ length: 12 }, (_, idx) => ({
       monthIndex: idx,
@@ -122,7 +123,7 @@ export default function HrDashboardView({
     }));
 
     for (const l of scopedLeaves) {
-      if (l.status !== 'approved') continue;
+      if (l.status !== 'approved' || l.leaveType === 'offsite') continue;
       const monthBreakdown = getLeaveDaysByMonthInYear(l, year, holidays);
       for (let m = 0; m < 12; m++) {
         if (monthBreakdown[m] > 0) {
@@ -150,7 +151,6 @@ export default function HrDashboardView({
         vacation: number;
         wfh: number;
         wfa: number;
-        offsite: number;
         total: number;
         headcount: number;
       }
@@ -166,7 +166,6 @@ export default function HrDashboardView({
           vacation: 0,
           wfh: 0,
           wfa: 0,
-          offsite: 0,
           total: 0,
           headcount: 0,
         });
@@ -178,8 +177,12 @@ export default function HrDashboardView({
       entry.vacation += q.quotas.vacation.usedDays;
       entry.wfh += q.quotas.wfh.usedDays;
       entry.wfa += q.quotas.wfa.usedDays;
-      entry.offsite += q.quotas.offsite.usedDays;
-      entry.total += q.totalUsed;
+      entry.total +=
+        q.quotas.sick.usedDays +
+        q.quotas.personal.usedDays +
+        q.quotas.vacation.usedDays +
+        q.quotas.wfh.usedDays +
+        q.quotas.wfa.usedDays;
     }
 
     const list = Array.from(map.values()).sort((a, b) => b.total - a.total);
@@ -270,7 +273,7 @@ export default function HrDashboardView({
                   สถิติการลา &amp; โควต้าพนักงาน
                 </h2>
                 <span className="rounded-full bg-blue-50 border border-blue-200 px-3 py-1 text-xs font-bold text-blue-700">
-                  ประจำปี {year + 543}
+                  ประจำปี {year}
                 </span>
               </div>
             </div>
@@ -373,14 +376,14 @@ export default function HrDashboardView({
             <div>
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <BarChart3 className="h-5 w-5 text-blue-600" />
-                <span>กราฟสรุปจำนวนวันลา &amp; นอกสถานที่รายเดือน (ม.ค. - ธ.ค.)</span>
+                <span>กราฟสรุปจำนวนวันลา &amp; WFH/WFA รายเดือน (ม.ค. - ธ.ค.)</span>
               </h3>
               <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                แสดงจำนวนวันแยกตามประเภททั้ง 6 ประเภทในแต่ละเดือน
+                แสดงจำนวนวันแยกตามประเภททั้ง 5 ประเภทในแต่ละเดือน
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600 font-semibold">
-              {ALL_LEAVE_TYPES.map((t) => (
+              {REQUESTABLE_LEAVE_TYPES.map((t) => (
                 <span key={t} className="flex items-center gap-1.5">
                   <span
                     className="h-3 w-3 rounded-xs"
@@ -412,9 +415,9 @@ export default function HrDashboardView({
                       <div
                         style={{ height: `${heightPct}%` }}
                         className="w-full flex flex-col justify-end rounded-t-lg overflow-hidden transition-all"
-                        title={`${m.label}: รวม ${m.total} วัน (ป่วย ${m.sick}, กิจ ${m.personal}, พักร้อน ${m.vacation}, WFH ${m.wfh}, WFA ${m.wfa}, นอกสถานที่ ${m.offsite})`}
+                        title={`${m.label}: รวม ${m.total} วัน (ป่วย ${m.sick}, กิจ ${m.personal}, พักร้อน ${m.vacation}, WFH ${m.wfh}, WFA ${m.wfa})`}
                       >
-                        {ALL_LEAVE_TYPES.map((t) =>
+                        {REQUESTABLE_LEAVE_TYPES.map((t) =>
                           m[t] > 0 ? (
                             <div
                               key={t}
@@ -445,7 +448,7 @@ export default function HrDashboardView({
               <span>สถิติแยกตามแผนก (Department Summary)</span>
             </h3>
             <p className="text-xs sm:text-sm text-slate-500 font-medium">
-              เปรียบเทียบจำนวนวันลาและปฏิบัติงานนอกสถานที่ในแต่ละแผนก
+              เปรียบเทียบจำนวนวันลาและ WFH/WFA ในแต่ละแผนก
             </p>
           </div>
 
@@ -483,7 +486,6 @@ export default function HrDashboardView({
                     <span>พักร้อน: {d.vacation}</span>
                     <span>WFH: {d.wfh}</span>
                     <span>WFA: {d.wfa}</span>
-                    <span>นอกสถานที่: {d.offsite}</span>
                   </div>
                 </div>
               );
@@ -497,7 +499,7 @@ export default function HrDashboardView({
         <div className="p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h3 className="text-base sm:text-lg font-black text-slate-900">
-              ตารางสรุปโควต้าวันลาคงเหลือ &amp; สถานะผ่านโปรรายบุคคล (ประจำปี {year + 543})
+              ตารางสรุปโควต้าวันลาคงเหลือ &amp; สถานะผ่านโปรรายบุคคล (ประจำปี {year})
             </h3>
             <p className="text-xs sm:text-sm text-slate-500 font-medium">
               เก็บเฉพาะข้อมูลตามหลัก PDPA (ไม่มีเบอร์โทรศัพท์) พร้อมคำนวณวันเริ่มงานและโควต้าอัตโนมัติ
@@ -554,9 +556,6 @@ export default function HrDashboardView({
                 </th>
                 <th className="py-4 px-3 text-center bg-blue-50/60 text-blue-800">
                   WFH / WFA
-                </th>
-                <th className="py-4 px-3 text-center bg-teal-50/60 text-teal-800">
-                  นอกสถานที่
                 </th>
                 <th className="py-4 px-4 text-center">รออนุมัติ</th>
               </tr>
@@ -639,14 +638,6 @@ export default function HrDashboardView({
                       {row.quotas.wfa.isUnlimited
                         ? ' (ไม่จำกัด)'
                         : ` / ${row.quotas.wfa.totalQuota}`}
-                    </div>
-                  </td>
-                  <td className="py-4 px-3 text-center">
-                    <span className="rounded-lg bg-teal-50 border border-teal-200 px-2.5 py-1 font-bold text-teal-800 text-xs inline-block">
-                      ใช้ {row.quotas.offsite.usedDays} วัน
-                    </span>
-                    <div className="text-xs text-teal-600 mt-1 font-medium">
-                      ไม่จำกัดโควต้า
                     </div>
                   </td>
                   <td className="py-4 px-4 text-center">

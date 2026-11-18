@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @theme {
+  --breakpoint-xs: 360px;
   --font-sans: "Google Sans", "Google Sans Thai", "Google Sans Text", "Noto Sans Thai", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --color-dbc-navy: #0a2540;
   --color-dbc-navy-dark: #07192c;

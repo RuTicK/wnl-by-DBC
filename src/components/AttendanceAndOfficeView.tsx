@@ -67,7 +67,6 @@ export default function AttendanceAndOfficeView({
   }, []);
 
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
-  const [note, setNote] = useState<string>('');
   const [deptFilter, setDeptFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -255,13 +254,7 @@ export default function AttendanceAndOfficeView({
   };
 
   const handleToggleLocationPicker = () => {
-    setShowLocationPicker((prev) => {
-      const next = !prev;
-      if (next && myTodayRecord?.note && !note) {
-        setNote(myTodayRecord.note);
-      }
-      return next;
-    });
+    setShowLocationPicker((prev) => !prev);
   };
 
   const handleOpenOffsiteModal = () => {
@@ -277,10 +270,6 @@ export default function AttendanceAndOfficeView({
       } else if (!initLoc) {
         initLoc = myTodayRecord.note.trim();
       }
-    }
-
-    if (!initLoc && note.trim()) {
-      initLoc = note.trim();
     }
 
     setOffsiteLocation(initLoc);
@@ -310,7 +299,6 @@ export default function AttendanceAndOfficeView({
         date: todayStr || bkk.dateStr,
         checkInTime: effectiveCheckInTime,
         workLocation: loc,
-        note: note.trim() || undefined,
       });
       if (!res.success) {
         setFeedback({
@@ -322,7 +310,6 @@ export default function AttendanceAndOfficeView({
           type: 'success',
           message: `ลงเวลา Check-in สำเร็จ (${WORK_LOCATION_META[loc].label})`,
         });
-        setNote('');
         setShowLocationPicker(false);
       }
     } finally {
@@ -354,7 +341,6 @@ export default function AttendanceAndOfficeView({
         setIsOffsiteModalOpen(false);
         setOffsiteLocation('');
         setOffsiteNote('');
-        setNote('');
         setShowLocationPicker(false);
         setFeedback({
           type: 'success',
@@ -375,7 +361,6 @@ export default function AttendanceAndOfficeView({
       const res = await onCheckOut({
         date: todayStr || bkk.dateStr,
         checkOutTime: bkk.timeStr,
-        note: note.trim() || undefined,
       });
       if (!res.success) {
         setFeedback({
@@ -542,20 +527,19 @@ export default function AttendanceAndOfficeView({
                         <ChevronUp className="h-4 w-4" />
                         <span>ซ่อนตัวเลือกสถานที่</span>
                       </>
-                    ) : (
-                      <>
-                        <ChevronDown className="h-4 w-4" />
-                        <span>เปลี่ยนสถานที่ หรือ แก้ไขหมายเหตุ</span>
-                      </>
-                    )}
-                  </button>
+                      ) : (
+                        <>
+                          <ChevronDown className="h-4 w-4" />
+                          <span>เปลี่ยนสถานที่ปฏิบัติงาน</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ) : null}
+              ) : null}
 
-            {/* Direct Check-In Actions (Shown if NOT checked in, OR if user toggled to update) */}
-            {(!myTodayRecord || showLocationPicker) && (
-              <div className="space-y-4">
+              {/* Direct Check-In Actions (Shown if NOT checked in, OR if user toggled to update) */}
+              {(!myTodayRecord || showLocationPicker) && (
                 <div>
                   <div className="flex items-center justify-between mb-2.5">
                     <label className="block text-sm sm:text-base font-extrabold text-slate-800">
@@ -697,30 +681,12 @@ export default function AttendanceAndOfficeView({
                           ? 'รอผ่านโปร 119 วัน'
                           : submitting
                             ? 'กำลังบันทึก...'
-                            : 'นอกสถานที่ทำงาน'}
+                            : 'ทำงานต่างจังหวัด/ที่อื่น'}
                       </div>
                     </button>
                   </div>
                 </div>
-
-                <div>
-                  <label
-                    htmlFor="attendance-note"
-                    className="block text-sm font-bold text-slate-800 mb-1.5"
-                  >
-                    หมายเหตุ / รายละเอียดสถานที่
-                  </label>
-                  <input
-                    id="attendance-note"
-                    type="text"
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder="ระบุสถานที่ หรือ รายละเอียดงาน (ถ้ามี)..."
-                    className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-base sm:text-sm text-slate-900 focus:border-blue-600 focus:outline-hidden"
-                  />
-                </div>
-              </div>
-            )}
+              )}
           </div>
         </div>
 
@@ -1183,11 +1149,12 @@ export default function AttendanceAndOfficeView({
                     </span>
                   </div>
                 ))}
-              </>
-            )}
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
       {/* Offsite Check-in Modal */}
       {isOffsiteModalOpen && (
@@ -1294,7 +1261,7 @@ export default function AttendanceAndOfficeView({
                   htmlFor="offsite-modal-note"
                   className="block text-sm font-bold text-slate-800"
                 >
-                  รายละเอียดงาน / หมายเหตุเพิ่มเติม (ถ้ามี)
+                  หมายเหตุ / รายละเอียดสถานที่เพิ่มเติม (ถ้ามี)
                 </label>
                 <textarea
                   id="offsite-modal-note"
@@ -1346,6 +1313,5 @@ export default function AttendanceAndOfficeView({
         </div>
       )}
     </div>
-  </div>
   );
 }

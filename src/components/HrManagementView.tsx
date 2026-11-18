@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import {
   formatThaiDate,
+  getBangkokNow,
   getNextEmployeeId,
   getProbationInfo,
   ROLE_META,
@@ -435,7 +436,7 @@ export default function HrManagementView({
   };
 
   const openAddEmployeeModal = () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getBangkokNow().dateStr;
     const nextId = getNextEmployeeId(users);
     setEditingEmpId(undefined);
     setEditingOriginalDepartment(null);

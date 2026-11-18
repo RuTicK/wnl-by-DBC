@@ -441,7 +441,9 @@ export default function LeaveRequestModal({
             <div className="flex items-center justify-between gap-2">
               <span className="font-black text-blue-950 flex items-center gap-1.5">
                 <BookOpen className="h-4 w-4 text-blue-600 shrink-0" />
-                เงื่อนไขการ{LEAVE_TYPE_META[leaveType].label}:
+                {leaveType === 'wfh' || leaveType === 'wfa'
+                  ? `เงื่อนไข ${LEAVE_TYPE_META[leaveType].label}:`
+                  : `เงื่อนไขการ${LEAVE_TYPE_META[leaveType].label}:`}
               </span>
               <button
                 type="button"

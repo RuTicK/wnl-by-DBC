@@ -96,7 +96,7 @@ export default function LeavePolicyModal({
               <span>เกณฑ์การผ่านทดลองงาน: 119 วัน (Probation)</span>
             </div>
             <p className="text-amber-800 leading-relaxed font-medium">
-              พนักงานต้องปฏิบัติงานครบ <strong>119 วัน</strong> จึงจะถือว่าผ่านการทดลองงาน โดยในช่วงระหว่างทดลองงานจะไม่สามารถใช้สิทธิ <strong>ลาพักร้อน (Vacation) หรือ Work From Home (WFH)</strong> ได้ (สามารถใช้สิทธิลาป่วย หรือ ทำงานนอกสถานที่ได้ตามปกติ)
+              พนักงานต้องปฏิบัติงานครบ <strong>119 วัน</strong> จึงจะถือว่าผ่านการทดลองงาน โดยในช่วงระหว่างทดลองงานจะไม่สามารถใช้สิทธิ <strong>ลาพักร้อน (Vacation), Work From Home (WFH) หรือ Work From Anywhere (WFA)</strong> ได้ (สามารถใช้สิทธิลาป่วย ลากิจ หรือ ทำงานนอกสถานที่ได้ตามปกติ)
             </p>
           </div>
 
@@ -197,13 +197,13 @@ export default function LeavePolicyModal({
               </div>
             </div>
 
-            {/* 4. WFH (Work From Home) */}
+            {/* 4. WFH / WFA (Work From Home & Work From Anywhere) */}
             <div className="rounded-2xl border border-blue-200 bg-blue-50/40 p-4 sm:p-5 flex flex-col justify-between space-y-3 shadow-2xs">
               <div>
                 <div className="flex items-center justify-between gap-2 border-b border-blue-200/60 pb-2.5">
                   <div className="flex items-center gap-2 font-black text-blue-900 text-base">
                     <Home className="h-5 w-5 text-blue-600 shrink-0" />
-                    <span>Work From Home (WFH)</span>
+                    <span>Work From Home (WFH) / WFA</span>
                   </div>
                   <span className="rounded-full bg-blue-100 text-blue-800 border border-blue-200 px-2.5 py-0.5 text-xs font-bold">
                     ไม่มีโควต้า (ไม่จำกัด)
@@ -217,7 +217,9 @@ export default function LeavePolicyModal({
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-blue-500 font-bold shrink-0 mt-0.5">•</span>
-                    <span>เป็นกรณีที่สมเหตุสมผล</span>
+                    <span>
+                      ทำงานที่บ้าน (WFH) หรือทำงานต่างจังหวัด/ที่อื่น (WFA) ตามเหตุผลที่สมควร
+                    </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-blue-500 font-bold shrink-0 mt-0.5">•</span>

@@ -73,7 +73,7 @@ export default function TermsOfServicePage() {
               <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 text-xs text-slate-600 sm:text-right shrink-0 space-y-1">
                 <div className="font-bold text-slate-800">ผู้ให้บริการและเจ้าของลิขสิทธิ์</div>
                 <div className="text-slate-700 font-medium">Digital Business Consult Co., Ltd. (DBC)</div>
-                <div className="text-slate-500 font-mono text-xs">ปรับปรุงล่าสุด: 10 พฤศจิกายน 2569 (v1.1)</div>
+                <div className="text-slate-500 font-mono text-xs">ปรับปรุงล่าสุด: 10 พฤศจิกายน 2026 (v1.1)</div>
               </div>
             </div>
 
@@ -320,7 +320,7 @@ export default function TermsOfServicePage() {
             <div>
               <p>© 2026 Digital Business Consult Co., Ltd. สงวนลิขสิทธิ์ทั้งหมด</p>
               <p className="text-xs text-slate-400 mt-0.5">
-                ประกาศ ณ วันที่ 10 พฤศจิกายน 2569 (เวอร์ชัน 1.1 - Production Enterprise Terms)
+                ประกาศ ณ วันที่ 10 พฤศจิกายน 2026 (เวอร์ชัน 1.1 - Production Enterprise Terms)
               </p>
             </div>
 

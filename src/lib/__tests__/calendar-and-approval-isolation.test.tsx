@@ -9,7 +9,12 @@ import HrDashboardView from '@/components/HrDashboardView';
 import HrManagementView, { DepartmentDropdown } from '@/components/HrManagementView';
 import LeaveCalendar from '@/components/LeaveCalendar';
 import { COMPANY_DEPARTMENTS, LeaveRequest, SafeUser } from '@/lib/types';
-import { STANDARD_LEAVE_QUOTAS } from '@/lib/leave-utils';
+import {
+  formatThaiDate,
+  LEAVE_TYPE_META,
+  STANDARD_LEAVE_QUOTAS,
+  WORK_LOCATION_META,
+} from '@/lib/leave-utils';
 
 describe('LeaveCalendar & Departmental Approval Isolation UI Tests', () => {
   const calendarPath = path.resolve(__dirname, '../../components/LeaveCalendar.tsx');
@@ -500,5 +505,109 @@ describe('LeaveCalendar & Departmental Approval Isolation UI Tests', () => {
     expect(approvalContent).not.toContain('รายละเอียด / เหตุผลการลา &amp; สถานที่:');
     expect(approvalContent).not.toContain('เหตุผลส่วนตัว (ซ่อนข้อมูลสำหรับเพื่อนร่วมแผนกตาม PDPA)');
     expect(approvalContent).toContain('เหตุผลส่วนตัว (ซ่อนข้อมูลตาม PDPA)');
+  });
+
+  it('uses Common Era (ค.ศ.) consistently across formatThaiDate, LeaveCalendar, and HrDashboardView', () => {
+    expect(formatThaiDate('2026-11-18', false)).toBe('18 พฤศจิกายน 2026');
+    expect(formatThaiDate('2026-11-18', true)).toBe('18 พ.ย. 2026');
+    expect(formatThaiDate('invalid-date', true)).toBe('invalid-date');
+
+    expect(calendarContent).not.toContain('+ 543');
+
+    const dashboardHtml = renderToStaticMarkup(
+      <HrDashboardView
+        currentUser={hrUser}
+        leaves={[]}
+        holidays={[]}
+        allQuotas={[]}
+        year={2026}
+        onNavigateToApprovals={() => {}}
+      />
+    );
+    expect(dashboardHtml).toContain('ประจำปี 2026');
+    expect(dashboardHtml).not.toContain('2569');
+  });
+
+  it('disambiguates WFA vs Offsite, removes redundant inline attendance note input, and cleans up offsite legend/chart items', () => {
+    expect(LEAVE_TYPE_META.wfa.label).toBe('Work From Anywhere (ทำงานต่างจังหวัด/ที่อื่น)');
+    expect(WORK_LOCATION_META.wfa.label).toBe('Work From Anywhere (ทำงานต่างจังหวัด/ที่อื่น)');
+
+    const attendanceHtml = renderToStaticMarkup(
+      <AttendanceAndOfficeView
+        currentUser={hrUser}
+        users={[hrUser]}
+        attendance={[]}
+        leaves={[]}
+        onCheckIn={async () => ({ success: true })}
+        onCheckOut={async () => ({ success: true })}
+      />
+    );
+    expect(attendanceHtml).toContain('พบลูกค้า/ออกบูธ');
+    expect(attendanceHtml).toContain('ทำงานต่างจังหวัด/ที่อื่น');
+    expect(attendanceHtml).not.toContain('นอกสถานที่ทำงาน');
+    expect(attendanceHtml).not.toContain('id="attendance-note"');
+
+    const legacyOffsiteLeave: LeaveRequest = {
+      id: 'LV-OFFSITE-LEGACY',
+      userId: 'EMP005',
+      userName: 'วรพล ยอดเยี่ยม',
+      requesterRole: 'manager',
+      department: 'Sales & Marketing',
+      leaveType: 'offsite',
+      durationType: 'full',
+      startDate: '2026-11-18',
+      endDate: '2026-11-18',
+      totalDays: 1,
+      reason: 'ออกบูธลูกค้า',
+      locationDetail: 'QSNCC',
+      status: 'approved',
+      createdAt: '2026-11-10T08:00:00.000Z',
+    };
+
+    // LeaveCalendar legend and cells should only display the 5 requestable leave/remote types + holiday (excluding legacy offsite)
+    const calendarHtml = renderToStaticMarkup(
+      <LeaveCalendar
+        currentUser={hrUser}
+        leaves={[legacyOffsiteLeave]}
+        holidays={[]}
+        onOpenRequestModal={() => {}}
+      />
+    );
+    expect(calendarHtml).not.toContain('bg-teal-500" /> นอกสถานที่');
+    expect(calendarHtml).not.toContain('วรพล ยอดเยี่ยม');
+    expect(calendarHtml).toContain('ไม่มีรายการวันลาหรือ WFH/WFA ในวันนี้');
+    expect(calendarContent).not.toContain('เหตุผลส่วนตัว (ซ่อนข้อมูลสำหรับเพื่อนร่วมแผนกตาม PDPA)');
+
+    // HrDashboardView chart and KPIs should show 5 requestable types and exclude legacy offsite from approvedDays KPI & quota table
+    const dashboardHtml = renderToStaticMarkup(
+      <HrDashboardView
+        currentUser={hrUser}
+        leaves={[itEmployeeLeave, { ...salesEmployeeLeave, status: 'approved' }, legacyOffsiteLeave]}
+        holidays={[]}
+        allQuotas={[]}
+        year={2026}
+        onNavigateToApprovals={() => {}}
+      />
+    );
+    expect(dashboardHtml).toContain('แสดงจำนวนวันแยกตามประเภททั้ง 5 ประเภทในแต่ละเดือน');
+    expect(dashboardHtml).not.toContain('แสดงจำนวนวันแยกตามประเภททั้ง 6 ประเภทในแต่ละเดือน');
+    expect(dashboardHtml).not.toContain('bg-teal-50/60 text-teal-800');
+    expect(dashboardHtml).toContain('วัน (1 รายการ)');
+
+    // CSS & Mobile UX checks
+    const globalsCss = fs.readFileSync(
+      path.resolve(__dirname, '../../app/globals.css'),
+      'utf-8'
+    );
+    expect(globalsCss).toContain('--breakpoint-xs: 360px;');
+
+    const pageTsx = fs.readFileSync(
+      path.resolve(__dirname, '../../app/page.tsx'),
+      'utf-8'
+    );
+    expect(pageTsx).not.toContain('py-0.2');
+    expect(pageTsx).not.toContain('backdrop-blur-2xs');
+    expect(pageTsx).toContain('aria-label="ยื่นใบลา"');
+    expect(pageTsx).toContain('getBangkokNow().year');
   });
 });

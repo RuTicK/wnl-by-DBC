@@ -97,6 +97,7 @@ export default function LeaveCalendar({
 
   const filteredLeaves = useMemo(() => {
     return leaves.filter((l) => {
+      if (l.leaveType === 'offsite') return false;
       if (l.status === 'rejected' || l.status === 'cancelled') return false;
       if (statusFilter === 'APPROVED_ONLY' && l.status !== 'approved') {
         return false;
@@ -228,7 +229,7 @@ export default function LeaveCalendar({
                   <ChevronLeft className="h-4.5 w-4.5" />
                 </button>
                 <h3 className="text-base sm:text-lg font-black text-slate-900 min-w-[130px] sm:min-w-[160px] text-center tracking-tight">
-                  {THAI_MONTHS[viewMonth]} {viewYear + 543}
+                  {THAI_MONTHS[viewMonth]} {viewYear}
                 </h3>
                 <button
                   type="button"
@@ -327,9 +328,6 @@ export default function LeaveCalendar({
             </span>
             <span className="inline-flex items-center gap-1 rounded-md bg-violet-50 border border-violet-200 px-2 py-0.5 text-violet-900 shrink-0 text-[11px]">
               <span className="h-1.5 w-1.5 rounded-full bg-violet-500" /> WFA
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-md bg-teal-50 border border-teal-200 px-2 py-0.5 text-teal-900 shrink-0 text-[11px]">
-              <span className="h-1.5 w-1.5 rounded-full bg-teal-500" /> นอกสถานที่
             </span>
             <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-emerald-900 shrink-0 text-[11px]">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> วันหยุด
@@ -557,7 +555,7 @@ export default function LeaveCalendar({
 
             {selectedDayInfo.dayLeaves.length === 0 ? (
               <div className="rounded-2xl border-2 border-dashed border-slate-200 py-8 px-4 text-center text-xs sm:text-sm text-slate-400 font-medium">
-                ไม่มีรายการลาหรือปฏิบัติงานนอกสถานที่ในวันนี้
+                ไม่มีรายการวันลาหรือ WFH/WFA ในวันนี้
               </div>
             ) : (
               <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1">
@@ -612,7 +610,7 @@ export default function LeaveCalendar({
                           <span className="inline-flex items-center gap-1.5 text-slate-400 italic">
                             <EyeOff className="h-4 w-4" />
                             <span>
-                              เหตุผลส่วนตัว (ซ่อนข้อมูลสำหรับเพื่อนร่วมแผนกตาม PDPA)
+                              เหตุผลส่วนตัว (ซ่อนข้อมูลตาม PDPA)
                             </span>
                           </span>
                         ) : (
