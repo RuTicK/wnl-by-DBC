@@ -17,8 +17,10 @@ import {
   formatThaiDate,
   generateLeavesCsv,
   generateQuotaSummaryCsv,
+  getAdditionalUserEmails,
   getLeaveDaysByMonthInYear,
   getLeaveDaysInYear,
+  getUserEmails,
   LEAVE_TYPE_META,
   REQUESTABLE_LEAVE_TYPES,
   ROLE_META,
@@ -217,6 +219,7 @@ export default function HrDashboardView({
         item.user.name.toLowerCase().includes(q) ||
         (item.user.englishName || '').toLowerCase().includes(q) ||
         item.user.email.toLowerCase().includes(q) ||
+        getUserEmails(item.user).some((e) => e.includes(q)) ||
         item.user.id.toLowerCase().includes(q) ||
         (item.user.position || '').toLowerCase().includes(q)
       );
@@ -571,6 +574,14 @@ export default function HrDashboardView({
                       {row.user.englishName ? `${row.user.englishName} • ` : ''}
                       {row.user.email}
                     </div>
+                    {getAdditionalUserEmails(row.user).map((altEmail) => (
+                      <div
+                        key={altEmail}
+                        className="text-xs font-semibold text-indigo-600 mt-0.5"
+                      >
+                        ↳ {altEmail}
+                      </div>
+                    ))}
                     <div className="flex items-center gap-2 mt-1.5">
                       <span className="font-mono text-xs text-slate-400 font-bold">
                         {row.user.id}

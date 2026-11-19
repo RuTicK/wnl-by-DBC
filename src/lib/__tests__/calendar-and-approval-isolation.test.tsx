@@ -610,4 +610,70 @@ describe('LeaveCalendar & Departmental Approval Isolation UI Tests', () => {
     expect(pageTsx).toContain('aria-label="ยื่นใบลา"');
     expect(pageTsx).toContain('getBangkokNow().year');
   });
+
+  it('displays linked @digitalbusinessconsult.asia and @dbcgroup.asia alias emails in HrManagementView and hides delete button for Super Admin on both domains', () => {
+    const corpEmp: SafeUser = {
+      id: 'EMP088',
+      name: 'ธนพล ที่ปรึกษา',
+      englishName: 'Thanapon Consult',
+      email: 'thanapon.c@digitalbusinessconsult.asia',
+      role: 'employee',
+      department: 'Consult',
+      position: 'Consultant',
+      startDate: '2024-01-01',
+      quotas: STANDARD_LEAVE_QUOTAS,
+    };
+
+    const superAdminChildDomain: SafeUser = {
+      id: 'EMP011',
+      name: 'รุจน์ วัชรประดิษฐ์',
+      englishName: 'Rut Watcharapadit',
+      email: 'rut.wa@dbcgroup.asia',
+      role: 'admin',
+      department: 'Management (Admin)',
+      position: 'System Administrator',
+      startDate: '2023-01-01',
+      quotas: STANDARD_LEAVE_QUOTAS,
+    };
+
+    const otherAdmin: SafeUser = {
+      id: 'EMP020',
+      name: 'แอดมินรอง',
+      englishName: 'Co Admin',
+      email: 'coadmin@dbcgroup.asia',
+      role: 'admin',
+      department: 'Management (Admin)',
+      position: 'Co-Admin',
+      startDate: '2024-01-01',
+      quotas: STANDARD_LEAVE_QUOTAS,
+    };
+
+    const mgmtHtml = renderToStaticMarkup(
+      <HrManagementView
+        currentUser={otherAdmin}
+        users={[otherAdmin, superAdminChildDomain, corpEmp]}
+        holidays={[]}
+        onUpsertEmployee={async () => ({ success: true })}
+        onDeleteEmployee={async () => ({ success: true })}
+        onUpsertHoliday={async () => ({ success: true })}
+        onDeleteHoliday={async () => ({ success: true })}
+      />
+    );
+
+    // Displays primary and auto-linked child/parent domain alias emails
+    expect(mgmtHtml).toContain('thanapon.c@digitalbusinessconsult.asia');
+    expect(mgmtHtml).toContain('↳ thanapon.c@dbcgroup.asia');
+    expect(mgmtHtml).toContain('rut.wa@dbcgroup.asia');
+    expect(mgmtHtml).toContain('↳ rut.wa@digitalbusinessconsult.asia');
+
+    // Only corpEmp has a delete button (otherAdmin is currentUser, superAdminChildDomain is protected root Super Admin)
+    const deleteButtons = mgmtHtml.match(/<span>ลบ<\/span>/g) || [];
+    expect(deleteButtons).toHaveLength(1);
+
+    // Verify HrManagementView supports editing/saving secondaryEmail in the modal
+    const hrMgmtPath = path.resolve(__dirname, '../../components/HrManagementView.tsx');
+    const hrMgmtContent = fs.readFileSync(hrMgmtPath, 'utf-8');
+    expect(hrMgmtContent).toContain('empSecondaryEmail');
+    expect(hrMgmtContent).toContain('secondaryEmail: cleanSecondaryEmail');
+  });
 });

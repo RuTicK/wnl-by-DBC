@@ -97,12 +97,14 @@ export async function POST(req: NextRequest) {
       isGoogleLogin,
       googleEmail,
       googleEnglishName,
+      googlePicture,
     } = body;
 
     const result = await authenticateUser(identifier, password, {
       isGoogleLogin: Boolean(isGoogleLogin),
       googleEmail,
       googleEnglishName,
+      googlePicture,
     });
 
     if (!result.success) {

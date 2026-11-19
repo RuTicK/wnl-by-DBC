@@ -1,18 +1,32 @@
 import {
+  areEmailsEquivalent,
   calculateLeaveDays,
   calculateUserQuotaSummary,
   checkApprovalPermission,
   checkProbationLeaveEligibility,
   checkRejectionPermission,
+  COMPANY_EMAIL_DOMAINS,
+  doesUserMatchEmail,
   DURATION_TYPE_META,
   filterLeavesForViewer,
   findOverlappingLeave,
   formatThaiDate,
+  getAdditionalUserEmails,
   getBangkokNow,
+  getCompanyAliasEmail,
+  getEquivalentEmails,
   getInitialLeaveStatus,
+  getUserEmails,
+  isSuperAdminEmail,
+  isSuperAdminUser,
+  isValidEmailFormat,
   LEAVE_TYPE_META,
   parseDateUTC,
+  parseEmailList,
   STANDARD_LEAVE_QUOTAS,
+  SUPER_ADMIN_ALT_EMAIL,
+  SUPER_ADMIN_EMAIL,
+  SUPER_ADMIN_EMAILS,
 } from './leave-utils';
 import {
   attendanceToAppSheetRow,
@@ -41,7 +55,22 @@ import {
   WorkLocationType,
 } from './types';
 
-export const SUPER_ADMIN_EMAIL = 'rut.wa@digitalbusinessconsult.asia';
+export {
+  areEmailsEquivalent,
+  COMPANY_EMAIL_DOMAINS,
+  doesUserMatchEmail,
+  getAdditionalUserEmails,
+  getCompanyAliasEmail,
+  getEquivalentEmails,
+  getUserEmails,
+  isSuperAdminEmail,
+  isSuperAdminUser,
+  isValidEmailFormat,
+  parseEmailList,
+  SUPER_ADMIN_ALT_EMAIL,
+  SUPER_ADMIN_EMAIL,
+  SUPER_ADMIN_EMAILS,
+};
 
 export function toSafeUser(user: User): SafeUser {
   return { ...user };
@@ -265,6 +294,7 @@ export async function authenticateUser(
   let { state, mode } = await getDatabaseState();
 
   // กรณี Google Login (ดึง email และชื่อภาษาอังกฤษจาก Google OAuth / USEREMAIL)
+  // รองรับการล็อกอินข้ามโดเมนคู่ขนาน @digitalbusinessconsult.asia <-> @dbcgroup.asia และ secondaryEmail
   if (options?.isGoogleLogin) {
     const cleanEmail = (options.googleEmail || identifier || '')
       .trim()
@@ -279,7 +309,7 @@ export async function authenticateUser(
 
     const foundByGoogle = state.users.find(
       (u) =>
-        u.email.toLowerCase() === cleanEmail ||
+        doesUserMatchEmail(u, cleanEmail) ||
         u.id.toLowerCase() === cleanEmail ||
         (u.username && u.username.toLowerCase() === cleanEmail)
     );
@@ -302,15 +332,25 @@ export async function authenticateUser(
         foundByGoogle.englishName = googleEnName;
         profileChanged = true;
       }
-      const emailPrefix = foundByGoogle.email
-        ? foundByGoogle.email.split('@')[0].toLowerCase()
-        : '';
+      const knownPrefixes = getUserEmails(foundByGoogle)
+        .map((e) => e.split('@')[0]?.toLowerCase())
+        .filter(Boolean);
       if (
         !foundByGoogle.name?.trim() ||
-        (emailPrefix && foundByGoogle.name.trim().toLowerCase() === emailPrefix)
+        knownPrefixes.includes(foundByGoogle.name.trim().toLowerCase())
       ) {
         foundByGoogle.name = googleEnName;
         profileChanged = true;
+        for (const req of state.leaveRequests) {
+          if (req.userId === foundByGoogle.id) {
+            req.userName = foundByGoogle.name;
+          }
+        }
+        for (const att of state.attendance || []) {
+          if (att.userId === foundByGoogle.id) {
+            att.userName = foundByGoogle.name;
+          }
+        }
       }
     }
 
@@ -350,14 +390,17 @@ export async function authenticateUser(
   }
 
   const found = state.users.find((u) => {
-    const emailPrefix = u.email ? u.email.split('@')[0].toLowerCase() : '';
-    const emailShortPrefix = emailPrefix.split('.')[0];
+    const userEmails = getUserEmails(u);
+    const emailPrefixes = userEmails
+      .map((e) => e.split('@')[0]?.toLowerCase())
+      .filter(Boolean);
+    const emailShortPrefixes = emailPrefixes.map((p) => p.split('.')[0]);
     return (
       u.id.toLowerCase() === cleanId ||
-      u.email.toLowerCase() === cleanId ||
+      doesUserMatchEmail(u, cleanId) ||
       (u.username && u.username.toLowerCase() === cleanId) ||
-      emailPrefix === cleanId ||
-      emailShortPrefix === cleanId ||
+      emailPrefixes.includes(cleanId) ||
+      emailShortPrefixes.includes(cleanId) ||
       u.englishName.toLowerCase() === cleanId
     );
   });
@@ -378,6 +421,43 @@ export async function authenticateUser(
     user: toSafeUser(found),
     mode,
   };
+}
+
+/**
+ * Helper สำหรับเข้าสู่ระบบด้วยโปรไฟล์ Google โดยตรง (รองรับทั้ง @digitalbusinessconsult.asia และ @dbcgroup.asia)
+ */
+export async function loginWithGoogleProfile(
+  profileOrEmail:
+    | string
+    | {
+        email: string;
+        englishName?: string;
+        name?: string;
+        picture?: string;
+        avatarUrl?: string;
+      },
+  englishName?: string,
+  picture?: string
+) {
+  const email =
+    typeof profileOrEmail === 'string'
+      ? profileOrEmail
+      : profileOrEmail?.email || '';
+  const resolvedEnglishName =
+    typeof profileOrEmail === 'string'
+      ? englishName
+      : profileOrEmail?.englishName || profileOrEmail?.name;
+  const resolvedPicture =
+    typeof profileOrEmail === 'string'
+      ? picture
+      : profileOrEmail?.picture || profileOrEmail?.avatarUrl;
+
+  return authenticateUser(email, undefined, {
+    isGoogleLogin: true,
+    googleEmail: email,
+    googleEnglishName: resolvedEnglishName,
+    googlePicture: resolvedPicture,
+  });
 }
 
 export interface OnboardGoogleUserInput {
@@ -405,7 +485,12 @@ export async function registerGoogleUser(
 }> {
   const { state, mode } = await getDatabaseState();
 
-  const cleanEmail = (input.email || '').trim().toLowerCase();
+  const parsedEmails = parseEmailList(input.email);
+  const cleanEmail = parsedEmails[0] || '';
+  const cleanSecondaryEmail =
+    parsedEmails[1] && parsedEmails[1] !== cleanEmail
+      ? parsedEmails[1]
+      : undefined;
   const cleanName = (input.name || '').trim();
   const cleanDepartment = (input.department || '').trim();
   const cleanPosition = (input.position || '').trim();
@@ -413,7 +498,7 @@ export async function registerGoogleUser(
     (input.englishName || '').trim() || cleanEmail.split('@')[0] || 'Employee';
   let role: Role = 'employee';
   if (input.role === 'admin') {
-    if (cleanEmail !== SUPER_ADMIN_EMAIL) {
+    if (!isSuperAdminEmail(cleanEmail) && !isSuperAdminEmail(cleanSecondaryEmail)) {
       return {
         success: false,
         error: `ตำแหน่ง Admin สงวนสิทธิ์เฉพาะผู้ดูแลระบบสูงสุด (${SUPER_ADMIN_EMAIL}) เท่านั้น`,
@@ -428,7 +513,11 @@ export async function registerGoogleUser(
     role = input.role;
   }
 
-  if (!cleanEmail || !cleanEmail.includes('@')) {
+  if (
+    !cleanEmail ||
+    !isValidEmailFormat(cleanEmail) ||
+    parsedEmails.some((e) => !isValidEmailFormat(e))
+  ) {
     return {
       success: false,
       error: 'ไม่พบอีเมลจาก Google Login ที่ถูกต้อง',
@@ -451,9 +540,11 @@ export async function registerGoogleUser(
       ? input.startDate.trim()
       : todayStr;
 
-  // หากมีอีเมลนี้อยู่แล้วในระบบ ให้ซิงก์เฉพาะ englishName โดยไม่เขียนทับข้อมูล HR เดิมของพนักงาน
+  // หากมีอีเมลนี้ (หรืออีเมลคู่ขนาน @digitalbusinessconsult.asia / @dbcgroup.asia) อยู่แล้วในระบบ ให้ซิงก์เฉพาะ englishName โดยไม่เขียนทับข้อมูล HR เดิมของพนักงาน
   const existingByEmail = state.users.find(
-    (u) => u.email.toLowerCase() === cleanEmail
+    (u) =>
+      doesUserMatchEmail(u, cleanEmail) ||
+      (cleanSecondaryEmail && doesUserMatchEmail(u, cleanSecondaryEmail))
   );
   if (existingByEmail) {
     let savedMode = mode;
@@ -494,6 +585,7 @@ export async function registerGoogleUser(
     name: cleanName,
     englishName: cleanEnglishName,
     email: cleanEmail,
+    ...(cleanSecondaryEmail ? { secondaryEmail: cleanSecondaryEmail } : {}),
     role,
     department: cleanDepartment,
     position: cleanPosition,
@@ -547,10 +639,7 @@ export async function updateOwnTestingProfile(
 
   if (input.role) {
     if (input.role === 'admin') {
-      if (
-        user.email.toLowerCase() === SUPER_ADMIN_EMAIL ||
-        user.role === 'admin'
-      ) {
+      if (isSuperAdminUser(user) || user.role === 'admin') {
         user.role = 'admin';
       }
     } else if (['employee', 'manager', 'hr', 'c_level'].includes(input.role)) {
@@ -1447,6 +1536,7 @@ export interface UpsertEmployeeInput {
   name?: string;
   englishName?: string;
   email?: string;
+  secondaryEmail?: string;
   role?: Role;
   department?: string;
   position?: string;
@@ -1501,26 +1591,57 @@ export async function upsertEmployee(
     };
   }
 
+  const parsedInputEmails = parseEmailList(input.email);
+  const parsedSecondaryEmails = parseEmailList(input.secondaryEmail);
+  const candidateEmail = parsedInputEmails[0] || '';
+  const candidateSecondaryEmail =
+    parsedSecondaryEmails[0] || parsedInputEmails[1] || '';
+
   const candidateTargetEmail = (
-    existingIndex >= 0 ? state.users[existingIndex].email : input.email || ''
+    existingIndex >= 0
+      ? candidateEmail || state.users[existingIndex].email
+      : candidateEmail
   )
     .trim()
     .toLowerCase();
 
-  // ป้องกันการลดสิทธิ์บัญชี Super Admin จากผู้อื่น
-  if (
-    existingIndex >= 0 &&
-    state.users[existingIndex].email.toLowerCase() === SUPER_ADMIN_EMAIL &&
-    input.role &&
-    input.role !== 'admin'
-  ) {
-    return {
-      success: false,
-      error: 'ไม่สามารถเปลี่ยนตำแหน่งหรือลดสิทธิ์ของผู้ดูแลระบบสูงสุดได้',
-    };
+  const candidateTargetSecondaryEmail = (
+    existingIndex >= 0
+      ? input.secondaryEmail !== undefined
+        ? candidateSecondaryEmail
+        : candidateSecondaryEmail ||
+          state.users[existingIndex].secondaryEmail ||
+          ''
+      : candidateSecondaryEmail
+  )
+    .trim()
+    .toLowerCase();
+
+  // ป้องกันการลดสิทธิ์หรือถอดถอนอีเมลของบัญชี Super Admin หลัก (รองรับทั้ง @digitalbusinessconsult.asia และ @dbcgroup.asia)
+  if (existingIndex >= 0 && isSuperAdminUser(state.users[existingIndex])) {
+    if (input.role && input.role !== 'admin') {
+      return {
+        success: false,
+        error: 'ไม่สามารถเปลี่ยนตำแหน่งหรือลดสิทธิ์ของผู้ดูแลระบบสูงสุดได้',
+      };
+    }
+    if (
+      !isSuperAdminEmail(candidateTargetEmail) &&
+      !isSuperAdminEmail(candidateTargetSecondaryEmail)
+    ) {
+      return {
+        success: false,
+        error:
+          'ไม่สามารถเปลี่ยนอีเมลของผู้ดูแลระบบสูงสุดเป็นอีเมลอื่นที่ไม่ใช่บัญชี Super Admin ได้',
+      };
+    }
   }
 
-  if (input.role === 'admin' && candidateTargetEmail !== SUPER_ADMIN_EMAIL) {
+  if (
+    input.role === 'admin' &&
+    !isSuperAdminEmail(candidateTargetEmail) &&
+    !isSuperAdminEmail(candidateTargetSecondaryEmail)
+  ) {
     if (actor.role !== 'admin') {
       return {
         success: false,
@@ -1534,7 +1655,6 @@ export async function upsertEmployee(
     (existingIndex >= 0 ? state.users[existingIndex].role : 'employee');
   const isExecutive = effectiveRole === 'c_level' || effectiveRole === 'admin';
   const cleanUsername = (input.username || '').trim();
-  const candidateEmail = (input.email || '').trim().toLowerCase();
 
   if (existingIndex < 0 && !input.role) {
     return {
@@ -1550,7 +1670,12 @@ export async function upsertEmployee(
     };
   }
 
-  if (candidateEmail && !candidateEmail.includes('@')) {
+  if (
+    (candidateEmail && !isValidEmailFormat(candidateEmail)) ||
+    (candidateSecondaryEmail && !isValidEmailFormat(candidateSecondaryEmail)) ||
+    parsedInputEmails.some((e) => !isValidEmailFormat(e)) ||
+    parsedSecondaryEmails.some((e) => !isValidEmailFormat(e))
+  ) {
     return {
       success: false,
       error: 'รูปแบบอีเมล Google ไม่ถูกต้อง',
@@ -1626,17 +1751,24 @@ export async function upsertEmployee(
     }
   }
 
-  if (candidateEmail) {
+  const candidateEmailsToCheck = [
+    ...getEquivalentEmails(candidateEmail),
+    ...getEquivalentEmails(candidateSecondaryEmail),
+  ];
+  if (candidateEmailsToCheck.length > 0) {
     const duplicateEmail = state.users.find(
       (u, idx) =>
         idx !== existingIndex &&
-        u.email &&
-        u.email.toLowerCase() === candidateEmail
+        candidateEmailsToCheck.some((ce) => doesUserMatchEmail(u, ce))
     );
     if (duplicateEmail) {
+      const displayOffendingEmail =
+        input.email?.trim() ||
+        input.secondaryEmail?.trim() ||
+        candidateEmail;
       return {
         success: false,
-        error: `อีเมล "${input.email?.trim()}" ถูกผูกกับพนักงานรหัส ${duplicateEmail.id} (${duplicateEmail.name}) แล้ว กรุณาใช้อีเมลอื่น`,
+        error: `อีเมล "${displayOffendingEmail}" ถูกผูกกับพนักงานรหัส ${duplicateEmail.id} (${duplicateEmail.name}) แล้ว กรุณาใช้อีเมลอื่น`,
       };
     }
   }
@@ -1654,8 +1786,20 @@ export async function upsertEmployee(
     const current = state.users[existingIndex];
     const updatedEmail =
       input.email !== undefined
-        ? input.email.trim().toLowerCase() || current.email
+        ? candidateEmail || current.email
         : current.email;
+    let updatedSecondaryEmail = current.secondaryEmail;
+    if (input.secondaryEmail !== undefined) {
+      updatedSecondaryEmail = candidateSecondaryEmail || undefined;
+    } else if (parsedInputEmails.length > 1) {
+      updatedSecondaryEmail = parsedInputEmails[1] || undefined;
+    }
+    if (
+      updatedSecondaryEmail &&
+      updatedSecondaryEmail.toLowerCase() === updatedEmail.toLowerCase()
+    ) {
+      updatedSecondaryEmail = undefined;
+    }
     const updatedEnglishName =
       input.englishName !== undefined
         ? input.englishName.trim() || current.englishName
@@ -1674,12 +1818,19 @@ export async function upsertEmployee(
           : current.cLevelApproverId
         : undefined;
 
+    const {
+      secondaryEmail: _oldSecondary,
+      ...currentWithoutSecondary
+    } = current;
     const updated: User = {
-      ...current,
+      ...currentWithoutSecondary,
       username: cleanUsername || current.username,
       name,
       englishName: updatedEnglishName,
       email: updatedEmail,
+      ...(updatedSecondaryEmail
+        ? { secondaryEmail: updatedSecondaryEmail }
+        : {}),
       role: effectiveRole,
       department,
       position,
@@ -1730,6 +1881,11 @@ export async function upsertEmployee(
 
     const cleanEmail =
       candidateEmail || `${derivedUsername}@company.co.th`;
+    const cleanSecondaryEmail =
+      candidateSecondaryEmail &&
+      candidateSecondaryEmail.toLowerCase() !== cleanEmail.toLowerCase()
+        ? candidateSecondaryEmail
+        : undefined;
     const cleanEnglishName = (input.englishName || '').trim();
     const cleanStartDate = isExecutive
       ? rawStartDate && parseDateUTC(rawStartDate)
@@ -1747,6 +1903,7 @@ export async function upsertEmployee(
       name,
       englishName: cleanEnglishName,
       email: cleanEmail,
+      ...(cleanSecondaryEmail ? { secondaryEmail: cleanSecondaryEmail } : {}),
       role: effectiveRole,
       department,
       position,
@@ -1785,7 +1942,7 @@ export async function deleteEmployee(
   }
 
   const targetUser = state.users.find((u) => u.id === targetUserId);
-  if (targetUser && targetUser.email.toLowerCase() === SUPER_ADMIN_EMAIL) {
+  if (targetUser && isSuperAdminUser(targetUser)) {
     return {
       success: false,
       error: 'ไม่สามารถลบบัญชีผู้ดูแลระบบสูงสุด (Admin) ได้',

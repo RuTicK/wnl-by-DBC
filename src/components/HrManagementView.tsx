@@ -17,9 +17,15 @@ import {
 } from 'lucide-react';
 import {
   formatThaiDate,
+  getAdditionalUserEmails,
   getBangkokNow,
+  getCompanyAliasEmail,
   getNextEmployeeId,
   getProbationInfo,
+  isSuperAdminEmail,
+  isSuperAdminUser,
+  isValidEmailFormat,
+  parseEmailList,
   ROLE_META,
   STANDARD_LEAVE_QUOTAS,
 } from '@/lib/leave-utils';
@@ -349,6 +355,7 @@ interface HrManagementViewProps {
     name?: string;
     englishName?: string;
     email: string;
+    secondaryEmail?: string;
     role: Role;
     department?: string;
     position?: string;
@@ -405,6 +412,7 @@ export default function HrManagementView({
   const [empCustomId, setEmpCustomId] = useState('');
   const [empName, setEmpName] = useState('');
   const [empEmail, setEmpEmail] = useState('');
+  const [empSecondaryEmail, setEmpSecondaryEmail] = useState('');
   const [empRole, setEmpRole] = useState<Role>('employee');
   const [empDepartment, setEmpDepartment] = useState<string>('');
   const [empPosition, setEmpPosition] = useState('');
@@ -444,6 +452,7 @@ export default function HrManagementView({
     setEmpCustomId(nextId);
     setEmpName('');
     setEmpEmail('');
+    setEmpSecondaryEmail('');
     setEmpRole('employee');
     setEmpDepartment('');
     setEmpPosition('');
@@ -463,6 +472,7 @@ export default function HrManagementView({
     setEmpCustomId(u.id);
     setEmpName(u.name || '');
     setEmpEmail(u.email || '');
+    setEmpSecondaryEmail(u.secondaryEmail || '');
     setEmpRole(u.role);
     setEmpDepartment(cleanDept);
     setEmpPosition(u.position || '');
@@ -480,8 +490,19 @@ export default function HrManagementView({
     setModalError(null);
     setDeptValidationError(null);
 
-    const cleanEmail = empEmail.trim().toLowerCase();
-    if (!cleanEmail || !cleanEmail.includes('@')) {
+    const parsedPrimaryEmails = parseEmailList(empEmail);
+    const parsedSecondaryEmails = parseEmailList(empSecondaryEmail);
+    const cleanEmail = parsedPrimaryEmails[0] || '';
+    const cleanSecondaryEmail =
+      parsedSecondaryEmails[0] || parsedPrimaryEmails[1] || '';
+
+    if (
+      !cleanEmail ||
+      !isValidEmailFormat(cleanEmail) ||
+      parsedPrimaryEmails.some((addr) => !isValidEmailFormat(addr)) ||
+      (cleanSecondaryEmail && !isValidEmailFormat(cleanSecondaryEmail)) ||
+      parsedSecondaryEmails.some((addr) => !isValidEmailFormat(addr))
+    ) {
       setModalError('กรุณากรอกอีเมล Google ที่ถูกต้องสำหรับเข้าสู่ระบบ');
       return;
     }
@@ -514,6 +535,7 @@ export default function HrManagementView({
         id: editingEmpId ? editingEmpId : empCustomId.trim() || undefined,
         name: empName.trim() || undefined,
         email: cleanEmail,
+        secondaryEmail: cleanSecondaryEmail,
         role: empRole,
         department: trimmedDepartment,
         position: empPosition.trim() || undefined,
@@ -756,6 +778,14 @@ export default function HrManagementView({
                         <div className="font-bold text-blue-700">
                           {u.email}
                         </div>
+                        {getAdditionalUserEmails(u).map((altEmail) => (
+                          <div
+                            key={altEmail}
+                            className="text-xs font-semibold text-indigo-600 mt-0.5"
+                          >
+                            ↳ {altEmail}
+                          </div>
+                        ))}
                         <div className="text-xs mt-0.5 font-medium">
                           {u.englishName ? (
                             <span className="text-slate-500">EN: {u.englishName}</span>
@@ -839,8 +869,7 @@ export default function HrManagementView({
                             <span>แก้ไข</span>
                           </button>
                           {u.id !== currentUser.id &&
-                            u.email.toLowerCase() !==
-                              'rut.wa@digitalbusinessconsult.asia' &&
+                            !isSuperAdminUser(u) &&
                             (currentUser.role === 'admin' ||
                               u.role !== 'admin') && (
                               <button
@@ -1089,8 +1118,8 @@ export default function HrManagementView({
                       <option value="hr">ฝ่ายบุคคล (HR)</option>
                       <option value="c_level">ผู้บริหารระดับสูง (C-Level)</option>
                       {(currentUser.role === 'admin' ||
-                        empEmail.trim().toLowerCase() ===
-                          'rut.wa@digitalbusinessconsult.asia') && (
+                        isSuperAdminEmail(empEmail) ||
+                        isSuperAdminEmail(empSecondaryEmail)) && (
                         <option value="admin">
                           👑 ผู้ดูแลระบบสูงสุด (Super Admin)
                         </option>
@@ -1146,13 +1175,45 @@ export default function HrManagementView({
                     อีเมล Google <span className="text-rose-500">*</span>
                   </label>
                   <input
-                    type="email"
+                    type="text"
+                    inputMode="email"
                     value={empEmail}
                     onChange={(e) => setEmpEmail(e.target.value)}
-                    placeholder="name@digitalbusinessconsult.asia"
+                    placeholder="name@digitalbusinessconsult.asia หรือ name@dbcgroup.asia"
                     className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm text-slate-900 font-medium focus:border-blue-600 focus:outline-hidden"
                     required
                   />
+                  {getCompanyAliasEmail(empEmail) ? (
+                    <p className="mt-1.5 text-xs font-semibold text-emerald-700">
+                      ✓ รองรับการเข้าสู่ระบบทั้ง 2 อีเมลอัตโนมัติ:{' '}
+                      <span className="font-mono underline">
+                        {parseEmailList(empEmail)[0] || empEmail.trim().toLowerCase()}
+                      </span>{' '}
+                      และ{' '}
+                      <span className="font-mono underline">
+                        {getCompanyAliasEmail(empEmail)}
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="mt-1.5 text-xs text-slate-500">
+                      รองรับทั้ง @digitalbusinessconsult.asia และ @dbcgroup.asia (เชื่อมโยงผู้ใช้คนเดียวกันอัตโนมัติ)
+                    </p>
+                  )}
+                  <div className="mt-3">
+                    <label className="block font-bold text-slate-700 mb-1 text-xs">
+                      อีเมลรอง / อีเมลลูกเพิ่มเติม{' '}
+                      <span className="font-normal text-slate-400">
+                        (ไม่บังคับ • กรณีชื่อหน้า @ ของ 2 อีเมลไม่เหมือนกัน)
+                      </span>
+                    </label>
+                    <input
+                      type="email"
+                      value={empSecondaryEmail}
+                      onChange={(e) => setEmpSecondaryEmail(e.target.value)}
+                      placeholder="เช่น alias@dbcgroup.asia"
+                      className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-base sm:text-sm text-slate-900 font-medium focus:border-blue-600 focus:outline-hidden"
+                    />
+                  </div>
                   {editingEmpId && (
                     <div className="mt-2 inline-flex items-center gap-2 rounded-xl bg-slate-50 border border-slate-200 px-3 py-1.5 text-xs">
                       <span className="font-bold text-slate-600">ชื่อจาก Google:</span>

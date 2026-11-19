@@ -66,6 +66,211 @@ export const PROBATION_RESTRICTED_TYPES: LeaveType[] = [
 ];
 
 /**
+ * โดเมนอีเมลของบริษัท (โดเมนหลัก @digitalbusinessconsult.asia และโดเมนลูก @dbcgroup.asia)
+ * พนักงาน 1 คนสามารถเข้าสู่ระบบได้จากทั้ง 2 โดเมนโดยใช้ชื่อผู้ใช้ (local-part) เดียวกัน
+ * หรือผูกอีเมลที่สอง (secondaryEmail) เข้ากับบัญชีเดียวกันได้
+ */
+export const COMPANY_EMAIL_DOMAINS = [
+  'digitalbusinessconsult.asia',
+  'dbcgroup.asia',
+] as const;
+
+export const SUPER_ADMIN_EMAIL = 'rut.wa@digitalbusinessconsult.asia';
+export const SUPER_ADMIN_ALT_EMAIL = 'rut.wa@dbcgroup.asia';
+export const SUPER_ADMIN_EMAILS = [
+  SUPER_ADMIN_EMAIL,
+  SUPER_ADMIN_ALT_EMAIL,
+] as const;
+
+/**
+ * แยกสตริงอีเมล (รองรับกรณีคั่นด้วยจุลภาค อัฒภาค เครื่องหมายทับ หรือช่องว่าง) เป็นรายการอีเมลตัวพิมพ์เล็ก
+ */
+export function parseEmailList(raw?: string | null): string[] {
+  if (!raw) return [];
+  return raw
+    .split(/[,;\s/]+/)
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+/**
+ * ตรวจสอบรูปแบบอีเมลว่าถูกต้องตามโครงสร้าง local-part@domain.tld หรือไม่
+ */
+export function isValidEmailFormat(email?: string | null): boolean {
+  if (!email) return false;
+  const trimmed = email.trim().toLowerCase();
+  const atIdx = trimmed.indexOf('@');
+  if (atIdx <= 0 || atIdx !== trimmed.lastIndexOf('@')) return false;
+  const localPart = trimmed.slice(0, atIdx).trim();
+  const domain = trimmed.slice(atIdx + 1).trim();
+  if (!localPart || !domain) return false;
+  if (/\s/.test(localPart) || /\s/.test(domain)) return false;
+  if (
+    !domain.includes('.') ||
+    domain.startsWith('.') ||
+    domain.endsWith('.') ||
+    domain.includes('..')
+  ) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * คืนค่าอีเมลคู่ขนานของโดเมนบริษัท (เช่น name@digitalbusinessconsult.asia <-> name@dbcgroup.asia)
+ * หากไม่ใช่อีเมลภายใต้โดเมนบริษัท จะคืนค่า null
+ */
+export function getCompanyAliasEmail(email?: string | null): string | null {
+  const list = parseEmailList(email);
+  if (list.length === 0) return null;
+  const primary = list[0];
+  const atIdx = primary.indexOf('@');
+  if (atIdx <= 0 || atIdx !== primary.lastIndexOf('@')) return null;
+
+  const localPart = primary.slice(0, atIdx).trim();
+  const domain = primary.slice(atIdx + 1).trim();
+  if (!localPart || !domain) return null;
+
+  if (domain === 'digitalbusinessconsult.asia') {
+    return `${localPart}@dbcgroup.asia`;
+  }
+  if (domain === 'dbcgroup.asia') {
+    return `${localPart}@digitalbusinessconsult.asia`;
+  }
+  return null;
+}
+
+/**
+ * คืนค่ารายการอีเมลทั้งหมดที่เทียบเท่ากับอีเมลที่ระบุ (รวมทั้งโดเมนหลักและโดเมนลูกของบริษัท)
+ */
+export function getEquivalentEmails(rawEmail?: string | null): string[] {
+  const list = parseEmailList(rawEmail);
+  const result: string[] = [];
+  const add = (e: string) => {
+    if (e && !result.includes(e)) {
+      result.push(e);
+    }
+  };
+
+  for (const item of list) {
+    add(item);
+    const atIdx = item.indexOf('@');
+    if (atIdx > 0 && atIdx === item.lastIndexOf('@')) {
+      const localPart = item.slice(0, atIdx).trim();
+      const domain = item.slice(atIdx + 1).trim();
+      if (
+        localPart &&
+        domain &&
+        (COMPANY_EMAIL_DOMAINS as readonly string[]).includes(domain)
+      ) {
+        for (const corpDomain of COMPANY_EMAIL_DOMAINS) {
+          add(`${localPart}@${corpDomain}`);
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
+/**
+ * คืนค่ารายการอีเมลทั้งหมดที่พนักงานคนนี้สามารถใช้เข้าสู่ระบบได้
+ * (รวม email หลัก, secondaryEmail และอีเมลคู่ขนาน @digitalbusinessconsult.asia / @dbcgroup.asia)
+ */
+export function getUserEmails(
+  user?: {
+    email?: string | null;
+    secondaryEmail?: string | null;
+    aliasEmails?: string[] | null;
+  } | null
+): string[] {
+  if (!user) return [];
+  const result: string[] = [];
+  const addAll = (raw?: string | null) => {
+    for (const e of getEquivalentEmails(raw)) {
+      if (!result.includes(e)) {
+        result.push(e);
+      }
+    }
+  };
+
+  addAll(user.email);
+  addAll(user.secondaryEmail);
+  if (Array.isArray(user.aliasEmails)) {
+    for (const alias of user.aliasEmails) {
+      addAll(alias);
+    }
+  }
+  return result;
+}
+
+/**
+ * คืนค่ารายการอีเมลเพิ่มเติมของพนักงาน (นอกเหนือจากอีเมลหลักตัวแรก) สำหรับแสดงผลบน UI
+ */
+export function getAdditionalUserEmails(
+  user?: {
+    email?: string | null;
+    secondaryEmail?: string | null;
+    aliasEmails?: string[] | null;
+  } | null
+): string[] {
+  if (!user) return [];
+  const primary = parseEmailList(user.email)[0] || '';
+  return getUserEmails(user).filter((e) => e !== primary);
+}
+
+/**
+ * ตรวจสอบว่าอีเมล 2 ค่าเป็นอีเมลเดียวกันหรือเป็นอีเมลคู่ขนานภายใต้โดเมนบริษัทเดียวกันหรือไม่
+ */
+export function areEmailsEquivalent(
+  emailA?: string | null,
+  emailB?: string | null
+): boolean {
+  const setA = getEquivalentEmails(emailA);
+  const setB = getEquivalentEmails(emailB);
+  if (setA.length === 0 || setB.length === 0) return false;
+  return setA.some((a) => setB.includes(a));
+}
+
+/**
+ * ตรวจสอบว่าพนักงานคนนี้เป็นเจ้าของอีเมลที่ระบุหรือไม่ (รองรับทั้ง 2 โดเมนบริษัทและ secondaryEmail)
+ */
+export function doesUserMatchEmail(
+  user?: {
+    email?: string | null;
+    secondaryEmail?: string | null;
+    aliasEmails?: string[] | null;
+  } | null,
+  candidateEmail?: string | null
+): boolean {
+  const userEmails = getUserEmails(user);
+  const candidateSet = getEquivalentEmails(candidateEmail);
+  if (userEmails.length === 0 || candidateSet.length === 0) return false;
+  return userEmails.some((e) => candidateSet.includes(e));
+}
+
+/**
+ * ตรวจสอบว่าเป็นอีเมลของผู้ดูแลระบบสูงสุด (Super Admin) หรือไม่
+ * รองรับทั้ง rut.wa@digitalbusinessconsult.asia และ rut.wa@dbcgroup.asia
+ */
+export function isSuperAdminEmail(email?: string | null): boolean {
+  return areEmailsEquivalent(email, SUPER_ADMIN_EMAIL);
+}
+
+/**
+ * ตรวจสอบว่าบัญชีผู้ใช้นี้เป็นผู้ดูแลระบบสูงสุด (Super Admin) จากอีเมลหลักหรืออีเมลรองหรือไม่
+ */
+export function isSuperAdminUser(
+  user?: {
+    email?: string | null;
+    secondaryEmail?: string | null;
+    aliasEmails?: string[] | null;
+  } | null
+): boolean {
+  return Boolean(user && doesUserMatchEmail(user, SUPER_ADMIN_EMAIL));
+}
+
+/**
  * คำนวณรหัสพนักงานใหม่ถัดไปโดยอัตโนมัติ (เช่น EMP012 จาก EMP011)
  */
 export function getNextEmployeeId(users: { id: string }[]): string {

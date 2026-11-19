@@ -49,6 +49,7 @@ export interface User {
   name: string;        // ชื่อ-นามสกุล (ภาษาไทย)
   englishName: string; // ชื่อ-นามสกุล (ภาษาอังกฤษ จาก Google Login)
   email: string;       // อีเมล Google Login (ใช้คู่กับ USEREMAIL() ใน AppSheet)
+  secondaryEmail?: string; // อีเมลรอง / อีเมลลูก (เช่น @dbcgroup.asia ที่ผูกกับผู้ใช้คนเดียวกัน)
   role: Role;          // 'c_level' | 'hr' | 'manager' | 'employee'
   department: string;  // แผนก
   position: string;    // ตำแหน่ง

@@ -19,7 +19,11 @@ import {
   INITIAL_LEAVE_REQUESTS,
   INITIAL_USERS,
 } from './mock-data';
-import { STANDARD_LEAVE_QUOTAS } from './leave-utils';
+import {
+  doesUserMatchEmail,
+  parseEmailList,
+  STANDARD_LEAVE_QUOTAS,
+} from './leave-utils';
 
 export interface DatabaseState {
   users: User[];
@@ -222,7 +226,9 @@ export function resetLocalDemoStore(preserveUser?: User): DatabaseState {
     !fresh.users.some(
       (u) =>
         u.id.toLowerCase() === preserveUser.id.toLowerCase() ||
-        u.email.toLowerCase() === preserveUser.email.toLowerCase()
+        doesUserMatchEmail(u, preserveUser.email) ||
+        (preserveUser.secondaryEmail &&
+          doesUserMatchEmail(u, preserveUser.secondaryEmail))
     )
   ) {
     fresh.users.push(JSON.parse(JSON.stringify(preserveUser)));
@@ -254,11 +260,16 @@ export const USER_SHEET_HEADERS = [
 ];
 
 export function userToRow(u: User): (string | number)[] {
+  const serializedEmail =
+    u.secondaryEmail &&
+    u.secondaryEmail.trim().toLowerCase() !== (u.email || '').trim().toLowerCase()
+      ? `${u.email || ''}, ${u.secondaryEmail.trim().toLowerCase()}`
+      : u.email || '';
   return [
     u.id,
     u.name,
     u.englishName || '',
-    u.email || '',
+    serializedEmail,
     u.role,
     u.department,
     u.position,
@@ -274,7 +285,10 @@ export function userToRow(u: User): (string | number)[] {
 }
 
 export function rowToUser(row: string[]): User {
-  const email = row[3] || '';
+  const rawEmailCell = (row[3] || '').trim();
+  const parsedEmails = parseEmailList(rawEmailCell);
+  const email = parsedEmails[0] || rawEmailCell;
+  const secondaryEmail = parsedEmails[1] || undefined;
   const derivedUsername = email.includes('@')
     ? email.split('@')[0].split('.')[0]
     : (row[0] || '').toLowerCase();
@@ -284,6 +298,7 @@ export function rowToUser(row: string[]): User {
     name: row[1] || '',
     englishName: row[2] || '',
     email,
+    ...(secondaryEmail ? { secondaryEmail } : {}),
     role: ((row[4] as Role) || 'employee'),
     department: (row[5] || '').trim() || 'General',
     position: row[6] || 'Staff',
@@ -463,13 +478,32 @@ export function userToAppSheetRow(u: User): Record<string, string | number> {
   USER_SHEET_HEADERS.forEach((h, idx) => {
     obj[h] = row[idx] ?? '';
   });
+  obj['email'] = u.email || '';
+  if (u.secondaryEmail) {
+    obj['SecondaryEmail'] = u.secondaryEmail;
+  }
   obj['CLevelApproverId'] = u.cLevelApproverId || '';
   obj['AvatarUrl'] = u.avatarUrl || '';
   return obj;
 }
 
 export function appSheetRowToUser(row: Record<string, any>): User {
-  const email = (row.email || row.Email || '').toString().trim();
+  const rawEmail = (row.email || row.Email || '').toString().trim();
+  const parsedEmails = parseEmailList(rawEmail);
+  const email = parsedEmails[0] || rawEmail;
+  const explicitSecondary = (
+    row.SecondaryEmail ||
+    row.secondaryEmail ||
+    parsedEmails[1] ||
+    ''
+  )
+    .toString()
+    .trim()
+    .toLowerCase();
+  const secondaryEmail =
+    explicitSecondary && explicitSecondary !== email.toLowerCase()
+      ? explicitSecondary
+      : undefined;
   const derivedUsername = email.includes('@')
     ? email.split('@')[0].split('.')[0]
     : (row.id || row.Id || row.ID || '').toString().toLowerCase();
@@ -486,6 +520,7 @@ export function appSheetRowToUser(row: Record<string, any>): User {
     name: (row.name || row.Name || '').toString().trim(),
     englishName: (row.englishName || row.EnglishName || '').toString().trim(),
     email,
+    ...(secondaryEmail ? { secondaryEmail } : {}),
     role: ((row.role || row.Role || 'employee') as Role),
     department: ((row.department || row.Department || '').toString()).trim() || 'General',
     position: (row.position || row.Position || 'Staff').toString().trim(),

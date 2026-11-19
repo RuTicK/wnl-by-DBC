@@ -344,6 +344,7 @@ export default function HomePage() {
     name?: string;
     englishName?: string;
     email: string;
+    secondaryEmail?: string;
     role: Role;
     department?: string;
     position?: string;

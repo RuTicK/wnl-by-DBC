@@ -9,19 +9,32 @@ import {
   PATCH as attendancePatch,
 } from '@/app/api/attendance/route';
 import {
+  areEmailsEquivalent,
   calculateLeaveDays,
   calculateUserQuotaSummary,
   checkApprovalPermission,
   checkProbationLeaveEligibility,
   checkRejectionPermission,
+  COMPANY_EMAIL_DOMAINS,
+  doesUserMatchEmail,
   escapeCsvCell,
   filterLeavesForViewer,
   generateAttendanceCsv,
   generateLeavesCsv,
   generateQuotaSummaryCsv,
+  getAdditionalUserEmails,
   getBangkokNow,
+  getCompanyAliasEmail,
+  getEquivalentEmails,
   getProbationInfo,
+  getUserEmails,
+  isSuperAdminEmail,
+  isSuperAdminUser,
+  isValidEmailFormat,
   STANDARD_LEAVE_QUOTAS,
+  SUPER_ADMIN_ALT_EMAIL,
+  SUPER_ADMIN_EMAIL,
+  SUPER_ADMIN_EMAILS,
 } from '../leave-utils';
 import {
   authenticateUser,
@@ -30,6 +43,7 @@ import {
   deleteHoliday,
   getSystemDataForUser,
   isNotifiableLeaveType,
+  loginWithGoogleProfile,
   processLeaveAction,
   recordCheckIn,
   recordCheckOut,
@@ -2037,6 +2051,338 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
         global.fetch = originalFetch;
         saveRuntimeAppConfig({ googleChatWebhookUrl: '' });
       }
+    });
+
+    it('supports dual-domain corporate emails (@digitalbusinessconsult.asia <-> @dbcgroup.asia) and secondary emails for the same user', async () => {
+      expect(COMPANY_EMAIL_DOMAINS).toEqual([
+        'digitalbusinessconsult.asia',
+        'dbcgroup.asia',
+      ]);
+      expect(SUPER_ADMIN_EMAIL).toBe('rut.wa@digitalbusinessconsult.asia');
+      expect(SUPER_ADMIN_ALT_EMAIL).toBe('rut.wa@dbcgroup.asia');
+      expect(SUPER_ADMIN_EMAILS).toContain('rut.wa@digitalbusinessconsult.asia');
+      expect(SUPER_ADMIN_EMAILS).toContain('rut.wa@dbcgroup.asia');
+
+      // 1. Domain alias resolution & equivalence checks
+      expect(getCompanyAliasEmail('somying.ae@digitalbusinessconsult.asia')).toBe(
+        'somying.ae@dbcgroup.asia'
+      );
+      expect(getCompanyAliasEmail('somying.ae@dbcgroup.asia')).toBe(
+        'somying.ae@digitalbusinessconsult.asia'
+      );
+      expect(getCompanyAliasEmail('external@gmail.com')).toBeNull();
+      expect(getCompanyAliasEmail('')).toBeNull();
+      expect(getCompanyAliasEmail('   ')).toBeNull();
+      expect(getCompanyAliasEmail('invalid-email')).toBeNull();
+      expect(getCompanyAliasEmail('@dbcgroup.asia')).toBeNull();
+      expect(getCompanyAliasEmail('user@')).toBeNull();
+      expect(getCompanyAliasEmail('a@b@dbcgroup.asia')).toBeNull();
+
+      expect(
+        areEmailsEquivalent(
+          'Rut.Wa@DigitalBusinessConsult.asia',
+          'rut.wa@dbcgroup.asia'
+        )
+      ).toBe(true);
+      expect(
+        areEmailsEquivalent(
+          'rut.wa@digitalbusinessconsult.asia',
+          'other.wa@dbcgroup.asia'
+        )
+      ).toBe(false);
+      expect(areEmailsEquivalent('', '')).toBe(false);
+      expect(
+        areEmailsEquivalent(
+          'rut.wa@dbcgroup.asia',
+          'rut.wa@fake-dbcgroup.asia'
+        )
+      ).toBe(false);
+      expect(
+        areEmailsEquivalent(
+          'rut.wa@dbcgroup.asia',
+          'rut.wa@sub.dbcgroup.asia'
+        )
+      ).toBe(false);
+
+      // 2. Employee registered with @digitalbusinessconsult.asia can log in using @dbcgroup.asia
+      const addPrimaryRes = await upsertEmployee('EMP001', {
+        id: 'EMP060',
+        email: 'nida.consult@digitalbusinessconsult.asia',
+        role: 'employee',
+        department: 'Consult',
+        startDate: '2025-01-10',
+      });
+      expect(addPrimaryRes.success).toBe(true);
+      expect(addPrimaryRes.user?.name).toBe('nida.consult');
+
+      // Login via @dbcgroup.asia child email auto-matches EMP060 and syncs Google English Name & Avatar
+      const loginViaChild = await loginWithGoogleProfile({
+        email: 'Nida.Consult@dbcgroup.asia',
+        englishName: 'Nida Rattana',
+        picture: 'https://lh3.googleusercontent.com/a/nida-avatar',
+      });
+      expect(loginViaChild.success).toBe(true);
+      expect(loginViaChild.user?.id).toBe('EMP060');
+      expect(loginViaChild.user?.englishName).toBe('Nida Rattana');
+      expect(loginViaChild.user?.name).toBe('Nida Rattana');
+      expect(loginViaChild.user?.avatarUrl).toBe(
+        'https://lh3.googleusercontent.com/a/nida-avatar'
+      );
+
+      // Login via POST /api/auth with @digitalbusinessconsult.asia also matches the same user EMP060
+      const apiAuthPrimaryReq = new NextRequest('http://localhost:3000/api/auth', {
+        method: 'POST',
+        body: JSON.stringify({
+          isGoogleLogin: true,
+          googleEmail: 'nida.consult@digitalbusinessconsult.asia',
+        }),
+      });
+      const apiAuthPrimaryRes = await authPost(apiAuthPrimaryReq);
+      expect(apiAuthPrimaryRes.status).toBe(200);
+      const apiAuthPrimaryJson = await apiAuthPrimaryRes.json();
+      expect(apiAuthPrimaryJson.user.id).toBe('EMP060');
+
+      // 3. Employee registered with @dbcgroup.asia can log in using @digitalbusinessconsult.asia
+      const addChildRes = await upsertEmployee('EMP001', {
+        id: 'EMP061',
+        name: 'ภาณุวัฒน์ การตลาด',
+        email: 'panuwat.mkt@dbcgroup.asia',
+        role: 'employee',
+        department: 'Marketing&BD',
+        startDate: '2025-02-01',
+      });
+      expect(addChildRes.success).toBe(true);
+
+      const loginViaParent = await authenticateUser('', undefined, {
+        isGoogleLogin: true,
+        googleEmail: 'panuwat.mkt@digitalbusinessconsult.asia',
+        googleEnglishName: 'Panuwat M.',
+      });
+      expect(loginViaParent.success).toBe(true);
+      expect(loginViaParent.user?.id).toBe('EMP061');
+      expect(loginViaParent.user?.englishName).toBe('Panuwat M.');
+
+      // Non-Google password login also works with either domain email
+      const passLoginViaParent = await authenticateUser(
+        'panuwat.mkt@digitalbusinessconsult.asia',
+        '1234'
+      );
+      expect(passLoginViaParent.success).toBe(true);
+      expect(passLoginViaParent.user?.id).toBe('EMP061');
+
+      // 4. Duplicate prevention across @digitalbusinessconsult.asia and @dbcgroup.asia
+      const crossDomainDup1 = await upsertEmployee('EMP001', {
+        id: 'EMP062',
+        name: 'คนซ้ำ โดเมนลูก',
+        email: 'nida.consult@dbcgroup.asia',
+        role: 'employee',
+        department: 'Consult',
+        startDate: '2025-03-01',
+      });
+      expect(crossDomainDup1.success).toBe(false);
+      expect(crossDomainDup1.error).toContain('ถูกผูกกับพนักงานรหัส EMP060');
+
+      const crossDomainDup2 = await upsertEmployee('EMP001', {
+        id: 'EMP063',
+        name: 'คนซ้ำ โดเมนหลัก',
+        email: 'panuwat.mkt@digitalbusinessconsult.asia',
+        role: 'employee',
+        department: 'Marketing&BD',
+        startDate: '2025-03-01',
+      });
+      expect(crossDomainDup2.success).toBe(false);
+      expect(crossDomainDup2.error).toContain('ถูกผูกกับพนักงานรหัส EMP061');
+
+      // Updating EMP060's own email from @digitalbusinessconsult.asia to @dbcgroup.asia is allowed
+      const selfSwitchDomain = await upsertEmployee('EMP001', {
+        id: 'EMP060',
+        email: 'nida.consult@dbcgroup.asia',
+      });
+      expect(selfSwitchDomain.success).toBe(true);
+      expect(selfSwitchDomain.user?.email).toBe('nida.consult@dbcgroup.asia');
+
+      // 5. Explicit secondaryEmail support (even when local-parts differ) + Sheet/AppSheet round-trip
+      const dualCustomRes = await upsertEmployee('EMP001', {
+        id: 'EMP064',
+        name: 'กมลชนก สองอีเมล',
+        email: 'kamonchanok.wa@digitalbusinessconsult.asia',
+        secondaryEmail: 'kamon.dbc@dbcgroup.asia',
+        role: 'employee',
+        department: 'AE',
+        startDate: '2025-01-15',
+      });
+      expect(dualCustomRes.success).toBe(true);
+      expect(dualCustomRes.user?.email).toBe(
+        'kamonchanok.wa@digitalbusinessconsult.asia'
+      );
+      expect(dualCustomRes.user?.secondaryEmail).toBe('kamon.dbc@dbcgroup.asia');
+
+      const allKamonEmails = getUserEmails(dualCustomRes.user);
+      expect(allKamonEmails).toContain('kamonchanok.wa@digitalbusinessconsult.asia');
+      expect(allKamonEmails).toContain('kamonchanok.wa@dbcgroup.asia');
+      expect(allKamonEmails).toContain('kamon.dbc@dbcgroup.asia');
+      expect(allKamonEmails).toContain('kamon.dbc@digitalbusinessconsult.asia');
+      expect(getAdditionalUserEmails(dualCustomRes.user)).toContain(
+        'kamonchanok.wa@dbcgroup.asia'
+      );
+      expect(getAdditionalUserEmails(dualCustomRes.user)).toContain(
+        'kamon.dbc@dbcgroup.asia'
+      );
+
+      // Can log in with secondary email or its alias
+      const loginSecondary = await loginWithGoogleProfile(
+        'kamon.dbc@dbcgroup.asia',
+        'Kamonchanok W.'
+      );
+      expect(loginSecondary.success).toBe(true);
+      expect(loginSecondary.user?.id).toBe('EMP064');
+
+      // Google Sheets & AppSheet mapper round-trip preserves secondaryEmail
+      const sheetRow = userToRow(dualCustomRes.user!).map(String);
+      const parsedFromSheet = rowToUser(sheetRow);
+      expect(parsedFromSheet.email).toBe(
+        'kamonchanok.wa@digitalbusinessconsult.asia'
+      );
+      expect(parsedFromSheet.secondaryEmail).toBe('kamon.dbc@dbcgroup.asia');
+      expect(doesUserMatchEmail(parsedFromSheet, 'kamon.dbc@dbcgroup.asia')).toBe(
+        true
+      );
+
+      const appSheetRow = userToAppSheetRow(dualCustomRes.user!);
+      expect(appSheetRow.email).toBe('kamonchanok.wa@digitalbusinessconsult.asia');
+      expect(appSheetRow.SecondaryEmail).toBe('kamon.dbc@dbcgroup.asia');
+      const parsedFromAppSheet = appSheetRowToUser(appSheetRow);
+      expect(parsedFromAppSheet.secondaryEmail).toBe('kamon.dbc@dbcgroup.asia');
+
+      // 6. Clearing secondaryEmail via empty string (as when cleared in HrManagementView modal) removes it cleanly
+      const clearedSecondaryRes = await upsertEmployee('EMP001', {
+        id: 'EMP064',
+        email: 'kamonchanok.wa@digitalbusinessconsult.asia',
+        secondaryEmail: '',
+      });
+      expect(clearedSecondaryRes.success).toBe(true);
+      expect(clearedSecondaryRes.user?.secondaryEmail).toBeUndefined();
+
+      // 7. Rejects malformed email formats containing '@' (e.g. '@dbcgroup.asia', 'user@', 'a@b@dbcgroup.asia')
+      expect(isValidEmailFormat('rut.wa@digitalbusinessconsult.asia')).toBe(true);
+      expect(isValidEmailFormat('rut.wa@dbcgroup.asia')).toBe(true);
+      expect(isValidEmailFormat('@dbcgroup.asia')).toBe(false);
+      expect(isValidEmailFormat('user@')).toBe(false);
+      expect(isValidEmailFormat('a@b@dbcgroup.asia')).toBe(false);
+      expect(isValidEmailFormat('user@dbcgroup')).toBe(false);
+      expect(isValidEmailFormat('user@.asia')).toBe(false);
+
+      for (const badEmail of [
+        '@dbcgroup.asia',
+        'user@',
+        'a@b@dbcgroup.asia',
+        'user@dbcgroup',
+        'user@.asia',
+      ]) {
+        const badUpsert = await upsertEmployee('EMP001', {
+          id: 'EMP069',
+          email: badEmail,
+          role: 'employee',
+          department: 'AE',
+          startDate: '2025-01-15',
+        });
+        expect(badUpsert.success).toBe(false);
+        expect(badUpsert.error).toContain('รูปแบบอีเมล Google ไม่ถูกต้อง');
+
+        const badSecondaryUpsert = await upsertEmployee('EMP001', {
+          id: 'EMP069',
+          email: 'valid.user@digitalbusinessconsult.asia',
+          secondaryEmail: badEmail,
+          role: 'employee',
+          department: 'AE',
+          startDate: '2025-01-15',
+        });
+        expect(badSecondaryUpsert.success).toBe(false);
+        expect(badSecondaryUpsert.error).toContain('รูปแบบอีเมล Google ไม่ถูกต้อง');
+      }
+    });
+
+    it('recognizes Super Admin across both rut.wa@digitalbusinessconsult.asia and rut.wa@dbcgroup.asia', async () => {
+      expect(isSuperAdminEmail('rut.wa@digitalbusinessconsult.asia')).toBe(true);
+      expect(isSuperAdminEmail('rut.wa@dbcgroup.asia')).toBe(true);
+      expect(isSuperAdminEmail('RUT.WA@DBCGROUP.ASIA')).toBe(true);
+      expect(isSuperAdminEmail('someone.else@dbcgroup.asia')).toBe(false);
+
+      // HR can seed/upsert Super Admin using child domain rut.wa@dbcgroup.asia
+      const seedRutChild = await upsertEmployee('EMP001', {
+        id: 'EMP011',
+        name: 'รุจน์ วัชรประดิษฐ์',
+        englishName: 'Rut (Rut) Watcharapadit',
+        email: 'rut.wa@dbcgroup.asia',
+        role: 'admin',
+        department: 'Management (Admin)',
+        position: 'System Administrator (Admin)',
+        startDate: '2023-01-01',
+      });
+      expect(seedRutChild.success).toBe(true);
+      expect(seedRutChild.user?.role).toBe('admin');
+      expect(isSuperAdminUser(seedRutChild.user)).toBe(true);
+
+      // Rut can log in using rut.wa@digitalbusinessconsult.asia even when stored as rut.wa@dbcgroup.asia
+      const loginRutParent = await loginWithGoogleProfile({
+        email: 'rut.wa@digitalbusinessconsult.asia',
+        englishName: 'Rut (Rut) Watcharapadit',
+      });
+      expect(loginRutParent.success).toBe(true);
+      expect(loginRutParent.user?.id).toBe('EMP011');
+      expect(loginRutParent.user?.role).toBe('admin');
+
+      // Rut can also log in using rut.wa@dbcgroup.asia
+      const loginRutChild = await loginWithGoogleProfile({
+        email: 'rut.wa@dbcgroup.asia',
+        englishName: 'Rut (Rut) Watcharapadit',
+      });
+      expect(loginRutChild.success).toBe(true);
+      expect(loginRutChild.user?.id).toBe('EMP011');
+
+      // Root Super Admin with @dbcgroup.asia cannot be deleted or demoted
+      const secondAdmin = await upsertEmployee('EMP011', {
+        id: 'EMP070',
+        name: 'แอดมินรอง',
+        email: 'co.admin@dbcgroup.asia',
+        role: 'admin',
+      });
+      expect(secondAdmin.success).toBe(true);
+
+      const attemptDemoteRut = await upsertEmployee('EMP070', {
+        id: 'EMP011',
+        role: 'employee',
+      });
+      expect(attemptDemoteRut.success).toBe(false);
+      expect(attemptDemoteRut.error).toContain(
+        'ไม่สามารถเปลี่ยนตำแหน่งหรือลดสิทธิ์ของผู้ดูแลระบบสูงสุดได้'
+      );
+
+      const attemptDeleteRut = await deleteEmployee('EMP070', 'EMP011');
+      expect(attemptDeleteRut.success).toBe(false);
+      expect(attemptDeleteRut.error).toContain(
+        'ไม่สามารถลบบัญชีผู้ดูแลระบบสูงสุด'
+      );
+
+      // Another admin cannot hijack or strip root Super Admin's email to a non-Super-Admin email
+      const attemptStripRutEmail = await upsertEmployee('EMP070', {
+        id: 'EMP011',
+        email: 'hijacked@company.co.th',
+      });
+      expect(attemptStripRutEmail.success).toBe(false);
+      expect(attemptStripRutEmail.error).toContain(
+        'ไม่สามารถเปลี่ยนอีเมลของผู้ดูแลระบบสูงสุด'
+      );
+
+      // Switching root Super Admin's email back and forth between @dbcgroup.asia and @digitalbusinessconsult.asia is allowed
+      const switchRutToPrimary = await upsertEmployee('EMP011', {
+        id: 'EMP011',
+        email: 'rut.wa@digitalbusinessconsult.asia',
+      });
+      expect(switchRutToPrimary.success).toBe(true);
+      expect(switchRutToPrimary.user?.email).toBe(
+        'rut.wa@digitalbusinessconsult.asia'
+      );
     });
   });
 });
