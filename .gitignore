@@ -14,3 +14,4 @@ yarn-error.log*
 next-env.d.ts
 .data
 *.zip
+UPLOAD_TO_SERVER

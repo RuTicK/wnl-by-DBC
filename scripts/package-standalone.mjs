@@ -110,7 +110,19 @@ NODE_ENV=production PORT=3000 node server.js
 fs.writeFileSync(path.join(standaloneDir, 'README_SERVER_ADMIN.txt'), readmeContent);
 console.log('✅ Created README_SERVER_ADMIN.txt for Server Administrator');
 
-// 7. Automatically create hr-dbc-deploy.zip
+// 7. Sync into UPLOAD_TO_SERVER folder (unzipped, ready to drag-and-drop)
+const uploadDir = path.join(rootDir, 'UPLOAD_TO_SERVER');
+try {
+  if (fs.existsSync(uploadDir)) {
+    fs.rmSync(uploadDir, { recursive: true, force: true });
+  }
+  fs.cpSync(standaloneDir, uploadDir, { recursive: true });
+  console.log('✅ Synchronized unzipped files into folder: UPLOAD_TO_SERVER/');
+} catch (err) {
+  console.log('⚠️ Note: Sync to UPLOAD_TO_SERVER failed:', err.message);
+}
+
+// 8. Automatically create hr-dbc-deploy.zip
 import { execSync } from 'node:child_process';
 const zipPath = path.join(rootDir, 'hr-dbc-deploy.zip');
 try {
@@ -122,6 +134,7 @@ try {
 }
 
 console.log('\n🎉 Standalone package ready at: .next/standalone/');
+console.log('📂 Ready-to-upload unzipped folder: D:\\HR\\UPLOAD_TO_SERVER\\');
 console.log('📦 Deployment zip file: hr-dbc-deploy.zip');
 console.log('👉 To run locally for testing:');
 console.log('   cd .next/standalone && node server.js');
