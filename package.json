@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:package": "next build && node scripts/package-standalone.mjs",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
