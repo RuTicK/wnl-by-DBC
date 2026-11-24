@@ -169,8 +169,46 @@ describe('Modern Clean UI Redesign & Edge-Case Verification', () => {
       />
     );
     expect(rejectedHtml).toContain('คำขอไม่ได้รับการอนุมัติในขั้นที่ 1');
+    expect(rejectedHtml).toContain('สิ้นสุดขั้น 1');
+    expect(rejectedHtml).toContain('คำขอสิ้นสุดที่ขั้นที่ 1 (ไม่ถึงขั้นตอน HR)');
     expect(rejectedHtml).toContain('ติดช่วงส่งมอบงานสำคัญ');
     expect(rejectedHtml).not.toContain('รออนุมัติ');
+
+    const cLevelRejectedByHr: LeaveRequest = {
+      id: 'LV-CEO-REJECT-2',
+      userId: cLevelUser.id,
+      userName: cLevelUser.name,
+      requesterRole: 'c_level',
+      department: cLevelUser.department,
+      leaveType: 'wfh',
+      durationType: 'full',
+      startDate: '2026-12-03',
+      endDate: '2026-12-03',
+      totalDays: 1,
+      reason: 'ประชุมผู้ถือหุ้น',
+      status: 'rejected',
+      rejectedBy: {
+        userId: hrUser.id,
+        userName: hrUser.name,
+        role: 'hr',
+        rejectedAt: '2026-11-22T09:00:00.000Z',
+        reason: 'ลงวันผิดเดือน',
+      },
+      createdAt: '2026-11-20T09:00:00.000Z',
+    };
+
+    const cLevelRejectedHtml = renderToStaticMarkup(
+      <ApprovalAndHistoryView
+        currentUser={{ ...cLevelUser, role: 'employee' }}
+        leaves={[cLevelRejectedByHr]}
+        onProcessLeaveAction={async () => ({ success: true })}
+      />
+    );
+    expect(cLevelRejectedHtml).toContain('ข้ามขั้น 1');
+    expect(cLevelRejectedHtml).toContain('คำขอไม่ได้รับการอนุมัติในขั้นที่ 2');
+    expect(cLevelRejectedHtml).not.toContain('คำขอไม่ได้รับการอนุมัติในขั้นที่ 1');
+    // Only Step 2 should carry the rose rejection card background, not Step 1
+    expect((cLevelRejectedHtml.match(/bg-rose-50\/35/g) || []).length).toBe(1);
 
     const cLevelLeave: LeaveRequest = {
       id: 'LV-CEO-1',
@@ -215,7 +253,7 @@ describe('Modern Clean UI Redesign & Edge-Case Verification', () => {
     expect(html).toContain('min-w-[440px]');
   });
 
-  it('renders keyboard-accessible calendar day cells in LeaveCalendar', () => {
+  it('renders keyboard-accessible calendar day cells and scroll-margin inspector in LeaveCalendar', () => {
     const html = renderToStaticMarkup(
       <LeaveCalendar
         currentUser={veteranEmployee}
@@ -227,9 +265,11 @@ describe('Modern Clean UI Redesign & Edge-Case Verification', () => {
     expect(html).toContain('role="button"');
     expect(html).toContain('tabindex="0"');
     expect(html).toContain('aria-pressed="true"');
+    expect(html).toContain('scroll-mt-28');
+    expect(html).toContain('focus-visible:ring-[#0066FF]');
   });
 
-  it('renders clean NotFound and LoginView pages and keeps CSS/header invariants sound', () => {
+  it('renders clean NotFound and LoginView pages and keeps CSS/header/modal stacking invariants sound', () => {
     const notFoundHtml = renderToStaticMarkup(<NotFound />);
     expect(notFoundHtml).toContain('Error 404');
     expect(notFoundHtml).toContain('ไม่พบหน้าที่ต้องการ');
@@ -251,6 +291,8 @@ describe('Modern Clean UI Redesign & Edge-Case Verification', () => {
     expect(pageSource).toContain('aria-expanded={isMobileQuotaOpen}');
     // Ensure <header> does not apply backdrop-blur directly on <header>, keeping fixed backdrop viewport-relative
     expect(pageSource).not.toMatch(/<header[^>]*backdrop-blur/);
+    // Ensure <main> does not create a stacking context via animate-ui-fade (which would trap z-50 modals below sidebar/header/nav)
+    expect(pageSource).not.toMatch(/<main[^>]*animate-ui-fade/);
 
     const cssSource = fs.readFileSync(
       path.resolve(__dirname, '../../app/globals.css'),
@@ -259,5 +301,7 @@ describe('Modern Clean UI Redesign & Edge-Case Verification', () => {
     expect(cssSource).toContain('@layer base');
     expect(cssSource).toContain('overflow-x: clip;');
     expect(cssSource).not.toContain('overflow-x: hidden;');
+    expect(cssSource).toContain('backwards;');
+    expect(cssSource).not.toMatch(/animation: ui(?:FadeIn|SlideUp|ScaleIn)[^;]*both;/);
   });
 });

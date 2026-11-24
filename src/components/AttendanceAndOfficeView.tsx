@@ -406,9 +406,9 @@ export default function AttendanceAndOfficeView({
       )}
 
       {/* Top Grid: Left = My Check-in/Check-out Card (5 cols), Right = Office Summary KPIs (7 cols) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-stretch">
         {/* Left: My Check-in / Check-out Hero Card */}
-        <div className="lg:col-span-5 rounded-2xl bg-white p-5 sm:p-6 border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] flex flex-col justify-between space-y-5">
+        <div className="xl:col-span-5 rounded-2xl bg-white p-5 sm:p-6 border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] flex flex-col justify-between space-y-5">
           <div className="space-y-4">
             {/* Header: Greeting + Live Clock */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
@@ -421,7 +421,7 @@ export default function AttendanceAndOfficeView({
                   textClass="text-sm"
                 />
                 <div className="min-w-0">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                  <span className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">
                     ลงเวลาเข้า-ออกงาน
                   </span>
                   <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight truncate">
@@ -436,9 +436,9 @@ export default function AttendanceAndOfficeView({
               </div>
 
               {/* Clean Digital Clock Pill */}
-              <div className="inline-flex items-center justify-center gap-2 self-stretch sm:self-center bg-slate-50 border border-slate-200/80 px-3.5 py-2 rounded-xl shrink-0">
+              <div className="inline-flex items-center justify-center gap-2 self-stretch sm:self-center bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-xl shrink-0">
                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                <span className="font-mono text-sm sm:text-base font-bold text-slate-900 tabular-nums tracking-tight">
+                <span className="font-mono text-sm font-bold text-slate-900 tabular-nums tracking-tight whitespace-nowrap">
                   {liveTime || '--:--:--'}
                 </span>
               </div>
@@ -483,13 +483,19 @@ export default function AttendanceAndOfficeView({
                   <div className="grid grid-cols-2 gap-2.5 text-xs sm:text-sm">
                     <div className="rounded-xl bg-white p-3.5 border border-slate-200/70">
                       <div className="text-slate-400 font-medium text-[11px]">เวลาเข้างาน</div>
-                      <div className="text-base sm:text-lg font-bold text-emerald-700 font-mono tabular-nums mt-0.5">
+                      <div className="text-base sm:text-lg font-bold text-emerald-700 font-mono tabular-nums whitespace-nowrap mt-0.5">
                         {myTodayRecord.checkInTime} น.
                       </div>
                     </div>
                     <div className="rounded-xl bg-white p-3.5 border border-slate-200/70">
                       <div className="text-slate-400 font-medium text-[11px]">เวลาออกงาน</div>
-                      <div className="text-sm sm:text-base font-bold font-mono tabular-nums mt-0.5 text-slate-800">
+                      <div
+                        className={`text-sm sm:text-base font-bold tabular-nums mt-0.5 text-slate-800 ${
+                          myTodayRecord.checkOutTime
+                            ? 'font-mono whitespace-nowrap'
+                            : 'leading-snug'
+                        }`}
+                      >
                         {myTodayRecord.checkOutTime
                           ? `${myTodayRecord.checkOutTime} น.`
                           : `ทำงานแล้ว ${getElapsedDuration(myTodayRecord.checkInTime)}`}
@@ -698,11 +704,11 @@ export default function AttendanceAndOfficeView({
         </div>
 
         {/* Right: Who's in Office Today Summary & Filters */}
-        <div className="lg:col-span-7 rounded-2xl bg-white p-5 sm:p-6 border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] flex flex-col justify-between space-y-5">
+        <div className="xl:col-span-7 rounded-2xl bg-white p-5 sm:p-6 border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
             <div>
               <div className="flex items-center gap-2">
-                <Users className="h-4.5 w-4.5 text-[#0066FF]" />
+                <Users className="h-4.5 w-4.5 text-[#0066FF] shrink-0" />
                 <h3 className="text-base font-bold text-slate-900 tracking-tight">
                   สถานะพนักงานรายวัน
                 </h3>
@@ -734,57 +740,57 @@ export default function AttendanceAndOfficeView({
           </div>
 
           {/* 5 Clean Unified Status Counter Tiles */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-3 2xl:grid-cols-5 gap-2.5">
             <div className="rounded-xl bg-slate-50/70 border border-slate-200/65 p-3.5 transition hover:border-emerald-200 hover:bg-emerald-50/25">
-              <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-                <span>อยู่ Office</span>
+              <div className="flex items-center justify-between gap-1.5 text-xs font-medium text-slate-500">
+                <span className="whitespace-nowrap">อยู่ Office</span>
                 <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
               </div>
-              <div className="mt-2 text-2xl font-bold text-slate-900 tabular-nums tracking-tight">
+              <div className="mt-2 text-2xl font-bold text-slate-900 tabular-nums tracking-tight whitespace-nowrap">
                 {dailyBoard.inOffice.length}{' '}
                 <span className="text-xs font-medium text-slate-400">คน</span>
               </div>
             </div>
 
             <div className="rounded-xl bg-slate-50/70 border border-slate-200/65 p-3.5 transition hover:border-blue-200 hover:bg-blue-50/25">
-              <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-                <span>WFH / WFA</span>
+              <div className="flex items-center justify-between gap-1.5 text-xs font-medium text-slate-500">
+                <span className="whitespace-nowrap">WFH / WFA</span>
                 <span className="h-2 w-2 rounded-full bg-[#0066FF] shrink-0" />
               </div>
-              <div className="mt-2 text-2xl font-bold text-slate-900 tabular-nums tracking-tight">
+              <div className="mt-2 text-2xl font-bold text-slate-900 tabular-nums tracking-tight whitespace-nowrap">
                 {dailyBoard.remoteWfhWfa.length}{' '}
                 <span className="text-xs font-medium text-slate-400">คน</span>
               </div>
             </div>
 
             <div className="rounded-xl bg-slate-50/70 border border-slate-200/65 p-3.5 transition hover:border-teal-200 hover:bg-teal-50/25">
-              <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-                <span>พบลูกค้า</span>
+              <div className="flex items-center justify-between gap-1.5 text-xs font-medium text-slate-500">
+                <span className="whitespace-nowrap">พบลูกค้า</span>
                 <span className="h-2 w-2 rounded-full bg-teal-500 shrink-0" />
               </div>
-              <div className="mt-2 text-2xl font-bold text-slate-900 tabular-nums tracking-tight">
+              <div className="mt-2 text-2xl font-bold text-slate-900 tabular-nums tracking-tight whitespace-nowrap">
                 {dailyBoard.offsiteClient.length}{' '}
                 <span className="text-xs font-medium text-slate-400">คน</span>
               </div>
             </div>
 
             <div className="rounded-xl bg-slate-50/70 border border-slate-200/65 p-3.5 transition hover:border-rose-200 hover:bg-rose-50/25">
-              <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-                <span>ลางานวันนี้</span>
+              <div className="flex items-center justify-between gap-1.5 text-xs font-medium text-slate-500">
+                <span className="whitespace-nowrap">ลางานวันนี้</span>
                 <span className="h-2 w-2 rounded-full bg-rose-500 shrink-0" />
               </div>
-              <div className="mt-2 text-2xl font-bold text-slate-900 tabular-nums tracking-tight">
+              <div className="mt-2 text-2xl font-bold text-slate-900 tabular-nums tracking-tight whitespace-nowrap">
                 {dailyBoard.onLeave.length}{' '}
                 <span className="text-xs font-medium text-slate-400">คน</span>
               </div>
             </div>
 
-            <div className="rounded-xl bg-slate-50/70 border border-slate-200/65 p-3.5 col-span-2 sm:col-span-1 transition hover:border-slate-300">
-              <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-                <span>ยังไม่ลงเวลา</span>
+            <div className="rounded-xl bg-slate-50/70 border border-slate-200/65 p-3.5 col-span-2 lg:col-span-1 xl:col-span-2 2xl:col-span-1 transition hover:border-slate-300">
+              <div className="flex items-center justify-between gap-1.5 text-xs font-medium text-slate-500">
+                <span className="whitespace-nowrap">ยังไม่ลงเวลา</span>
                 <span className="h-2 w-2 rounded-full bg-slate-300 shrink-0" />
               </div>
-              <div className="mt-2 text-2xl font-bold text-slate-900 tabular-nums tracking-tight">
+              <div className="mt-2 text-2xl font-bold text-slate-900 tabular-nums tracking-tight whitespace-nowrap">
                 {dailyBoard.notCheckedIn.length}{' '}
                 <span className="text-xs font-medium text-slate-400">คน</span>
               </div>
@@ -842,7 +848,7 @@ export default function AttendanceAndOfficeView({
           </div>
 
           {/* Search & Department Filter Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2 border-t border-slate-100">
+          <div className="mt-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-3 border-t border-slate-100">
             <div className="relative w-full sm:w-auto">
               <Users className="h-4 w-4 text-slate-400 pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" />
               <select
@@ -887,8 +893,8 @@ export default function AttendanceAndOfficeView({
 
       {/* Detailed Columns: Mobile Segmented Switcher & 3-Column Desktop View */}
       <div className="space-y-3">
-        {/* Mobile Segmented Switcher (< lg) */}
-        <div className="lg:hidden flex items-center rounded-xl bg-slate-200/60 p-1 gap-1">
+        {/* Mobile/Tablet Segmented Switcher (< xl) */}
+        <div className="xl:hidden flex items-center rounded-xl bg-slate-200/60 p-1 gap-1">
           <button
             type="button"
             onClick={() => setMobileBoardTab('office')}
@@ -933,12 +939,12 @@ export default function AttendanceAndOfficeView({
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 items-start">
           {/* Column 1: ใครอยู่ Office บ้าง */}
           <div
             className={`${
               mobileBoardTab === 'office' ? 'block' : 'hidden'
-            } lg:block rounded-2xl bg-white border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden`}
+            } xl:block rounded-2xl bg-white border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden`}
           >
             <div className="border-b border-slate-100 px-4 sm:px-5 py-3.5 flex items-center justify-between">
               <div className="flex items-center gap-2 font-semibold text-sm text-slate-900">
@@ -1002,7 +1008,7 @@ export default function AttendanceAndOfficeView({
           <div
             className={`${
               mobileBoardTab === 'remote' ? 'block' : 'hidden'
-            } lg:block rounded-2xl bg-white border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden`}
+            } xl:block rounded-2xl bg-white border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden`}
           >
             <div className="border-b border-slate-100 px-4 sm:px-5 py-3.5 flex items-center justify-between">
               <div className="flex items-center gap-2 font-semibold text-sm text-slate-900">
@@ -1115,7 +1121,7 @@ export default function AttendanceAndOfficeView({
           <div
             className={`${
               mobileBoardTab === 'leaves' ? 'block' : 'hidden'
-            } lg:block rounded-2xl bg-white border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden`}
+            } xl:block rounded-2xl bg-white border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden`}
           >
             <div className="border-b border-slate-100 px-4 sm:px-5 py-3.5 flex items-center justify-between">
               <div className="flex items-center gap-2 font-semibold text-sm text-slate-900">

@@ -265,17 +265,17 @@ export default function HrDashboardView({
   return (
     <div className="space-y-5 sm:space-y-6">
       {/* Header & Export Buttons */}
-      <div className="rounded-2xl bg-white p-5 sm:p-6 shadow-[0_1px_2px_rgba(15,23,42,0.03)] border border-slate-200/75 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
+      <div className="rounded-2xl bg-white p-5 sm:p-6 shadow-[0_1px_2px_rgba(15,23,42,0.03)] border border-slate-200/75 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5 min-w-0">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-[#0066FF] border border-blue-200/60 shrink-0">
             <BarChart3 className="h-5 w-5" />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
                 สถิติการลา &amp; โควต้าพนักงาน
               </h2>
-              <span className="rounded-full bg-blue-50 border border-blue-200/70 px-2.5 py-0.5 text-xs font-semibold text-[#0066FF] tabular-nums">
+              <span className="rounded-full bg-blue-50 border border-blue-200/70 px-2.5 py-0.5 text-xs font-semibold text-[#0066FF] tabular-nums whitespace-nowrap shrink-0">
                 ประจำปี {year}
               </span>
             </div>
@@ -307,7 +307,7 @@ export default function HrDashboardView({
       </div>
 
       {/* KPI Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3.5 sm:gap-4">
         <div className="rounded-2xl bg-white p-4 sm:p-5 border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
           <div className="flex items-center justify-between gap-2 text-xs font-medium text-slate-500">
             <span>อนุมัติแล้วรวม (ปีนี้)</span>
@@ -384,24 +384,24 @@ export default function HrDashboardView({
       </div>
 
       {/* Charts Row: Monthly Chart + Department Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
         {/* Monthly Leave Bar Chart (7 cols) */}
-        <div className="lg:col-span-7 rounded-2xl bg-white p-5 sm:p-6 border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] space-y-4">
+        <div className="xl:col-span-7 rounded-2xl bg-white p-5 sm:p-6 border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-            <div>
+            <div className="min-w-0">
               <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
-                <BarChart3 className="h-4.5 w-4.5 text-[#0066FF]" />
+                <BarChart3 className="h-4.5 w-4.5 text-[#0066FF] shrink-0" />
                 <span>กราฟสรุปจำนวนวันลา &amp; WFH/WFA รายเดือน (ม.ค. - ธ.ค.)</span>
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
                 แสดงจำนวนวันแยกตามประเภททั้ง 5 ประเภทในแต่ละเดือน
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2.5 text-[11px] text-slate-500 font-medium">
+            <div className="flex flex-wrap items-center gap-2.5 text-[11px] text-slate-500 font-medium shrink-0">
               {REQUESTABLE_LEAVE_TYPES.map((t) => (
-                <span key={t} className="flex items-center gap-1.5">
+                <span key={t} className="flex items-center gap-1.5 whitespace-nowrap">
                   <span
-                    className="h-2.5 w-2.5 rounded-full"
+                    className="h-2.5 w-2.5 rounded-full shrink-0"
                     style={{ backgroundColor: LEAVE_TYPE_META[t].color }}
                   />
                   {LEAVE_TYPE_META[t].shortLabel}
@@ -410,7 +410,7 @@ export default function HrDashboardView({
             </div>
           </div>
 
-          <div className="overflow-x-auto no-scrollbar momentum-scroll">
+          <div className="overflow-x-auto momentum-scroll pb-1">
             <div className="grid grid-cols-12 gap-1.5 sm:gap-2 items-end h-56 min-w-[440px] pt-6 pb-2 px-1 border-b border-slate-100">
             {monthlyStats.months.map((m) => {
               const heightPct =
@@ -458,10 +458,10 @@ export default function HrDashboardView({
         </div>
 
         {/* Department Leave Breakdown (5 cols) */}
-        <div className="lg:col-span-5 rounded-2xl bg-white p-5 sm:p-6 border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] space-y-4">
+        <div className="xl:col-span-5 rounded-2xl bg-white p-5 sm:p-6 border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] space-y-4">
           <div>
             <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
-              <PieChart className="h-4.5 w-4.5 text-[#0066FF]" />
+              <PieChart className="h-4.5 w-4.5 text-[#0066FF] shrink-0" />
               <span>สถิติแยกตามแผนก (Department Summary)</span>
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
@@ -477,15 +477,15 @@ export default function HrDashboardView({
                   : 0;
               return (
                 <div key={d.department} className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs sm:text-sm">
-                    <span className="font-semibold text-slate-800 flex items-center gap-1.5">
-                      <Building2 className="h-3.5 w-3.5 text-slate-400" />
-                      {d.department}{' '}
-                      <span className="font-normal text-slate-400 text-xs tabular-nums">
+                  <div className="flex items-center justify-between gap-2 text-xs sm:text-sm">
+                    <span className="font-semibold text-slate-800 flex items-center gap-1.5 min-w-0">
+                      <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                      <span className="truncate">{d.department}</span>{' '}
+                      <span className="font-normal text-slate-400 text-xs tabular-nums shrink-0 whitespace-nowrap">
                         ({d.headcount} คน)
                       </span>
                     </span>
-                    <span className="font-bold text-[#0066FF] tabular-nums">
+                    <span className="font-bold text-[#0066FF] tabular-nums shrink-0 whitespace-nowrap">
                       รวม {d.total} วัน
                     </span>
                   </div>
@@ -569,9 +569,9 @@ export default function HrDashboardView({
         <div className="overflow-x-auto momentum-scroll pb-2">
           <table className="w-full text-left border-collapse text-xs sm:text-sm">
             <thead>
-              <tr className="bg-slate-50/80 border-b border-slate-100 text-slate-500 font-semibold text-xs">
-                <th className="py-3.5 px-5">พนักงาน (TH / EN / Email)</th>
-                <th className="py-3.5 px-4">แผนก / เริ่มงาน (โปร 119 วัน)</th>
+              <tr className="bg-slate-50/80 border-b border-slate-100 text-slate-500 font-semibold text-xs whitespace-nowrap">
+                <th className="py-3.5 px-5 min-w-[220px]">พนักงาน (TH / EN / Email)</th>
+                <th className="py-3.5 px-4 min-w-[180px]">แผนก / เริ่มงาน (โปร 119 วัน)</th>
                 <th className="py-3.5 px-3 text-center">
                   <span className="inline-flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-rose-500" />

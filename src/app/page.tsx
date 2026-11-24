@@ -221,12 +221,14 @@ export default function HomePage() {
   }, [systemData?.attendance, currentUser, todayStr]);
 
   const handleOpenRequestModal = (dateStr?: string) => {
+    setIsMobileQuotaOpen(false);
     setModalInitialDate(dateStr);
     setIsPolicyOnlyView(false);
     setIsPolicyModalOpen(true);
   };
 
   const handleOpenPolicyOnlyModal = () => {
+    setIsMobileQuotaOpen(false);
     setIsPolicyOnlyView(true);
     setIsPolicyModalOpen(true);
   };
@@ -833,7 +835,13 @@ export default function HomePage() {
             isMobileQuotaOpen ? 'z-50' : 'z-30'
           }`}
         >
-          <div className="relative z-40 bg-white/85 backdrop-blur-xl px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-3">
+          <div
+            className={`relative z-40 px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-3 ${
+              isMobileQuotaOpen
+                ? 'bg-white'
+                : 'bg-white/85 backdrop-blur-xl'
+            }`}
+          >
             {/* Mobile Branding (only visible on mobile) */}
             <div className="flex md:hidden items-center gap-2.5 min-w-0">
               <UserAvatar
@@ -860,13 +868,13 @@ export default function HomePage() {
 
             {/* Desktop View Header / Title */}
             <div className="hidden md:flex items-center gap-2.5 min-w-0">
-              <div className="text-base lg:text-[17px] font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
+              <div className="text-base lg:text-[17px] font-bold text-slate-900 tracking-tight flex items-center gap-2.5 min-w-0">
                 {activeTab === 'OFFICE' && (
                   <>
                     <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-200/60 shrink-0">
                       <MapPin className="h-4 w-4" />
                     </span>
-                    <span>ลงเวลาเข้างาน &amp; สถานะออฟฟิศ</span>
+                    <span className="truncate">ลงเวลาเข้างาน &amp; สถานะออฟฟิศ</span>
                   </>
                 )}
                 {activeTab === 'CALENDAR' && (
@@ -874,7 +882,7 @@ export default function HomePage() {
                     <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-[#0066FF] border border-blue-200/60 shrink-0">
                       <Calendar className="h-4 w-4" />
                     </span>
-                    <span>ปฏิทินวันลา &amp; โควต้า</span>
+                    <span className="truncate">ปฏิทินวันลา &amp; โควต้า</span>
                   </>
                 )}
                 {activeTab === 'APPROVALS' && (
@@ -882,7 +890,7 @@ export default function HomePage() {
                     <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 border border-amber-200/60 shrink-0">
                       <CheckSquare className="h-4 w-4" />
                     </span>
-                    <span>
+                    <span className="truncate">
                       {currentUser.role === 'employee'
                         ? 'ประวัติการลาของฉัน'
                         : 'อนุมัติใบลา & ประวัติคำขอ'}
@@ -894,7 +902,7 @@ export default function HomePage() {
                     <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-[#0066FF] border border-blue-200/60 shrink-0">
                       <BarChart3 className="h-4 w-4" />
                     </span>
-                    <span>สถิติ &amp; รายงานวันลา</span>
+                    <span className="truncate">สถิติ &amp; รายงานวันลา</span>
                   </>
                 )}
                 {activeTab === 'MANAGEMENT' && (
@@ -902,7 +910,7 @@ export default function HomePage() {
                     <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700 border border-slate-200/70 shrink-0">
                       <Settings className="h-4 w-4" />
                     </span>
-                    <span>จัดการพนักงาน &amp; วันหยุด</span>
+                    <span className="truncate">จัดการพนักงาน &amp; วันหยุด</span>
                   </>
                 )}
               </div>
@@ -912,8 +920,8 @@ export default function HomePage() {
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               {/* Today Attendance Status Indicator */}
               {myTodayAttendance ? (
-                <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/80 px-3 py-1.5 text-xs font-semibold text-emerald-700 tabular-nums">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/80 px-3 py-1.5 text-xs font-semibold text-emerald-700 tabular-nums whitespace-nowrap">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
                   <span>
                     {myTodayAttendance.checkOutTime
                       ? `เลิกงาน ${myTodayAttendance.checkOutTime} น.`
@@ -924,8 +932,8 @@ export default function HomePage() {
                   </span>
                 </span>
               ) : (
-                <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-amber-50/80 px-3 py-1.5 text-xs font-semibold text-amber-800">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-amber-50/80 px-3 py-1.5 text-xs font-semibold text-amber-800 whitespace-nowrap">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
                   <span>ยังไม่ Check-in วันนี้</span>
                 </span>
               )}
@@ -934,7 +942,7 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={handleOpenPolicyOnlyModal}
-                className="hidden lg:flex items-center gap-2 rounded-full border border-slate-200/80 bg-slate-50/80 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-white hover:border-slate-300 transition cursor-pointer tabular-nums"
+                className="hidden xl:flex items-center gap-2 rounded-full border border-slate-200/80 bg-slate-50/80 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-white hover:border-slate-300 transition cursor-pointer tabular-nums"
                 title="คลิกเพื่อดูระเบียบและเงื่อนไขการลา"
               >
                 <span className="text-slate-400 font-medium text-[11px]">โควต้า</span>
@@ -995,7 +1003,13 @@ export default function HomePage() {
           </div>
 
           {/* Mobile Quota Quick Bar */}
-          <div className="relative z-40 md:hidden border-t border-slate-100 bg-slate-50/90 backdrop-blur-xl px-3 py-1.5">
+          <div
+            className={`relative z-40 md:hidden border-t border-slate-100 px-3 py-1.5 ${
+              isMobileQuotaOpen
+                ? 'bg-slate-50'
+                : 'bg-slate-50/90 backdrop-blur-xl'
+            }`}
+          >
             <div className="flex items-center justify-between gap-1.5">
               {(['sick', 'personal', 'vacation'] as LeaveType[]).map((type) => {
                 const meta = LEAVE_TYPE_META[type];
@@ -1015,6 +1029,8 @@ export default function HomePage() {
                     key={type}
                     type="button"
                     onClick={() => setIsMobileQuotaOpen((prev) => !prev)}
+                    aria-expanded={isMobileQuotaOpen}
+                    aria-controls="mobile-quota-drawer"
                     className="flex-1 rounded-lg bg-white border border-slate-200/80 px-2 py-1.5 flex items-center justify-between text-xs active:scale-95 transition cursor-pointer min-w-0"
                     title={`โควต้า${meta.shortLabel}คงเหลือ ${q.remainingDays}/${q.totalQuota} วัน (แตะเพื่อดูรายละเอียด)`}
                   >
@@ -1181,7 +1197,7 @@ export default function HomePage() {
         </header>
 
       {/* Main Content Container */}
-      <main className="mx-auto w-full max-w-[1360px] flex-1 px-4 sm:px-6 lg:px-8 py-5 sm:py-6 pb-24 md:pb-10 space-y-6 animate-ui-fade">
+      <main className="mx-auto w-full max-w-[1360px] flex-1 px-4 sm:px-6 lg:px-8 py-5 sm:py-6 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] md:pb-10 space-y-6">
         {/* Google Sheets API Warning Banner for Admin */}
         {currentUser.role === 'admin' && systemData.storageMode === 'demo_local' && systemData.syncError && (
           <div className="rounded-2xl bg-amber-50/90 border border-amber-200/80 p-4 text-xs sm:text-sm text-amber-950 flex items-start gap-3">

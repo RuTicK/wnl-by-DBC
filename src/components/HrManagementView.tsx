@@ -801,11 +801,11 @@ export default function HrManagementView({
           <div className="overflow-x-auto momentum-scroll pb-2">
             <table className="w-full text-left border-collapse text-xs sm:text-sm">
               <thead>
-                <tr className="bg-slate-50/80 border-b border-slate-100 text-slate-500 font-semibold text-xs">
-                  <th className="py-3.5 px-5">รหัส / ชื่อภาษาไทย</th>
-                  <th className="py-3.5 px-4">Google Email / EN</th>
+                <tr className="bg-slate-50/80 border-b border-slate-100 text-slate-500 font-semibold text-xs whitespace-nowrap">
+                  <th className="py-3.5 px-5 min-w-[200px]">รหัส / ชื่อภาษาไทย</th>
+                  <th className="py-3.5 px-4 min-w-[220px]">Google Email / EN</th>
                   <th className="py-3.5 px-3">บทบาท</th>
-                  <th className="py-3.5 px-3">ฝ่าย / ตำแหน่ง</th>
+                  <th className="py-3.5 px-3 min-w-[140px]">ฝ่าย / ตำแหน่ง</th>
                   <th className="py-3.5 px-3">เริ่มงาน (โปร 119 วัน)</th>
                   <th className="py-3.5 px-3 text-center">
                     โควต้า (ป่วย/กิจ/พักร้อน)
@@ -828,8 +828,8 @@ export default function HrManagementView({
                             textClass="text-xs"
                             fallbackBgClass="bg-slate-100 text-slate-600"
                           />
-                          <div>
-                            <div className="font-semibold text-sm text-slate-900">{u.name}</div>
+                          <div className="min-w-0">
+                            <div className="font-semibold text-sm text-slate-900 whitespace-nowrap">{u.name}</div>
                             <div className="font-mono text-[11px] text-slate-400 mt-0.5">
                               {u.id}
                             </div>
@@ -966,9 +966,9 @@ export default function HrManagementView({
 
       {/* SECTION 2: HOLIDAYS MANAGEMENT */}
       {activeSection === 'HOLIDAYS' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
           {/* Left: Add/Edit Holiday Form */}
-          <div className="lg:col-span-5 rounded-2xl bg-white p-5 sm:p-6 border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] space-y-4">
+          <div className="xl:col-span-5 rounded-2xl bg-white p-5 sm:p-6 border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] space-y-4">
             <div className="border-b border-slate-100 pb-3.5">
               <h3 className="text-base font-bold text-slate-900 tracking-tight">
                 {editingHolidayId
@@ -1049,7 +1049,7 @@ export default function HrManagementView({
           </div>
 
           {/* Right: Holidays List */}
-          <div className="lg:col-span-7 rounded-2xl bg-white border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden">
+          <div className="xl:col-span-7 rounded-2xl bg-white border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden">
             <div className="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-base font-bold text-slate-900 tracking-tight">
                 รายการวันหยุดประจำปีทั้งหมด
@@ -1109,6 +1109,11 @@ export default function HrManagementView({
         <div
           role="dialog"
           aria-modal="true"
+          aria-label={
+            editingEmpId
+              ? `แก้ไขข้อมูลพนักงาน (${editingEmpId})`
+              : 'เพิ่มพนักงานใหม่'
+          }
           onClick={(e) => {
             if (e.target === e.currentTarget && !savingEmp) {
               closeEmployeeModal();
@@ -1165,10 +1170,14 @@ export default function HrManagementView({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1.5">
+                  <label
+                    htmlFor="emp-custom-id"
+                    className="block font-semibold text-slate-700 mb-1.5"
+                  >
                     รหัสพนักงาน <span className="text-rose-500">*</span>
                   </label>
                   <input
+                    id="emp-custom-id"
                     type="text"
                     value={empCustomId}
                     onChange={(e) => setEmpCustomId(e.target.value)}
@@ -1263,10 +1272,14 @@ export default function HrManagementView({
                 )}
 
                 <div className="sm:col-span-2">
-                  <label className="block font-semibold text-slate-700 mb-1.5">
+                  <label
+                    htmlFor="emp-email-input"
+                    className="block font-semibold text-slate-700 mb-1.5"
+                  >
                     อีเมล Google <span className="text-rose-500">*</span>
                   </label>
                   <input
+                    id="emp-email-input"
                     type="text"
                     inputMode="email"
                     value={empEmail}
@@ -1292,13 +1305,17 @@ export default function HrManagementView({
                     </p>
                   )}
                   <div className="mt-3">
-                    <label className="block font-semibold text-slate-600 mb-1 text-xs">
+                    <label
+                      htmlFor="emp-secondary-email-input"
+                      className="block font-semibold text-slate-600 mb-1 text-xs"
+                    >
                       อีเมลรอง / อีเมลลูกเพิ่มเติม{' '}
                       <span className="font-normal text-slate-400">
                         (ไม่บังคับ • กรณีชื่อหน้า @ ของ 2 อีเมลไม่เหมือนกัน)
                       </span>
                     </label>
                     <input
+                      id="emp-secondary-email-input"
                       type="email"
                       value={empSecondaryEmail}
                       onChange={(e) => setEmpSecondaryEmail(e.target.value)}
@@ -1376,7 +1393,10 @@ export default function HrManagementView({
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1.5">
+                  <label
+                    htmlFor="emp-start-date-input"
+                    className="block font-semibold text-slate-700 mb-1.5"
+                  >
                     วันที่เริ่มงาน{' '}
                     {isExecutiveRole ? (
                       <span className="text-xs font-normal text-slate-400">
@@ -1389,6 +1409,7 @@ export default function HrManagementView({
                     )}
                   </label>
                   <input
+                    id="emp-start-date-input"
                     type="date"
                     value={empStartDate}
                     onChange={(e) => setEmpStartDate(e.target.value)}
@@ -1398,11 +1419,15 @@ export default function HrManagementView({
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1.5">
+                  <label
+                    htmlFor="emp-thai-name-input"
+                    className="block font-semibold text-slate-700 mb-1.5"
+                  >
                     ชื่อภาษาไทย{' '}
                     <span className="text-xs font-normal text-slate-400">(ไม่บังคับ)</span>
                   </label>
                   <input
+                    id="emp-thai-name-input"
                     type="text"
                     value={empName}
                     onChange={(e) => setEmpName(e.target.value)}
@@ -1412,11 +1437,15 @@ export default function HrManagementView({
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1.5">
+                  <label
+                    htmlFor="emp-position-input"
+                    className="block font-semibold text-slate-700 mb-1.5"
+                  >
                     ตำแหน่ง{' '}
                     <span className="text-xs font-normal text-slate-400">(ไม่บังคับ)</span>
                   </label>
                   <input
+                    id="emp-position-input"
                     type="text"
                     value={empPosition}
                     onChange={(e) => setEmpPosition(e.target.value)}

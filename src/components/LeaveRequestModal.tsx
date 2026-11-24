@@ -394,6 +394,8 @@ export default function LeaveRequestModal({
                     type="button"
                     onClick={() => setLeaveType(type)}
                     className={`rounded-xl border p-3 sm:p-3.5 text-left transition cursor-pointer flex flex-col justify-between min-h-[78px] ${
+                      type === 'wfa' ? 'col-span-2 lg:col-span-1' : ''
+                    } ${
                       isSelected
                         ? 'border-[#0066FF] bg-blue-50/50 ring-2 ring-blue-500/15'
                         : isLockedByProbation

@@ -201,14 +201,14 @@ export default function LeavePolicyModal({
             {/* 4. WFH / WFA (Work From Home & Work From Anywhere) */}
             <div className="rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 flex flex-col justify-between space-y-3">
               <div>
-                <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
                   <div className="flex items-center gap-2 font-bold text-slate-900 text-sm sm:text-base min-w-0">
                     <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-[#0066FF] border border-blue-200/60 shrink-0">
                       <Home className="h-4 w-4" />
                     </span>
-                    <span className="truncate">Work From Home (WFH) / WFA</span>
+                    <span>Work From Home (WFH) / WFA</span>
                   </div>
-                  <span className="rounded-full bg-blue-50 text-[#0066FF] border border-blue-200/80 px-2.5 py-0.5 text-xs font-semibold shrink-0">
+                  <span className="rounded-full bg-blue-50 text-[#0066FF] border border-blue-200/80 px-2.5 py-0.5 text-xs font-semibold shrink-0 whitespace-nowrap">
                     ไม่มีโควต้า (ไม่จำกัด)
                   </span>
                 </div>

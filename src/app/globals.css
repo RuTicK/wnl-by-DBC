@@ -59,6 +59,7 @@
 
   /* Accessible focus rings (layered so Tailwind focus:outline-hidden + focus:ring-* overrides cleanly on inputs) */
   button:focus-visible,
+  [role="button"]:focus-visible,
   a:focus-visible,
   input:focus-visible,
   select:focus-visible,
@@ -132,7 +133,7 @@
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 
@@ -143,20 +144,20 @@
   }
   to {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: none;
   }
 }
 
 .animate-ui-fade {
-  animation: uiFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: uiFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
 .animate-ui-slide-up {
-  animation: uiSlideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: uiSlideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
 .animate-ui-modal {
-  animation: uiScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: uiScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
