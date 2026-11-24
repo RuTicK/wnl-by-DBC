@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   BookOpen,
   Building2,
@@ -77,6 +77,17 @@ export default function LeaveCalendar({
     url: string;
     name: string;
   } | null>(null);
+
+  useEffect(() => {
+    if (!previewAttachment) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setPreviewAttachment(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [previewAttachment]);
 
   const departments = useMemo(() => {
     const set = new Set<string>(COMPANY_DEPARTMENTS);
@@ -210,40 +221,39 @@ export default function LeaveCalendar({
 
   return (
     <div className="space-y-5">
-
-      {/* Main Layout: Calendar Grid (Left 8 cols) + Selected Day Inspector (Right 4 cols) */}
+      {/* Main Layout: Calendar Grid (Left 8 cols) + Sticky Selected Day Inspector (Right 4 cols) */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
         {/* Calendar Grid Card */}
-        <div className="xl:col-span-8 rounded-3xl bg-white shadow-xs border border-slate-200/90 overflow-hidden">
+        <div className="xl:col-span-8 rounded-2xl bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)] border border-slate-200/75 overflow-hidden">
           {/* Calendar Toolbar: Month Navigation & Minimal Controls */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-200/80 px-3.5 sm:px-5 py-3 sm:py-3.5 bg-slate-50/70">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-100 px-4 sm:px-5 py-3.5 bg-white">
             {/* Month Navigation */}
-            <div className="flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2">
-              <div className="flex items-center justify-center gap-1 sm:gap-1.5">
+            <div className="flex items-center justify-between sm:justify-start gap-2">
+              <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={handlePrevMonth}
-                  className="rounded-xl border border-slate-200 bg-white p-2 text-slate-700 hover:bg-slate-100 transition cursor-pointer shadow-2xs min-h-[38px] min-w-[38px] flex items-center justify-center active:scale-95 shrink-0"
+                  className="rounded-xl border border-slate-200/80 bg-white p-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center active:scale-95 shrink-0"
                   aria-label="เดือนก่อนหน้า"
                 >
-                  <ChevronLeft className="h-4.5 w-4.5" />
+                  <ChevronLeft className="h-4 w-4" />
                 </button>
-                <h3 className="text-base sm:text-lg font-black text-slate-900 min-w-[130px] sm:min-w-[160px] text-center tracking-tight">
+                <h3 className="text-base sm:text-[17px] font-bold text-slate-900 min-w-[138px] sm:min-w-[164px] text-center tracking-tight tabular-nums">
                   {THAI_MONTHS[viewMonth]} {viewYear}
                 </h3>
                 <button
                   type="button"
                   onClick={handleNextMonth}
-                  className="rounded-xl border border-slate-200 bg-white p-2 text-slate-700 hover:bg-slate-100 transition cursor-pointer shadow-2xs min-h-[38px] min-w-[38px] flex items-center justify-center active:scale-95 shrink-0"
+                  className="rounded-xl border border-slate-200/80 bg-white p-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center active:scale-95 shrink-0"
                   aria-label="เดือนถัดไป"
                 >
-                  <ChevronRight className="h-4.5 w-4.5" />
+                  <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
               <button
                 type="button"
                 onClick={handleToday}
-                className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-100 transition cursor-pointer shadow-2xs min-h-[38px] shrink-0 active:scale-95"
+                className="rounded-xl border border-slate-200/80 bg-slate-50/80 hover:bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition cursor-pointer min-h-[36px] shrink-0 active:scale-95"
               >
                 วันนี้
               </button>
@@ -254,12 +264,12 @@ export default function LeaveCalendar({
               {(currentUser.role === 'admin' ||
                 currentUser.role === 'hr' ||
                 currentUser.role === 'c_level') && (
-                <div className="relative flex items-center bg-white border border-slate-200 rounded-xl shadow-2xs min-h-[38px] hover:border-blue-300 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100 transition">
+                <div className="relative flex items-center bg-slate-50/70 border border-slate-200/80 rounded-xl min-h-[36px] hover:border-slate-300 focus-within:border-[#0066FF] focus-within:bg-white transition">
                   <Building2 className="h-3.5 w-3.5 text-slate-400 pointer-events-none absolute left-2.5" />
                   <select
                     value={deptFilter}
                     onChange={(e) => setDeptFilter(e.target.value)}
-                    className="appearance-none bg-transparent pl-8 pr-8 py-1.5 font-bold text-slate-700 focus:outline-hidden cursor-pointer text-xs"
+                    className="appearance-none bg-transparent pl-8 pr-7 py-1.5 font-semibold text-slate-700 focus:outline-hidden cursor-pointer text-xs"
                     aria-label="กรองตามแผนก"
                   >
                     <option value="ALL">ทุกแผนก</option>
@@ -269,34 +279,34 @@ export default function LeaveCalendar({
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="h-3.5 w-3.5 text-slate-500 pointer-events-none absolute right-2" />
+                  <ChevronDown className="h-3.5 w-3.5 text-slate-400 pointer-events-none absolute right-2" />
                 </div>
               )}
 
-              <div className="relative flex items-center bg-white border border-slate-200 rounded-xl shadow-2xs min-h-[38px] hover:border-blue-300 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100 transition">
+              <div className="relative flex items-center bg-slate-50/70 border border-slate-200/80 rounded-xl min-h-[36px] hover:border-slate-300 focus-within:border-[#0066FF] focus-within:bg-white transition">
                 <Filter className="h-3.5 w-3.5 text-slate-400 pointer-events-none absolute left-2.5" />
                 <select
                   value={statusFilter}
                   onChange={(e) =>
                     setStatusFilter(e.target.value as 'ACTIVE' | 'APPROVED_ONLY')
                   }
-                  className="appearance-none bg-transparent pl-8 pr-8 py-1.5 font-bold text-slate-700 focus:outline-hidden cursor-pointer text-xs"
+                  className="appearance-none bg-transparent pl-8 pr-7 py-1.5 font-semibold text-slate-700 focus:outline-hidden cursor-pointer text-xs"
                   aria-label="กรองตามสถานะใบลา"
                 >
                   <option value="ACTIVE">ทั้งหมดที่ใช้งาน</option>
                   <option value="APPROVED_ONLY">เฉพาะที่อนุมัติแล้ว</option>
                 </select>
-                <ChevronDown className="h-3.5 w-3.5 text-slate-500 pointer-events-none absolute right-2" />
+                <ChevronDown className="h-3.5 w-3.5 text-slate-400 pointer-events-none absolute right-2" />
               </div>
 
               {onOpenPolicyModal && (
                 <button
                   type="button"
                   onClick={onOpenPolicyModal}
-                  className="rounded-xl border border-blue-200 bg-blue-50/80 hover:bg-blue-100 text-blue-700 px-2.5 py-1.5 text-xs font-bold transition flex items-center gap-1 cursor-pointer shadow-2xs min-h-[38px]"
+                  className="rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 px-2.5 py-1.5 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer min-h-[36px]"
                   title="ดูเงื่อนไขและระเบียบการลางาน"
                 >
-                  <BookOpen className="h-3.5 w-3.5 text-blue-600" />
+                  <BookOpen className="h-3.5 w-3.5 text-slate-500" />
                   <span className="hidden sm:inline">เงื่อนไข</span>
                 </button>
               )}
@@ -304,47 +314,47 @@ export default function LeaveCalendar({
               <button
                 type="button"
                 onClick={() => onOpenRequestModal(selectedDate)}
-                className="rounded-xl bg-gradient-to-r from-[#0066FF] to-[#1D4ED8] hover:from-blue-700 hover:to-[#0A2540] px-3.5 py-1.5 text-xs font-black text-white shadow-xs hover:shadow-md transition flex items-center gap-1.5 cursor-pointer min-h-[38px] active:scale-95"
+                className="rounded-xl bg-[#0066FF] hover:bg-[#0052CC] px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs transition flex items-center gap-1.5 cursor-pointer min-h-[36px] active:scale-95"
               >
-                <CalendarPlus className="h-4 w-4" />
+                <CalendarPlus className="h-3.5 w-3.5" />
                 <span>+ ยื่นใบลา</span>
               </button>
             </div>
           </div>
 
-          {/* Color Legend Bar */}
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 overflow-x-auto no-scrollbar momentum-scroll px-3.5 sm:px-5 py-2 bg-slate-50/40 border-b border-slate-100 flex-nowrap sm:flex-wrap">
-            <span className="inline-flex items-center gap-1 rounded-md bg-rose-50 border border-rose-200 px-2 py-0.5 text-rose-900 shrink-0 text-[11px]">
-              <span className="h-1.5 w-1.5 rounded-full bg-rose-500" /> ลาป่วย
+          {/* Minimal Color Legend Bar */}
+          <div className="flex items-center gap-3.5 text-[11px] font-medium text-slate-500 overflow-x-auto no-scrollbar momentum-scroll px-4 sm:px-5 py-2.5 bg-slate-50/50 border-b border-slate-100 flex-nowrap sm:flex-wrap">
+            <span className="inline-flex items-center gap-1.5 shrink-0">
+              <span className="h-2 w-2 rounded-full bg-rose-500" /> ลาป่วย
             </span>
-            <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-amber-900 shrink-0 text-[11px]">
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> ลากิจ
+            <span className="inline-flex items-center gap-1.5 shrink-0">
+              <span className="h-2 w-2 rounded-full bg-amber-500" /> ลากิจ
             </span>
-            <span className="inline-flex items-center gap-1 rounded-md bg-sky-50 border border-sky-200 px-2 py-0.5 text-sky-900 shrink-0 text-[11px]">
-              <span className="h-1.5 w-1.5 rounded-full bg-sky-500" /> พักร้อน
+            <span className="inline-flex items-center gap-1.5 shrink-0">
+              <span className="h-2 w-2 rounded-full bg-sky-500" /> พักร้อน
             </span>
-            <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 border border-blue-200 px-2 py-0.5 text-[#0A2540] shrink-0 text-[11px]">
-              <span className="h-1.5 w-1.5 rounded-full bg-blue-500" /> WFH
+            <span className="inline-flex items-center gap-1.5 shrink-0">
+              <span className="h-2 w-2 rounded-full bg-[#0066FF]" /> WFH
             </span>
-            <span className="inline-flex items-center gap-1 rounded-md bg-violet-50 border border-violet-200 px-2 py-0.5 text-violet-900 shrink-0 text-[11px]">
-              <span className="h-1.5 w-1.5 rounded-full bg-violet-500" /> WFA
+            <span className="inline-flex items-center gap-1.5 shrink-0">
+              <span className="h-2 w-2 rounded-full bg-violet-500" /> WFA
             </span>
-            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-emerald-900 shrink-0 text-[11px]">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> วันหยุด
+            <span className="inline-flex items-center gap-1.5 shrink-0">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" /> วันหยุด
             </span>
           </div>
 
           {/* Weekday Headers */}
-          <div className="grid grid-cols-7 border-b border-slate-200/80 bg-slate-100/70 text-center text-xs sm:text-sm font-extrabold text-slate-700 py-2 sm:py-3">
+          <div className="grid grid-cols-7 border-b border-slate-100 bg-white text-center text-xs font-semibold py-2.5">
             {WEEKDAYS.map((day, idx) => (
               <div
                 key={day}
                 className={
                   idx === 0
-                    ? 'text-rose-600 bg-rose-50/50'
+                    ? 'text-rose-500'
                     : idx === 6
-                      ? 'text-blue-600 bg-blue-50/40'
-                      : 'text-slate-800'
+                      ? 'text-blue-500'
+                      : 'text-slate-400'
                 }
               >
                 {day}
@@ -359,7 +369,7 @@ export default function LeaveCalendar({
                 return (
                   <div
                     key={`empty-${idx}`}
-                    className="min-h-[64px] sm:min-h-[135px] border-b border-r border-slate-100 bg-slate-50/40"
+                    className="min-h-[60px] sm:min-h-[124px] border-b border-r border-slate-100 [&:nth-child(7n)]:border-r-0 bg-slate-50/35"
                   />
                 );
               }
@@ -374,50 +384,60 @@ export default function LeaveCalendar({
               return (
                 <div
                   key={cell.dateStr}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`วันที่ ${formatThaiDate(cell.dateStr)}`}
+                  aria-pressed={isSelected}
                   onClick={() => {
                     setSelectedDate(cell.dateStr!);
                   }}
-                  className={`min-h-[64px] sm:min-h-[135px] border-b border-r border-slate-100 p-1 sm:p-2.5 transition cursor-pointer flex flex-col justify-between ${
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedDate(cell.dateStr!);
+                    }
+                  }}
+                  className={`min-h-[60px] sm:min-h-[124px] border-b border-r border-slate-100 [&:nth-child(7n)]:border-r-0 p-1.5 sm:p-2 transition cursor-pointer flex flex-col justify-between ${
                     isSelected
-                      ? 'bg-blue-50/90 ring-2 ring-inset ring-blue-600'
+                      ? 'bg-blue-50/55 ring-2 ring-inset ring-[#0066FF]/75'
                       : cell.holiday
-                        ? 'bg-emerald-50/40 hover:bg-emerald-50/70'
+                        ? 'bg-emerald-50/30 hover:bg-emerald-50/55'
                         : cell.isWeekend
-                          ? 'bg-slate-50/70 hover:bg-slate-100/60'
-                          : 'bg-white hover:bg-slate-50'
+                          ? 'bg-slate-50/55 hover:bg-slate-100/50'
+                          : 'bg-white hover:bg-slate-50/80'
                   }`}
                 >
                   {/* Day Number + Counters */}
-                  <div className="flex items-center justify-between gap-0.5 sm:gap-1">
+                  <div className="flex items-center justify-center sm:justify-between gap-0.5 sm:gap-1">
                     <span
-                      className={`inline-flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full text-xs sm:text-sm font-black ${
+                      className={`inline-flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full text-xs font-semibold tabular-nums ${
                         isToday
-                          ? 'bg-[#0066FF] text-white shadow-xs'
+                          ? 'bg-[#0066FF] text-white font-bold shadow-xs'
                           : cell.isWeekend
-                            ? 'text-rose-500'
-                            : 'text-slate-800'
+                            ? 'text-rose-400'
+                            : 'text-slate-700'
                       }`}
                     >
                       {cell.dayNumber}
                     </span>
 
                     {cell.dayLeaves.length > 0 && (
-                      <span className="hidden sm:inline-block rounded-md bg-slate-100 border border-slate-200/80 px-2 py-0.5 text-xs font-bold text-slate-700">
-                        ลา {cell.dayLeaves.length}
+                      <span className="hidden sm:inline-block rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 tabular-nums">
+                        {cell.dayLeaves.length}
                       </span>
                     )}
                   </div>
 
                   {/* Leaves List inside cell */}
                   <div className="mt-1 space-y-1 overflow-hidden">
-                    {/* Desktop & Tablet: Badges */}
+                    {/* Desktop & Tablet: Compact Clean Badges */}
                     <div className="hidden sm:block space-y-1">
                       {cell.holiday && (
                         <div
-                          className="truncate rounded-lg bg-emerald-100 border border-emerald-200 px-2 py-1 text-xs font-bold text-emerald-800"
+                          className="truncate rounded-md bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-700"
                           title={cell.holiday.name}
                         >
-                          🎉 {cell.holiday.name}
+                          {cell.holiday.name}
                         </div>
                       )}
 
@@ -428,17 +448,17 @@ export default function LeaveCalendar({
                         return (
                           <div
                             key={lv.id}
-                            className={`truncate rounded-lg border px-2 py-1 text-xs font-semibold flex items-center justify-between gap-1 ${
+                            className={`truncate rounded-md border px-1.5 py-0.5 text-[11px] font-medium flex items-center justify-between gap-1 ${
                               typeMeta.badgeClass
-                            } ${isPending ? 'border-dashed opacity-85' : ''}`}
+                            } ${isPending ? 'border-dashed opacity-80' : ''}`}
                             title={`${lv.userName} (${typeMeta.label} - ${
                               DURATION_TYPE_META[lv.durationType].shortLabel
                             })`}
                           >
-                            <span className="truncate">
+                            <span className="truncate font-semibold">
                               {lv.userName.split(' ')[0]}
                             </span>
-                            <span className="shrink-0 text-xs font-semibold opacity-85 hidden md:inline">
+                            <span className="shrink-0 text-[10px] opacity-80 hidden md:inline">
                               {lv.durationType === 'full'
                                 ? typeMeta.shortLabel
                                 : DURATION_TYPE_META[lv.durationType].shortLabel}
@@ -448,7 +468,7 @@ export default function LeaveCalendar({
                       })}
 
                       {hiddenCount > 0 && (
-                        <div className="text-xs font-bold text-blue-600 pl-1">
+                        <div className="text-[11px] font-semibold text-[#0066FF] pl-1">
                           + อีก {hiddenCount} คน
                         </div>
                       )}
@@ -458,7 +478,7 @@ export default function LeaveCalendar({
                     <div className="sm:hidden flex flex-wrap items-center justify-center gap-1 mt-0.5">
                       {cell.holiday && (
                         <span
-                          className="h-2 w-2 rounded-full bg-emerald-500 shrink-0 ring-1 ring-emerald-300"
+                          className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0"
                           title={`วันหยุด: ${cell.holiday.name}`}
                         />
                       )}
@@ -471,20 +491,20 @@ export default function LeaveCalendar({
                               : lv.leaveType === 'vacation'
                                 ? 'bg-sky-500'
                                 : lv.leaveType === 'wfh'
-                                  ? 'bg-blue-500'
+                                  ? 'bg-[#0066FF]'
                                   : lv.leaveType === 'offsite'
                                     ? 'bg-teal-500'
                                     : 'bg-violet-500';
                         return (
                           <span
                             key={lv.id}
-                            className={`h-2 w-2 rounded-full shrink-0 ${dotColor} ring-1 ring-white`}
+                            className={`h-1.5 w-1.5 rounded-full shrink-0 ${dotColor}`}
                             title={`${lv.userName} - ${LEAVE_TYPE_META[lv.leaveType]?.label}`}
                           />
                         );
                       })}
                       {cell.dayLeaves.length > 3 && (
-                        <span className="text-xs font-black text-slate-600 leading-normal">
+                        <span className="text-[10px] font-bold text-slate-500 leading-none tabular-nums">
                           +{cell.dayLeaves.length - 3}
                         </span>
                       )}
@@ -501,64 +521,70 @@ export default function LeaveCalendar({
             onClick={() => {
               document.getElementById('selected-day-inspector')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }}
-            className="w-full xl:hidden bg-blue-50/90 hover:bg-blue-100 border-t border-blue-100 p-3 text-center text-xs font-bold text-blue-800 transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-99 min-h-[44px]"
+            className="w-full xl:hidden bg-slate-50/90 hover:bg-blue-50/60 border-t border-slate-100 p-3 text-center text-xs font-semibold text-[#0066FF] transition flex items-center justify-center gap-1.5 cursor-pointer min-h-[42px]"
           >
             <span>ดูรายละเอียดวันที่เลือก ({selectedDayInfo.dayLeaves.length} รายการ)</span>
           </button>
         </div>
 
-        {/* Right Column: Selected Date Details */}
-        <div id="selected-day-inspector" className="xl:col-span-4 rounded-3xl bg-white p-5 sm:p-6 shadow-xs border border-slate-200/90 space-y-5">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-            <div>
-              <div className="text-xs font-bold text-blue-600 uppercase tracking-wider">
+        {/* Right Column: Sticky Selected Date Details */}
+        <div
+          id="selected-day-inspector"
+          className="xl:col-span-4 xl:sticky xl:top-20 rounded-2xl bg-white p-5 sm:p-6 shadow-[0_1px_2px_rgba(15,23,42,0.03)] border border-slate-200/75 space-y-4"
+        >
+          <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div className="min-w-0">
+              <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                 รายละเอียดวันที่เลือก
               </div>
-              <h3 className="text-lg font-black text-slate-900 mt-0.5">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight mt-0.5">
                 {formatThaiDate(selectedDate)}
               </h3>
             </div>
             <button
               type="button"
               onClick={() => onOpenRequestModal(selectedDate)}
-              className="rounded-2xl bg-blue-50 border border-blue-200 px-4 py-2.5 text-xs sm:text-sm font-bold text-blue-700 hover:bg-blue-100 transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              className="rounded-xl bg-blue-50 border border-blue-200/70 px-3 py-2 text-xs font-semibold text-[#0066FF] hover:bg-blue-100/80 transition flex items-center gap-1.5 cursor-pointer shrink-0"
             >
-              <CalendarPlus className="h-4 w-4" />
+              <CalendarPlus className="h-3.5 w-3.5" />
               <span>ทำรายการวันนี้</span>
             </button>
           </div>
 
           {selectedDayInfo.holiday && (
-            <div className="rounded-2xl bg-emerald-50/90 border border-emerald-200 px-4 py-3 text-xs sm:text-sm text-emerald-950 flex items-center justify-between shadow-2xs">
-              <div className="flex items-center gap-2">
+            <div className="rounded-xl bg-emerald-50/70 border border-emerald-200/70 px-3.5 py-2.5 text-xs sm:text-sm text-emerald-900 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <Sparkles className="h-4 w-4 text-emerald-600 shrink-0" />
-                <span className="font-bold text-emerald-900">{selectedDayInfo.holiday.name}</span>
+                <span className="font-semibold truncate">{selectedDayInfo.holiday.name}</span>
               </div>
-              <span className="text-xs text-emerald-700 font-semibold bg-emerald-100/80 px-2 py-0.5 rounded-md">วันหยุด</span>
+              <span className="text-[11px] text-emerald-700 font-semibold bg-white/80 border border-emerald-200/70 px-2 py-0.5 rounded-md shrink-0">
+                วันหยุด
+              </span>
             </div>
           )}
 
           {selectedDayInfo.isWeekend && !selectedDayInfo.holiday && (
-            <div className="rounded-2xl bg-slate-100/90 border border-slate-200 px-4 py-2.5 text-xs sm:text-sm text-slate-700 flex items-center justify-between">
-              <strong className="font-bold text-slate-900">วันหยุดสุดสัปดาห์</strong>
-              <span className="text-xs text-slate-500 font-medium">เสาร์ - อาทิตย์</span>
+            <div className="rounded-xl bg-slate-50 border border-slate-200/70 px-3.5 py-2.5 text-xs text-slate-600 flex items-center justify-between">
+              <strong className="font-semibold text-slate-800">วันหยุดสุดสัปดาห์</strong>
+              <span className="text-slate-400">เสาร์ - อาทิตย์</span>
             </div>
           )}
 
           {/* Leaves on Selected Date */}
           <div className="space-y-3">
-            <div className="text-sm font-black text-slate-900 flex items-center justify-between">
-              <span>
-                รายการลางานและปฏิบัติงาน ({selectedDayInfo.dayLeaves.length})
+            <div className="text-xs font-semibold text-slate-500 flex items-center justify-between">
+              <span>รายการลางานและปฏิบัติงาน</span>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 tabular-nums">
+                {selectedDayInfo.dayLeaves.length} รายการ
               </span>
             </div>
 
             {selectedDayInfo.dayLeaves.length === 0 ? (
-              <div className="rounded-2xl border-2 border-dashed border-slate-200 py-8 px-4 text-center text-xs sm:text-sm text-slate-400 font-medium">
+              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/40 py-10 px-4 text-center text-xs sm:text-sm text-slate-400">
                 ไม่มีรายการวันลาหรือ WFH/WFA ในวันนี้
               </div>
             ) : (
-              <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1">
+              <div className="space-y-2.5 max-h-[460px] overflow-y-auto momentum-scroll pr-0.5">
                 {selectedDayInfo.dayLeaves.map((lv) => {
                   const typeMeta =
                     LEAVE_TYPE_META[lv.leaveType] || LEAVE_TYPE_META.vacation;
@@ -570,52 +596,52 @@ export default function LeaveCalendar({
                   return (
                     <div
                       key={lv.id}
-                      className="rounded-2xl border border-slate-200 p-4 space-y-2.5 bg-slate-50/70"
+                      className="rounded-xl border border-slate-200/75 p-3.5 space-y-2.5 bg-slate-50/40 hover:bg-slate-50/80 transition"
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="font-bold text-base text-slate-900">
+                        <div className="min-w-0">
+                          <div className="font-semibold text-sm text-slate-900 truncate">
                             {lv.userName}
                           </div>
-                          <div className="text-xs text-slate-500 font-medium">
+                          <div className="text-xs text-slate-400">
                             แผนก {lv.department}
                           </div>
                         </div>
                         <span
-                          className={`rounded-xl border px-2.5 py-1 text-xs font-bold ${typeMeta.badgeClass}`}
+                          className={`rounded-lg border px-2 py-0.5 text-[11px] font-semibold shrink-0 ${typeMeta.badgeClass}`}
                         >
                           {typeMeta.shortLabel}
                         </span>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
-                        <span className="inline-flex items-center gap-1 rounded-lg bg-white border border-slate-200 px-2.5 py-1 font-semibold">
-                          <Clock className="h-3.5 w-3.5 text-blue-600" />
+                      <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-600">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-white border border-slate-200/80 px-2 py-0.5 font-medium tabular-nums">
+                          <Clock className="h-3 w-3 text-[#0066FF]" />
                           {durMeta.label} (รวม {lv.totalDays} วัน)
                         </span>
                         <span
-                          className={`rounded-lg border px-2.5 py-1 text-xs font-bold ${statusMeta.badgeClass}`}
+                          className={`rounded-md border px-2 py-0.5 font-semibold ${statusMeta.badgeClass}`}
                         >
                           {statusMeta.shortLabel}
                         </span>
                       </div>
 
-                      <div className="text-xs sm:text-sm text-slate-700 bg-white rounded-xl p-3 border border-slate-100 space-y-1.5 font-medium">
+                      <div className="text-xs text-slate-600 bg-white rounded-lg p-2.5 border border-slate-100 space-y-1.5">
                         {lv.locationDetail && (
-                          <div className="font-bold text-teal-800">
-                            📍 สถานที่/ลูกค้า: {lv.locationDetail}
+                          <div className="font-semibold text-teal-700">
+                            สถานที่/ลูกค้า: {lv.locationDetail}
                           </div>
                         )}
                         {lv.isRedacted ? (
                           <span className="inline-flex items-center gap-1.5 text-slate-400 italic">
-                            <EyeOff className="h-4 w-4" />
+                            <EyeOff className="h-3.5 w-3.5" />
                             <span>
                               เหตุผลส่วนตัว (ซ่อนข้อมูลตาม PDPA)
                             </span>
                           </span>
                         ) : (
                           <div>
-                            <span className="font-bold text-slate-900">
+                            <span className="font-semibold text-slate-800">
                               รายละเอียด:{' '}
                             </span>
                             <span>{lv.reason}</span>
@@ -634,9 +660,9 @@ export default function LeaveCalendar({
                                       lv.attachmentName || 'ใบรับรองแพทย์แนบ',
                                   })
                                 }
-                                className="inline-flex items-center gap-1 text-blue-600 hover:underline font-bold cursor-pointer"
+                                className="inline-flex items-center gap-1 text-[#0066FF] hover:underline font-semibold cursor-pointer"
                               >
-                                <FileText className="h-4 w-4" />
+                                <FileText className="h-3.5 w-3.5" />
                                 <span>
                                   ดูรูปใบรับรองแพทย์ (
                                   {lv.attachmentName || 'คลิกเพื่อขยาย'})
@@ -647,9 +673,9 @@ export default function LeaveCalendar({
                                 href={lv.attachmentUrl}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="inline-flex items-center gap-1 text-blue-600 hover:underline font-bold"
+                                className="inline-flex items-center gap-1 text-[#0066FF] hover:underline font-semibold"
                               >
-                                <FileText className="h-4 w-4" />
+                                <FileText className="h-3.5 w-3.5" />
                                 <span>
                                   ดูเอกสารแนบ / ใบรับรองแพทย์ (
                                   {lv.attachmentName || 'เปิดดูไฟล์'})
@@ -671,27 +697,30 @@ export default function LeaveCalendar({
       {/* Modal Preview Medical Certificate Image */}
       {previewAttachment && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-xs p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="ดูเอกสารแนบ"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 backdrop-blur-xs p-4 animate-ui-fade"
           onClick={() => setPreviewAttachment(null)}
         >
           <div
-            className="max-w-lg w-full rounded-2xl bg-white p-5 shadow-2xl border border-slate-200 space-y-3"
+            className="max-w-lg w-full rounded-2xl bg-white p-5 shadow-2xl border border-slate-200/80 space-y-3 animate-ui-modal"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-              <div className="font-bold text-sm text-slate-900 flex items-center gap-2">
-                <FileText className="h-4 w-4 text-blue-600" />
-                <span>{previewAttachment.name}</span>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="font-semibold text-sm text-slate-900 flex items-center gap-2 min-w-0">
+                <FileText className="h-4 w-4 text-[#0066FF] shrink-0" />
+                <span className="truncate">{previewAttachment.name}</span>
               </div>
               <button
                 type="button"
                 onClick={() => setPreviewAttachment(null)}
-                className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200 cursor-pointer"
+                className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition cursor-pointer shrink-0"
               >
                 ปิดหน้าต่าง
               </button>
             </div>
-            <div className="flex justify-center bg-slate-50 rounded-xl p-3 border border-slate-200/80 max-h-[70vh] overflow-auto">
+            <div className="flex justify-center bg-slate-50 rounded-xl p-3 border border-slate-200/70 max-h-[70vh] overflow-auto">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={previewAttachment.url}

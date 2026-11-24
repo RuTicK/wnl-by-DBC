@@ -33,7 +33,7 @@ export default function UserAvatar({
       <img
         src={cleanUrl}
         alt={name}
-        className={`${sizeClass} ${roundedClass} object-cover shrink-0 border border-slate-200 shadow-2xs`}
+        className={`${sizeClass} ${roundedClass} object-cover shrink-0 ring-1 ring-slate-900/10`}
         referrerPolicy="no-referrer"
         onError={() => setFailedUrl(cleanUrl)}
       />
@@ -42,7 +42,7 @@ export default function UserAvatar({
 
   return (
     <div
-      className={`flex ${sizeClass} items-center justify-center ${roundedClass} ${fallbackBgClass} font-extrabold ${textClass} shrink-0 shadow-2xs`}
+      className={`flex ${sizeClass} items-center justify-center ${roundedClass} ${fallbackBgClass} font-semibold ${textClass} shrink-0 ring-1 ring-slate-900/5`}
     >
       {initials}
     </div>

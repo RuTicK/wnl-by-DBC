@@ -12,6 +12,7 @@ import {
   PieChart,
   Search,
   Users,
+  X,
 } from 'lucide-react';
 import {
   formatThaiDate,
@@ -262,32 +263,33 @@ export default function HrDashboardView({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       {/* Header & Export Buttons */}
-      <div className="rounded-3xl bg-white p-6 sm:p-7 shadow-xs border border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 border border-blue-100 shrink-0 shadow-xs">
-              <BarChart3 className="h-6 w-6" />
+      <div className="rounded-2xl bg-white p-5 sm:p-6 shadow-[0_1px_2px_rgba(15,23,42,0.03)] border border-slate-200/75 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-[#0066FF] border border-blue-200/60 shrink-0">
+            <BarChart3 className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+                สถิติการลา &amp; โควต้าพนักงาน
+              </h2>
+              <span className="rounded-full bg-blue-50 border border-blue-200/70 px-2.5 py-0.5 text-xs font-semibold text-[#0066FF] tabular-nums">
+                ประจำปี {year}
+              </span>
             </div>
-            <div>
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
-                  สถิติการลา &amp; โควต้าพนักงาน
-                </h2>
-                <span className="rounded-full bg-blue-50 border border-blue-200 px-3 py-1 text-xs font-bold text-blue-700">
-                  ประจำปี {year}
-                </span>
-              </div>
-            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              ภาพรวมสถิติการลาและโควต้าคงเหลือทั้งองค์กร
+            </p>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
           <button
             type="button"
             onClick={handleExportQuotasCsv}
-            className="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2.5 text-xs sm:text-sm font-bold text-emerald-800 hover:bg-emerald-100 transition flex items-center gap-2 cursor-pointer shadow-xs min-h-[44px]"
+            className="rounded-xl border border-slate-200/90 bg-white hover:bg-emerald-50/70 hover:border-emerald-200 hover:text-emerald-800 px-3.5 py-2 text-xs sm:text-sm font-semibold text-slate-700 transition flex items-center gap-2 cursor-pointer min-h-[40px]"
           >
             <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
             <span>Export สรุปโควต้า (Excel/CSV)</span>
@@ -296,7 +298,7 @@ export default function HrDashboardView({
           <button
             type="button"
             onClick={handleExportLeavesCsv}
-            className="rounded-xl bg-gradient-to-r from-[#0066FF] to-[#1D4ED8] hover:from-blue-700 hover:to-[#0A2540] px-4 py-2.5 text-xs sm:text-sm font-bold text-white transition flex items-center gap-2 cursor-pointer shadow-xs ring-2 ring-blue-500/20 min-h-[44px]"
+            className="rounded-xl bg-[#0066FF] hover:bg-[#0052CC] px-4 py-2 text-xs sm:text-sm font-semibold text-white transition flex items-center gap-2 cursor-pointer shadow-xs min-h-[40px]"
           >
             <Download className="h-4 w-4" />
             <span>Export ประวัติการลา (Excel/CSV)</span>
@@ -305,91 +307,101 @@ export default function HrDashboardView({
       </div>
 
       {/* KPI Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-        <div className="rounded-3xl bg-white p-5 sm:p-6 border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-xs sm:text-sm font-bold text-slate-500">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+        <div className="rounded-2xl bg-white p-4 sm:p-5 border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+          <div className="flex items-center justify-between gap-2 text-xs font-medium text-slate-500">
             <span>อนุมัติแล้วรวม (ปีนี้)</span>
-            <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-200/60 shrink-0">
+              <CheckCircle2 className="h-4 w-4" />
+            </span>
           </div>
-          <div className="mt-3 text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+          <div className="mt-2.5 text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight tabular-nums">
             {kpis.approvedDays}{' '}
-            <span className="text-xs sm:text-sm font-semibold text-slate-500">
+            <span className="text-xs font-medium text-slate-400">
               วัน ({kpis.approvedCount} รายการ)
             </span>
           </div>
-          <div className="mt-2 text-xs text-emerald-700 font-bold">
+          <div className="mt-2 text-[11px] text-emerald-700 font-medium">
             อนุมัติครบ 2 ขั้นตอน &amp; แจ้ง C-Level แล้ว
           </div>
         </div>
 
-        <div
+        <button
+          type="button"
           onClick={onNavigateToApprovals}
-          className="rounded-3xl bg-white p-5 sm:p-6 border border-amber-200 shadow-xs cursor-pointer hover:bg-amber-50/40 transition group"
+          className="text-left rounded-2xl bg-white p-4 sm:p-5 border border-slate-200/75 hover:border-amber-300 shadow-[0_1px_2px_rgba(15,23,42,0.03)] hover:bg-amber-50/20 cursor-pointer transition group"
         >
-          <div className="flex items-center justify-between text-xs sm:text-sm font-bold text-amber-800">
+          <div className="flex items-center justify-between gap-2 text-xs font-medium text-slate-500">
             <span>รออนุมัติขั้นที่ 1 (Manager/C-Level)</span>
-            <Clock className="h-5 w-5 text-amber-600 group-hover:scale-110 transition-transform" />
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-600 border border-amber-200/60 shrink-0 group-hover:scale-105 transition-transform">
+              <Clock className="h-4 w-4" />
+            </span>
           </div>
-          <div className="mt-3 text-3xl sm:text-4xl font-black text-amber-700 tracking-tight">
+          <div className="mt-2.5 text-2xl sm:text-3xl font-bold text-amber-700 tracking-tight tabular-nums">
             {kpis.pendingStep1Count}{' '}
-            <span className="text-xs sm:text-sm font-semibold text-slate-500">รายการ</span>
+            <span className="text-xs font-medium text-slate-400">รายการ</span>
           </div>
-          <div className="mt-2 text-xs text-amber-700 font-bold underline group-hover:text-amber-900">
+          <div className="mt-2 text-[11px] text-amber-700 font-semibold group-hover:underline">
             คลิกเพื่อไปหน้าอนุมัติใบลา &rarr;
           </div>
-        </div>
+        </button>
 
-        <div
+        <button
+          type="button"
           onClick={onNavigateToApprovals}
-          className="rounded-3xl bg-white p-5 sm:p-6 border border-blue-200 shadow-xs cursor-pointer hover:bg-blue-50/40 transition group"
+          className="text-left rounded-2xl bg-white p-4 sm:p-5 border border-slate-200/75 hover:border-blue-300 shadow-[0_1px_2px_rgba(15,23,42,0.03)] hover:bg-blue-50/20 cursor-pointer transition group"
         >
-          <div className="flex items-center justify-between text-xs sm:text-sm font-bold text-blue-800">
+          <div className="flex items-center justify-between gap-2 text-xs font-medium text-slate-500">
             <span>รอ HR อนุมัติ (ขั้นที่ 2/2)</span>
-            <Clock className="h-5 w-5 text-blue-600 group-hover:scale-110 transition-transform" />
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-[#0066FF] border border-blue-200/60 shrink-0 group-hover:scale-105 transition-transform">
+              <Clock className="h-4 w-4" />
+            </span>
           </div>
-          <div className="mt-3 text-3xl sm:text-4xl font-black text-blue-700 tracking-tight">
+          <div className="mt-2.5 text-2xl sm:text-3xl font-bold text-[#0066FF] tracking-tight tabular-nums">
             {kpis.pendingHrCount}{' '}
-            <span className="text-xs sm:text-sm font-semibold text-slate-500">รายการ</span>
+            <span className="text-xs font-medium text-slate-400">รายการ</span>
           </div>
-          <div className="mt-2 text-xs text-blue-700 font-bold underline group-hover:text-blue-900">
+          <div className="mt-2 text-[11px] text-[#0066FF] font-semibold group-hover:underline">
             ผ่านขั้นที่ 1 แล้ว รอ HR ยืนยัน &rarr;
           </div>
-        </div>
+        </button>
 
-        <div className="rounded-3xl bg-white p-5 sm:p-6 border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-xs sm:text-sm font-bold text-slate-500">
+        <div className="rounded-2xl bg-white p-4 sm:p-5 border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+          <div className="flex items-center justify-between gap-2 text-xs font-medium text-slate-500">
             <span>จำนวนพนักงานในสังกัด</span>
-            <Users className="h-5 w-5 text-blue-600" />
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-600 border border-slate-200/70 shrink-0">
+              <Users className="h-4 w-4" />
+            </span>
           </div>
-          <div className="mt-3 text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+          <div className="mt-2.5 text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight tabular-nums">
             {kpis.totalEmployees}{' '}
-            <span className="text-xs sm:text-sm font-semibold text-slate-500">คน</span>
+            <span className="text-xs font-medium text-slate-400">คน</span>
           </div>
-          <div className="mt-2 text-xs text-slate-500 font-medium">
+          <div className="mt-2 text-[11px] text-slate-400 font-medium">
             ครอบคลุม {departments.length} แผนกในองค์กร
           </div>
         </div>
       </div>
 
       {/* Charts Row: Monthly Chart + Department Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Monthly Leave Bar Chart (7 cols) */}
-        <div className="lg:col-span-7 rounded-3xl bg-white p-6 border border-slate-200 shadow-xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div className="lg:col-span-7 rounded-2xl bg-white p-5 sm:p-6 border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
             <div>
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-blue-600" />
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+                <BarChart3 className="h-4.5 w-4.5 text-[#0066FF]" />
                 <span>กราฟสรุปจำนวนวันลา &amp; WFH/WFA รายเดือน (ม.ค. - ธ.ค.)</span>
               </h3>
-              <p className="text-xs sm:text-sm text-slate-500 font-medium">
+              <p className="text-xs text-slate-400 mt-0.5">
                 แสดงจำนวนวันแยกตามประเภททั้ง 5 ประเภทในแต่ละเดือน
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600 font-semibold">
+            <div className="flex flex-wrap items-center gap-2.5 text-[11px] text-slate-500 font-medium">
               {REQUESTABLE_LEAVE_TYPES.map((t) => (
                 <span key={t} className="flex items-center gap-1.5">
                   <span
-                    className="h-3 w-3 rounded-xs"
+                    className="h-2.5 w-2.5 rounded-full"
                     style={{ backgroundColor: LEAVE_TYPE_META[t].color }}
                   />
                   {LEAVE_TYPE_META[t].shortLabel}
@@ -398,7 +410,8 @@ export default function HrDashboardView({
             </div>
           </div>
 
-          <div className="grid grid-cols-12 gap-1.5 sm:gap-2 items-end h-56 pt-6 pb-2 px-1 border-b border-slate-100">
+          <div className="overflow-x-auto no-scrollbar momentum-scroll">
+            <div className="grid grid-cols-12 gap-1.5 sm:gap-2 items-end h-56 min-w-[440px] pt-6 pb-2 px-1 border-b border-slate-100">
             {monthlyStats.months.map((m) => {
               const heightPct =
                 m.total > 0
@@ -410,14 +423,14 @@ export default function HrDashboardView({
                   key={m.label}
                   className="flex flex-col items-center justify-end h-full group"
                 >
-                  <div className="text-xs font-bold text-slate-700 mb-1">
+                  <div className="text-[11px] font-semibold text-slate-500 group-hover:text-slate-900 mb-1 tabular-nums transition-colors">
                     {m.total > 0 ? m.total : ''}
                   </div>
-                  <div className="w-full max-w-[32px] bg-slate-100 rounded-t-lg h-36 flex flex-col justify-end overflow-hidden">
+                  <div className="w-full max-w-[28px] bg-slate-100/80 rounded-t-md h-36 flex flex-col justify-end overflow-hidden">
                     {m.total > 0 && (
                       <div
                         style={{ height: `${heightPct}%` }}
-                        className="w-full flex flex-col justify-end rounded-t-lg overflow-hidden transition-all"
+                        className="w-full flex flex-col justify-end rounded-t-md overflow-hidden transition-all group-hover:brightness-95"
                         title={`${m.label}: รวม ${m.total} วัน (ป่วย ${m.sick}, กิจ ${m.personal}, พักร้อน ${m.vacation}, WFH ${m.wfh}, WFA ${m.wfa})`}
                       >
                         {REQUESTABLE_LEAVE_TYPES.map((t) =>
@@ -434,23 +447,24 @@ export default function HrDashboardView({
                       </div>
                     )}
                   </div>
-                  <div className="mt-2 text-xs sm:text-sm font-bold text-slate-700">
+                  <div className="mt-2 text-[11px] sm:text-xs font-medium text-slate-500 group-hover:text-slate-900 transition-colors whitespace-nowrap">
                     {m.label}
                   </div>
                 </div>
               );
             })}
+            </div>
           </div>
         </div>
 
         {/* Department Leave Breakdown (5 cols) */}
-        <div className="lg:col-span-5 rounded-3xl bg-white p-6 border border-slate-200 shadow-xs space-y-4">
+        <div className="lg:col-span-5 rounded-2xl bg-white p-5 sm:p-6 border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] space-y-4">
           <div>
-            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <PieChart className="h-5 w-5 text-blue-600" />
+            <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+              <PieChart className="h-4.5 w-4.5 text-[#0066FF]" />
               <span>สถิติแยกตามแผนก (Department Summary)</span>
             </h3>
-            <p className="text-xs sm:text-sm text-slate-500 font-medium">
+            <p className="text-xs text-slate-400 mt-0.5">
               เปรียบเทียบจำนวนวันลาและ WFH/WFA ในแต่ละแผนก
             </p>
           </div>
@@ -462,33 +476,33 @@ export default function HrDashboardView({
                   ? Math.max(8, (d.total / departmentStats.maxDeptTotal) * 100)
                   : 0;
               return (
-                <div key={d.department} className="space-y-2">
+                <div key={d.department} className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs sm:text-sm">
-                    <span className="font-bold text-slate-800 flex items-center gap-2">
-                      <Building2 className="h-4 w-4 text-blue-600" />
+                    <span className="font-semibold text-slate-800 flex items-center gap-1.5">
+                      <Building2 className="h-3.5 w-3.5 text-slate-400" />
                       {d.department}{' '}
-                      <span className="font-medium text-slate-400">
+                      <span className="font-normal text-slate-400 text-xs tabular-nums">
                         ({d.headcount} คน)
                       </span>
                     </span>
-                    <span className="font-black text-blue-700">
+                    <span className="font-bold text-[#0066FF] tabular-nums">
                       รวม {d.total} วัน
                     </span>
                   </div>
 
-                  <div className="h-3.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                  <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
                     <div
                       style={{ width: `${widthPct}%` }}
-                      className="h-full bg-gradient-to-r from-[#0066FF] to-sky-500 rounded-full"
+                      className="h-full bg-[#0066FF] rounded-full transition-all duration-500"
                     />
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 font-medium">
-                    <span>ป่วย: {d.sick}</span>
-                    <span>กิจ: {d.personal}</span>
-                    <span>พักร้อน: {d.vacation}</span>
-                    <span>WFH: {d.wfh}</span>
-                    <span>WFA: {d.wfa}</span>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-slate-400 font-medium tabular-nums">
+                    <span>ป่วย {d.sick}</span>
+                    <span>กิจ {d.personal}</span>
+                    <span>พักร้อน {d.vacation}</span>
+                    <span>WFH {d.wfh}</span>
+                    <span>WFA {d.wfa}</span>
                   </div>
                 </div>
               );
@@ -498,24 +512,24 @@ export default function HrDashboardView({
       </div>
 
       {/* Employee Remaining Quota Table */}
-      <div className="rounded-3xl bg-white border border-slate-200 shadow-xs overflow-hidden">
-        <div className="p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="rounded-2xl bg-white border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden">
+        <div className="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h3 className="text-base sm:text-lg font-black text-slate-900">
+            <h3 className="text-base font-bold text-slate-900 tracking-tight">
               ตารางสรุปโควต้าวันลาคงเหลือ &amp; สถานะผ่านโปรรายบุคคล (ประจำปี {year})
             </h3>
-            <p className="text-xs sm:text-sm text-slate-500 font-medium">
+            <p className="text-xs text-slate-400 mt-0.5">
               เก็บเฉพาะข้อมูลตามหลัก PDPA (ไม่มีเบอร์โทรศัพท์) พร้อมคำนวณวันเริ่มงานและโควต้าอัตโนมัติ
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
             {filterDepartments.length > 0 && (
               <div className="relative">
                 <select
                   value={deptFilter}
                   onChange={(e) => setDeptFilter(e.target.value)}
-                  className="appearance-none rounded-xl border border-slate-200 bg-slate-50 pl-3.5 pr-10 py-2.5 text-base sm:text-sm font-bold text-slate-700 hover:border-blue-300 focus:border-blue-600 focus:bg-white focus:outline-hidden cursor-pointer min-h-[44px]"
+                  className="w-full sm:w-auto appearance-none rounded-xl border border-slate-200 bg-slate-50/70 pl-3.5 pr-9 py-2 text-base sm:text-xs font-semibold text-slate-700 hover:border-slate-300 focus:border-[#0066FF] focus:bg-white focus:outline-hidden cursor-pointer min-h-[40px] transition"
                   aria-label="กรองตารางโควต้าตามแผนก"
                 >
                   <option value="ALL">ทุกแผนก ({allQuotas.length} คน)</option>
@@ -525,19 +539,29 @@ export default function HrDashboardView({
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="h-4 w-4 text-slate-500 pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" />
+                <ChevronDown className="h-3.5 w-3.5 text-slate-400 pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" />
               </div>
             )}
 
             <div className="relative">
-              <Search className="h-4 w-4 text-slate-400 absolute left-3.5 top-3.5" />
+              <Search className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="ค้นหาชื่อไทย/อังกฤษ/อีเมล..."
-                className="rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 py-2 text-base sm:text-sm text-slate-900 focus:border-blue-600 focus:bg-white focus:outline-hidden min-h-[44px] font-medium"
+                className="w-full sm:w-56 rounded-xl border border-slate-200 bg-slate-50/70 pl-9 pr-8 py-2 text-base sm:text-xs text-slate-900 placeholder:text-slate-400 hover:border-slate-300 focus:border-[#0066FF] focus:bg-white focus:outline-hidden min-h-[40px] transition"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  aria-label="ล้างคำค้นหา"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 transition cursor-pointer"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -545,49 +569,61 @@ export default function HrDashboardView({
         <div className="overflow-x-auto momentum-scroll pb-2">
           <table className="w-full text-left border-collapse text-xs sm:text-sm">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-black">
-                <th className="py-4 px-5">พนักงาน (TH / EN / Email)</th>
-                <th className="py-4 px-4">แผนก / เริ่มงาน (โปร 119 วัน)</th>
-                <th className="py-4 px-3 text-center bg-rose-50/60 text-rose-800">
-                  ลาป่วย
+              <tr className="bg-slate-50/80 border-b border-slate-100 text-slate-500 font-semibold text-xs">
+                <th className="py-3.5 px-5">พนักงาน (TH / EN / Email)</th>
+                <th className="py-3.5 px-4">แผนก / เริ่มงาน (โปร 119 วัน)</th>
+                <th className="py-3.5 px-3 text-center">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-rose-500" />
+                    ลาป่วย
+                  </span>
                 </th>
-                <th className="py-4 px-3 text-center bg-amber-50/60 text-amber-800">
-                  ลากิจ
+                <th className="py-3.5 px-3 text-center">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-amber-500" />
+                    ลากิจ
+                  </span>
                 </th>
-                <th className="py-4 px-3 text-center bg-sky-50/60 text-sky-800">
-                  ลาพักร้อน
+                <th className="py-3.5 px-3 text-center">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-sky-500" />
+                    ลาพักร้อน
+                  </span>
                 </th>
-                <th className="py-4 px-3 text-center bg-blue-50/60 text-blue-800">
-                  WFH / WFA
+                <th className="py-3.5 px-3 text-center">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-[#0066FF]" />
+                    WFH / WFA
+                  </span>
                 </th>
-                <th className="py-4 px-4 text-center">รออนุมัติ</th>
+                <th className="py-3.5 px-4 text-center">รออนุมัติ</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 font-medium">
+            <tbody className="divide-y divide-slate-100">
               {filteredQuotas.map((row) => (
-                <tr key={row.user.id} className="hover:bg-slate-50/80 transition">
-                  <td className="py-4 px-5">
-                    <div className="font-extrabold text-sm sm:text-base text-slate-900">
+                <tr key={row.user.id} className="hover:bg-slate-50/70 transition">
+                  <td className="py-3.5 px-5">
+                    <div className="font-semibold text-sm text-slate-900">
                       {row.user.name}
                     </div>
-                    <div className="text-xs text-slate-500 font-medium mt-0.5">
-                      {row.user.englishName ? `${row.user.englishName} • ` : ''}
+                    <div className="text-xs text-slate-400 mt-0.5">
+                      {row.user.englishName ? `${row.user.englishName} · ` : ''}
                       {row.user.email}
                     </div>
                     {getAdditionalUserEmails(row.user).map((altEmail) => (
                       <div
                         key={altEmail}
-                        className="text-xs font-semibold text-indigo-600 mt-0.5"
+                        className="text-xs font-medium text-indigo-600 mt-0.5"
                       >
                         ↳ {altEmail}
                       </div>
                     ))}
                     <div className="flex items-center gap-2 mt-1.5">
-                      <span className="font-mono text-xs text-slate-400 font-bold">
+                      <span className="font-mono text-[11px] text-slate-400">
                         {row.user.id}
                       </span>
                       <span
-                        className={`rounded-md border px-2 py-0.5 text-xs font-bold ${
+                        className={`inline-flex whitespace-nowrap rounded-md border px-2 py-0.5 text-[11px] font-semibold ${
                           ROLE_META[row.user.role].badgeClass
                         }`}
                       >
@@ -595,26 +631,26 @@ export default function HrDashboardView({
                       </span>
                     </div>
                   </td>
-                  <td className="py-4 px-4">
-                    <div className="font-bold text-slate-800">
+                  <td className="py-3.5 px-4">
+                    <div className="font-semibold text-slate-800 text-xs sm:text-sm">
                       {row.user.department || 'ผู้บริหาร (C-Level)'}
                     </div>
-                    <div className="text-slate-500 text-xs mt-0.5">
+                    <div className="text-slate-400 text-xs mt-0.5">
                       {row.user.position}
                     </div>
                     <div className="mt-1.5">
                       {row.user.role === 'c_level' ||
                       row.user.role === 'admin' ||
                       !row.user.startDate ? (
-                        <span className="inline-flex items-center rounded-lg bg-purple-50 border border-purple-200 px-2 py-0.5 text-xs font-bold text-purple-700">
+                        <span className="inline-flex whitespace-nowrap items-center rounded-md bg-purple-50 border border-purple-200/70 px-2 py-0.5 text-[11px] font-semibold text-purple-700">
                           ผู้บริหาร (ไม่ติดเงื่อนไขโปร)
                         </span>
                       ) : row.probation.passed ? (
-                        <span className="inline-flex items-center rounded-lg bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-bold text-emerald-700">
+                        <span className="inline-flex whitespace-nowrap items-center rounded-md bg-emerald-50 border border-emerald-200/70 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
                           ผ่านโปรแล้ว ({formatThaiDate(row.user.startDate, true)})
                         </span>
                       ) : (
-                        <span className="inline-flex items-center rounded-lg bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-bold text-amber-800">
+                        <span className="inline-flex whitespace-nowrap items-center rounded-md bg-amber-50 border border-amber-200/70 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
                           ทดลองงาน (เหลือ {row.probation.daysRemaining} วัน)
                         </span>
                       )}
@@ -623,37 +659,37 @@ export default function HrDashboardView({
                   {(['sick', 'personal', 'vacation'] as LeaveType[]).map((t) => {
                     const q = row.quotas[t];
                     return (
-                      <td key={t} className="py-4 px-3 text-center">
-                        <span className="font-black text-base text-slate-900">
+                      <td key={t} className="py-3.5 px-3 text-center tabular-nums whitespace-nowrap">
+                        <span className="font-bold text-sm sm:text-base text-slate-900">
                           {q.remainingDays}
                         </span>
-                        <span className="text-slate-400 text-xs font-semibold">
+                        <span className="text-slate-400 text-xs">
                           {' '}
                           / {q.totalQuota}
                         </span>
-                        <div className="text-xs text-slate-500 font-medium mt-0.5">
+                        <div className="text-[11px] text-slate-400 mt-0.5">
                           ใช้แล้ว {q.usedDays} วัน
                         </div>
                       </td>
                     );
                   })}
-                  <td className="py-4 px-3 text-center">
-                    <div className="text-xs font-bold text-blue-800">
+                  <td className="py-3.5 px-3 text-center tabular-nums whitespace-nowrap">
+                    <div className="text-xs font-semibold text-blue-700">
                       WFH: ใช้ {row.quotas.wfh.usedDays}
                       {row.quotas.wfh.isUnlimited
                         ? ' (ไม่จำกัด)'
                         : ` / ${row.quotas.wfh.totalQuota}`}
                     </div>
-                    <div className="text-xs font-bold text-violet-800 mt-1">
+                    <div className="text-xs font-semibold text-violet-700 mt-1">
                       WFA: ใช้ {row.quotas.wfa.usedDays}
                       {row.quotas.wfa.isUnlimited
                         ? ' (ไม่จำกัด)'
                         : ` / ${row.quotas.wfa.totalQuota}`}
                     </div>
                   </td>
-                  <td className="py-4 px-4 text-center">
+                  <td className="py-3.5 px-4 text-center tabular-nums whitespace-nowrap">
                     {row.totalPending > 0 ? (
-                      <span className="rounded-xl bg-amber-100 border border-amber-200 px-3 py-1.5 font-bold text-amber-900 text-xs sm:text-sm inline-block">
+                      <span className="rounded-full bg-amber-50 border border-amber-200/80 px-2.5 py-1 font-semibold text-amber-800 text-xs inline-block">
                         {row.totalPending} วัน
                       </span>
                     ) : (
@@ -662,6 +698,16 @@ export default function HrDashboardView({
                   </td>
                 </tr>
               ))}
+              {filteredQuotas.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="py-10 text-center text-sm text-slate-400"
+                  >
+                    ไม่พบข้อมูลพนักงานที่ตรงกับเงื่อนไขการค้นหา
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

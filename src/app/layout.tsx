@@ -5,7 +5,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
-  themeColor: '#0A2540',
+  themeColor: '#ffffff',
   viewportFit: 'cover',
 };
 
@@ -49,7 +49,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-screen bg-slate-50 text-slate-900 antialiased selection:bg-blue-100 selection:text-blue-900 font-sans">
+      <body className="min-h-screen bg-[#F7F8FA] text-slate-900 antialiased selection:bg-blue-100 selection:text-blue-900 font-sans">
         {children}
       </body>
     </html>

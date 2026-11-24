@@ -7,10 +7,8 @@ import {
   BarChart3,
   Calendar,
   CalendarPlus,
-  CheckCircle2,
   CheckSquare,
   ChevronDown,
-  Clock,
   ExternalLink,
   FileText,
   LogOut,
@@ -436,21 +434,21 @@ export default function HomePage() {
 
   if (isInitializing) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-tr from-[#0A2540] via-[#0066FF] to-[#2563EB] text-white shadow-xl shadow-blue-600/30 ring-8 ring-blue-500/10 animate-pulse">
-            <Calendar className="h-8 w-8" />
+      <div className="min-h-screen bg-[#F7F8FA] flex flex-col items-center justify-center p-4">
+        <div className="flex flex-col items-center space-y-4 animate-ui-fade">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0A2540] to-[#0066FF] text-white shadow-lg shadow-blue-600/20 animate-pulse">
+            <Calendar className="h-7 w-7" />
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center gap-2">
-              <span className="text-xl font-black text-slate-900 tracking-tight">
+              <span className="text-lg font-bold text-slate-900 tracking-tight">
                 วันนี้ลา
               </span>
-              <span className="rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-white px-2 py-0.5 text-xs font-black">
+              <span className="rounded-full bg-amber-50 border border-amber-200/80 text-amber-700 px-2 py-0.5 text-[11px] font-semibold">
                 by DBC
               </span>
             </div>
-            <p className="text-xs font-semibold text-slate-500 mt-1">
+            <p className="text-xs font-medium text-slate-400 mt-1.5">
               กำลังตรวจสอบข้อมูลเซสชัน...
             </p>
           </div>
@@ -470,28 +468,28 @@ export default function HomePage() {
       : rawProbation;
 
   return (
-    <div className="min-h-screen bg-slate-50/80 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-[#F7F8FA] flex flex-col md:flex-row">
       {/* =================================================================
           DESKTOP LEFT SIDEBAR NAVBAR (md: and up)
           ================================================================= */}
-      <aside className="hidden md:flex md:w-64 lg:w-72 md:flex-col md:fixed md:inset-y-0 z-40 bg-white border-r border-slate-200/90 shadow-xs">
+      <aside className="hidden md:flex md:w-64 lg:w-[272px] md:flex-col md:fixed md:inset-y-0 z-40 bg-white border-r border-slate-200/75">
         {/* Sidebar Header: Brand & Live Status */}
-        <div className="p-4 lg:p-5 border-b border-slate-100 flex items-center justify-between gap-2.5">
+        <div className="px-4 lg:px-5 h-16 border-b border-slate-100 flex items-center justify-between gap-2.5 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex h-10 w-10 lg:h-11 lg:w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#0A2540] to-[#0066FF] text-white shadow-md shadow-blue-900/20 ring-2 ring-blue-500/10 shrink-0">
-              <Calendar className="h-5 w-5 lg:h-5.5 lg:w-5.5" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#0A2540] to-[#0066FF] text-white shadow-sm shadow-blue-900/15 shrink-0">
+              <Calendar className="h-4.5 w-4.5" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="text-base lg:text-lg font-black tracking-tight text-slate-900 truncate">
+                <span className="text-base font-bold tracking-tight text-slate-900 truncate">
                   วันนี้ลา
                 </span>
-                <span className="rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-white px-2 py-0.5 text-xs font-black tracking-wider shadow-2xs shrink-0">
+                <span className="rounded-full bg-amber-50 border border-amber-200/80 text-amber-700 px-2 py-0.5 text-[10px] font-semibold tracking-wide shrink-0">
                   by DBC
                 </span>
               </div>
-              <div className="flex items-center gap-1 text-xs font-semibold text-emerald-700 mt-0.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400 mt-0.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
                 <span className="truncate">
                   {systemData.storageMode === 'google_sheets'
                     ? 'Google Sheets (Live)'
@@ -503,43 +501,43 @@ export default function HomePage() {
         </div>
 
         {/* Primary Action Button: Request Leave */}
-        <div className="p-3.5 lg:p-4 pb-2">
+        <div className="px-3.5 lg:px-4 pt-4 pb-2">
           <button
             type="button"
             onClick={() => handleOpenRequestModal()}
-            className="w-full rounded-2xl bg-gradient-to-r from-[#0066FF] via-blue-600 to-[#1D4ED8] p-3 lg:p-3.5 text-xs lg:text-sm font-black text-white shadow-md shadow-blue-600/25 hover:shadow-lg hover:from-blue-700 hover:to-[#0A2540] transition flex items-center justify-center gap-2 cursor-pointer ring-2 ring-blue-500/20 active:scale-98"
+            className="w-full rounded-xl bg-[#0066FF] hover:bg-[#0052CC] active:scale-[0.98] py-2.5 px-4 text-xs lg:text-sm font-semibold text-white shadow-sm shadow-blue-600/20 hover:shadow-md hover:shadow-blue-600/25 transition flex items-center justify-center gap-2 cursor-pointer min-h-[42px]"
           >
-            <CalendarPlus className="h-4 w-4 lg:h-5 lg:w-5 shrink-0" />
+            <CalendarPlus className="h-4 w-4 shrink-0" />
             <span>+ ยื่นใบลา / WFH</span>
           </button>
         </div>
 
         {/* Navigation Menu List */}
-        <div className="flex-1 overflow-y-auto px-3 lg:px-4 py-2 space-y-1.5 momentum-scroll">
-          <div className="text-xs font-bold text-slate-400 px-3 uppercase tracking-wider mb-2">
+        <div className="flex-1 overflow-y-auto px-3 lg:px-3.5 py-2 space-y-1 momentum-scroll">
+          <div className="text-[11px] font-semibold text-slate-400 px-3 pt-1 pb-1.5 uppercase tracking-wider">
             เมนูหลัก
           </div>
 
           <button
             type="button"
             onClick={() => setActiveTab('OFFICE')}
-            className={`w-full rounded-2xl px-3.5 py-3 text-xs lg:text-sm font-bold transition flex items-center justify-between gap-3 cursor-pointer text-left ${
+            className={`w-full rounded-xl px-3 py-2.5 text-xs lg:text-[13px] transition flex items-center justify-between gap-2.5 cursor-pointer text-left ${
               activeTab === 'OFFICE'
-                ? 'bg-blue-50/90 text-blue-700 border border-blue-200/80 shadow-2xs font-black'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'
+                ? 'bg-blue-50/90 text-[#0066FF] font-semibold'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 font-medium'
             }`}
           >
-            <div className="flex items-center gap-3 min-w-0">
+            <div className="flex items-center gap-2.5 min-w-0">
               <MapPin
-                className={`h-5 w-5 shrink-0 ${
-                  activeTab === 'OFFICE' ? 'text-blue-600' : 'text-slate-400'
+                className={`h-[18px] w-[18px] shrink-0 ${
+                  activeTab === 'OFFICE' ? 'text-[#0066FF]' : 'text-slate-400'
                 }`}
               />
               <span className="truncate">Check-in &amp; ออฟฟิศ</span>
             </div>
             {myTodayAttendance && (
               <span
-                className="h-2 w-2 rounded-full bg-emerald-500 shrink-0"
+                className="h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-emerald-100 shrink-0"
                 title="Check-in แล้ว"
               />
             )}
@@ -548,15 +546,15 @@ export default function HomePage() {
           <button
             type="button"
             onClick={() => setActiveTab('CALENDAR')}
-            className={`w-full rounded-2xl px-3.5 py-3 text-xs lg:text-sm font-bold transition flex items-center gap-3 cursor-pointer text-left ${
+            className={`w-full rounded-xl px-3 py-2.5 text-xs lg:text-[13px] transition flex items-center gap-2.5 cursor-pointer text-left ${
               activeTab === 'CALENDAR'
-                ? 'bg-blue-50/90 text-blue-700 border border-blue-200/80 shadow-2xs font-black'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'
+                ? 'bg-blue-50/90 text-[#0066FF] font-semibold'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 font-medium'
             }`}
           >
             <Calendar
-              className={`h-5 w-5 shrink-0 ${
-                activeTab === 'CALENDAR' ? 'text-blue-600' : 'text-slate-400'
+              className={`h-[18px] w-[18px] shrink-0 ${
+                activeTab === 'CALENDAR' ? 'text-[#0066FF]' : 'text-slate-400'
               }`}
             />
             <span className="truncate">ปฏิทินวันลา &amp; โควต้า</span>
@@ -565,17 +563,17 @@ export default function HomePage() {
           <button
             type="button"
             onClick={() => setActiveTab('APPROVALS')}
-            className={`w-full rounded-2xl px-3.5 py-3 text-xs lg:text-sm font-bold transition flex items-center justify-between gap-3 cursor-pointer text-left ${
+            className={`w-full rounded-xl px-3 py-2.5 text-xs lg:text-[13px] transition flex items-center justify-between gap-2.5 cursor-pointer text-left ${
               activeTab === 'APPROVALS'
-                ? 'bg-blue-50/90 text-blue-700 border border-blue-200/80 shadow-2xs font-black'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'
+                ? 'bg-blue-50/90 text-[#0066FF] font-semibold'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 font-medium'
             }`}
           >
-            <div className="flex items-center gap-3 min-w-0">
+            <div className="flex items-center gap-2.5 min-w-0">
               <CheckSquare
-                className={`h-5 w-5 shrink-0 ${
+                className={`h-[18px] w-[18px] shrink-0 ${
                   activeTab === 'APPROVALS'
-                    ? 'text-blue-600'
+                    ? 'text-[#0066FF]'
                     : 'text-slate-400'
                 }`}
               />
@@ -586,7 +584,7 @@ export default function HomePage() {
               </span>
             </div>
             {currentUser.role !== 'employee' && pendingApprovalCount > 0 && (
-              <span className="rounded-full bg-amber-500 text-white px-2 py-0.5 text-xs font-black shadow-xs shrink-0">
+              <span className="rounded-full bg-amber-500 text-white px-2 py-0.5 text-[11px] font-bold tabular-nums shrink-0">
                 {pendingApprovalCount}
               </span>
             )}
@@ -594,23 +592,23 @@ export default function HomePage() {
 
           {isHrOrCLevel && (
             <>
-              <div className="pt-4 pb-1 text-xs font-bold text-slate-400 px-3 uppercase tracking-wider">
+              <div className="pt-4 pb-1.5 text-[11px] font-semibold text-slate-400 px-3 uppercase tracking-wider">
                 ผู้ดูแลระบบ (HR / C-Level)
               </div>
 
               <button
                 type="button"
                 onClick={() => setActiveTab('DASHBOARD')}
-                className={`w-full rounded-2xl px-3.5 py-3 text-xs lg:text-sm font-bold transition flex items-center gap-3 cursor-pointer text-left ${
+                className={`w-full rounded-xl px-3 py-2.5 text-xs lg:text-[13px] transition flex items-center gap-2.5 cursor-pointer text-left ${
                   activeTab === 'DASHBOARD'
-                    ? 'bg-blue-50/90 text-blue-700 border border-blue-200/80 shadow-2xs font-black'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'
+                    ? 'bg-blue-50/90 text-[#0066FF] font-semibold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 font-medium'
                 }`}
               >
                 <BarChart3
-                  className={`h-5 w-5 shrink-0 ${
+                  className={`h-[18px] w-[18px] shrink-0 ${
                     activeTab === 'DASHBOARD'
-                      ? 'text-blue-600'
+                      ? 'text-[#0066FF]'
                       : 'text-slate-400'
                   }`}
                 />
@@ -620,16 +618,16 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={() => setActiveTab('MANAGEMENT')}
-                className={`w-full rounded-2xl px-3.5 py-3 text-xs lg:text-sm font-bold transition flex items-center gap-3 cursor-pointer text-left ${
+                className={`w-full rounded-xl px-3 py-2.5 text-xs lg:text-[13px] transition flex items-center gap-2.5 cursor-pointer text-left ${
                   activeTab === 'MANAGEMENT'
-                    ? 'bg-blue-50/90 text-blue-700 border border-blue-200/80 shadow-2xs font-black'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'
+                    ? 'bg-blue-50/90 text-[#0066FF] font-semibold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 font-medium'
                 }`}
               >
                 <Settings
-                  className={`h-5 w-5 shrink-0 ${
+                  className={`h-[18px] w-[18px] shrink-0 ${
                     activeTab === 'MANAGEMENT'
-                      ? 'text-blue-600'
+                      ? 'text-[#0066FF]'
                       : 'text-slate-400'
                   }`}
                 />
@@ -639,22 +637,22 @@ export default function HomePage() {
           )}
 
           {/* Desktop Quota Display Widget */}
-          <div className="pt-3 pb-1">
+          <div className="pt-4 pb-1">
             <div className="flex items-center justify-between px-2 mb-2">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                 โควต้าวันลาคงเหลือ ({currentYear})
               </span>
               <button
                 type="button"
                 onClick={handleOpenPolicyOnlyModal}
-                className="text-[11px] font-bold text-blue-600 hover:text-blue-800 transition cursor-pointer"
+                className="text-[11px] font-semibold text-[#0066FF] hover:text-blue-800 transition cursor-pointer"
                 title="ดูระเบียบและเงื่อนไขการลา"
               >
                 เงื่อนไข
               </button>
             </div>
 
-            <div className="rounded-2xl bg-slate-50/90 border border-slate-200/80 p-2.5 space-y-2.5 shadow-2xs">
+            <div className="rounded-xl bg-slate-50/80 border border-slate-200/60 p-3 space-y-3">
               {(['sick', 'personal', 'vacation'] as LeaveType[]).map((type) => {
                 const meta = LEAVE_TYPE_META[type];
                 const q = systemData.myQuota.quotas[type];
@@ -669,11 +667,11 @@ export default function HomePage() {
 
                 const icon =
                   type === 'sick' ? (
-                    <Activity className="h-3.5 w-3.5 text-rose-600 shrink-0" />
+                    <Activity className="h-3.5 w-3.5 text-rose-500 shrink-0" />
                   ) : type === 'personal' ? (
-                    <FileText className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                    <FileText className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                   ) : (
-                    <Sun className="h-3.5 w-3.5 text-sky-600 shrink-0" />
+                    <Sun className="h-3.5 w-3.5 text-sky-500 shrink-0" />
                   );
 
                 const barColor =
@@ -684,45 +682,45 @@ export default function HomePage() {
                     : 'bg-sky-500';
 
                 return (
-                  <div key={type} className="space-y-1">
+                  <div key={type} className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-1.5 min-w-0">
                         {icon}
-                        <span className="font-bold text-slate-700 truncate">
+                        <span className="font-medium text-slate-700 truncate">
                           {meta.shortLabel}
                         </span>
                         {lockedByProbation && (
-                          <span className="rounded bg-amber-100 border border-amber-300 px-1 py-0.5 text-[10px] font-bold text-amber-800 shrink-0">
+                          <span className="rounded-md bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 shrink-0">
                             รอโปร
                           </span>
                         )}
                       </div>
-                      <div className="flex items-baseline gap-1 shrink-0">
-                        <span className="font-black text-slate-900 text-xs">
+                      <div className="flex items-baseline gap-0.5 shrink-0 tabular-nums">
+                        <span className="font-bold text-slate-900 text-xs">
                           {q.remainingDays}
                         </span>
-                        <span className="text-[11px] text-slate-400 font-semibold">
+                        <span className="text-[11px] text-slate-400 font-medium">
                           /{q.totalQuota} วัน
                         </span>
                       </div>
                     </div>
 
                     {/* Progress Bar */}
-                    <div className="w-full bg-slate-200/80 rounded-full h-1.5 overflow-hidden">
+                    <div className="w-full bg-slate-200/70 rounded-full h-1.5 overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-300 ${barColor}`}
                         style={{ width: `${usedPercent}%` }}
                       />
                     </div>
 
-                    <div className="flex items-center justify-between text-[10px] text-slate-500 font-medium px-0.5">
-                      <span>ใช้ไป {q.usedDays} วัน</span>
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium">
+                      <span className="tabular-nums">ใช้ไป {q.usedDays} วัน</span>
                       {q.pendingDays > 0 ? (
-                        <span className="text-amber-700 font-bold bg-amber-100/80 px-1 py-0.5 rounded">
+                        <span className="text-amber-700 font-semibold bg-amber-50 border border-amber-200/70 px-1.5 py-0.5 rounded tabular-nums">
                           รอ {q.pendingDays} วัน
                         </span>
                       ) : (
-                        <span className="text-emerald-700 font-semibold">
+                        <span className="text-emerald-600 font-medium">
                           พร้อมใช้
                         </span>
                       )}
@@ -734,61 +732,58 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Sidebar Bottom: User Card & Logout */}
-        <div className="p-3 lg:p-4 border-t border-slate-100 bg-slate-50/70 space-y-3">
-          {/* User Profile Info Card */}
-          <div className="rounded-2xl bg-white border border-slate-200/80 p-3 shadow-2xs space-y-2">
-            <div className="flex items-center gap-2.5">
-              <UserAvatar
-                name={currentUser.name}
-                avatarUrl={currentUser.avatarUrl}
-                sizeClass="h-9 w-9"
-                roundedClass="rounded-xl"
-                textClass="text-sm"
-              />
-              <div className="min-w-0 flex-1">
-                <div className="text-xs font-bold text-slate-900 truncate">
-                  {currentUser.name}
-                </div>
-                <div className="text-xs text-slate-500 font-medium truncate">
-                  {currentUser.email}
-                </div>
+        {/* Sidebar Bottom: Clean User Profile & Actions */}
+        <div className="p-3.5 border-t border-slate-100 bg-white space-y-2.5 shrink-0">
+          <div className="flex items-center gap-2.5 px-1">
+            <UserAvatar
+              name={currentUser.name}
+              avatarUrl={currentUser.avatarUrl}
+              sizeClass="h-9 w-9"
+              roundedClass="rounded-xl"
+              textClass="text-xs"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-semibold text-slate-900 truncate">
+                {currentUser.name}
               </div>
-            </div>
-
-            <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-slate-100 text-xs">
-              <span
-                className={`rounded-md border px-1.5 py-0.5 font-bold ${
-                  ROLE_META[currentUser.role].badgeClass
-                }`}
-              >
-                {ROLE_META[currentUser.role].label}
-              </span>
-              <span
-                className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 font-bold ${
-                  probation.passed
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                    : 'bg-amber-50 border-amber-200 text-amber-800'
-                }`}
-              >
-                {probation.passed
-                  ? 'ผ่านโปร'
-                  : `ทดลองงาน (${probation.daysWorked}/119ว.)`}
-              </span>
+              <div className="text-[11px] text-slate-400 truncate">
+                {currentUser.email}
+              </div>
             </div>
           </div>
 
+          <div className="flex items-center flex-wrap gap-1.5 px-1 text-[11px]">
+            <span
+              className={`rounded-md border px-1.5 py-0.5 font-semibold ${
+                ROLE_META[currentUser.role].badgeClass
+              }`}
+            >
+              {ROLE_META[currentUser.role].label}
+            </span>
+            <span
+              className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 font-semibold ${
+                probation.passed
+                  ? 'bg-emerald-50 border-emerald-200/80 text-emerald-700'
+                  : 'bg-amber-50 border-amber-200/80 text-amber-800'
+              }`}
+            >
+              {probation.passed
+                ? 'ผ่านโปร'
+                : `ทดลองงาน (${probation.daysWorked}/119ว.)`}
+            </span>
+          </div>
+
           {/* Logout & Refresh Row */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 pt-1">
             <button
               type="button"
               onClick={() => fetchDashboardData(currentUser.id)}
-              className="flex-1 rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs font-bold text-slate-700 hover:bg-slate-50 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+              className="flex-1 rounded-xl border border-slate-200/80 bg-slate-50/70 hover:bg-slate-100 py-2 px-3 text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5 cursor-pointer"
               title="รีเฟรชข้อมูล"
             >
               <RefreshCw
                 className={`h-3.5 w-3.5 ${
-                  loadingData ? 'animate-spin text-blue-600' : ''
+                  loadingData ? 'animate-spin text-[#0066FF]' : ''
                 }`}
               />
               <span>รีเฟรช</span>
@@ -797,7 +792,7 @@ export default function HomePage() {
             <button
               type="button"
               onClick={handleLogout}
-              className="rounded-xl border border-rose-200 bg-rose-50/80 py-2 px-3 text-xs font-bold text-rose-700 hover:bg-rose-100 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+              className="rounded-xl border border-slate-200/80 bg-white hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 py-2 px-3 text-xs font-semibold text-slate-600 transition flex items-center justify-center gap-1.5 cursor-pointer"
               title="ออกจากระบบ"
             >
               <LogOut className="h-3.5 w-3.5" />
@@ -806,21 +801,21 @@ export default function HomePage() {
           </div>
 
           {/* Legal Links in Sidebar */}
-          <div className="pt-1 flex items-center justify-center gap-2 text-xs text-slate-400">
+          <div className="pt-0.5 flex items-center justify-center gap-2 text-[11px] text-slate-400">
             <a
               href="/privacy"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-blue-600 underline transition-colors"
+              className="hover:text-[#0066FF] transition-colors"
             >
               ความเป็นส่วนตัว
             </a>
-            <span>•</span>
+            <span className="text-slate-300">•</span>
             <a
               href="/terms"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-blue-600 underline transition-colors"
+              className="hover:text-[#0066FF] transition-colors"
             >
               เงื่อนไข
             </a>
@@ -831,12 +826,16 @@ export default function HomePage() {
       {/* =================================================================
           MAIN CONTENT AREA (Offset by sidebar on desktop)
           ================================================================= */}
-      <div className="flex-1 min-w-0 md:pl-64 lg:pl-72 flex flex-col min-h-screen">
+      <div className="flex-1 min-w-0 md:pl-64 lg:pl-[272px] flex flex-col min-h-screen">
         {/* Top Header Bar for Desktop & Mobile */}
-        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-2xs">
-          <div className="relative z-40 px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-3 bg-white">
+        <header
+          className={`sticky top-0 border-b border-slate-200/70 ${
+            isMobileQuotaOpen ? 'z-50' : 'z-30'
+          }`}
+        >
+          <div className="relative z-40 bg-white/85 backdrop-blur-xl px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-3">
             {/* Mobile Branding (only visible on mobile) */}
-            <div className="flex md:hidden items-center gap-2 sm:gap-2.5 min-w-0">
+            <div className="flex md:hidden items-center gap-2.5 min-w-0">
               <UserAvatar
                 name={currentUser.name}
                 avatarUrl={currentUser.avatarUrl}
@@ -845,54 +844,64 @@ export default function HomePage() {
                 textClass="text-xs"
               />
               <div className="min-w-0">
-                <div className="flex items-center gap-1 sm:gap-1.5">
-                  <span className="text-sm font-black text-slate-900 truncate">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm font-bold text-slate-900 truncate">
                     วันนี้ลา
                   </span>
-                  <span className="rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-white px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-black tracking-wider shadow-2xs shrink-0">
+                  <span className="rounded-full bg-amber-50 border border-amber-200/80 text-amber-700 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide shrink-0">
                     by DBC
                   </span>
                 </div>
-                <div className="text-[11px] sm:text-xs text-slate-500 font-medium truncate">
+                <div className="text-[11px] text-slate-500 font-medium truncate">
                   คุณ {currentUser.name.split(' ')[0]}
                 </div>
               </div>
             </div>
 
             {/* Desktop View Header / Title */}
-            <div className="hidden md:flex items-center gap-3 min-w-0">
-              <div className="text-base lg:text-lg font-black text-slate-900 flex items-center gap-2">
+            <div className="hidden md:flex items-center gap-2.5 min-w-0">
+              <div className="text-base lg:text-[17px] font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
                 {activeTab === 'OFFICE' && (
                   <>
-                    <MapPin className="h-5 w-5 text-emerald-600 shrink-0" />
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-200/60 shrink-0">
+                      <MapPin className="h-4 w-4" />
+                    </span>
                     <span>ลงเวลาเข้างาน &amp; สถานะออฟฟิศ</span>
                   </>
                 )}
                 {activeTab === 'CALENDAR' && (
                   <>
-                    <Calendar className="h-5 w-5 text-blue-600 shrink-0" />
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-[#0066FF] border border-blue-200/60 shrink-0">
+                      <Calendar className="h-4 w-4" />
+                    </span>
                     <span>ปฏิทินวันลา &amp; โควต้า</span>
                   </>
                 )}
                 {activeTab === 'APPROVALS' && (
                   <>
-                    <CheckSquare className="h-5 w-5 text-amber-600 shrink-0" />
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 border border-amber-200/60 shrink-0">
+                      <CheckSquare className="h-4 w-4" />
+                    </span>
                     <span>
                       {currentUser.role === 'employee'
                         ? 'ประวัติการลาของฉัน'
-                        : 'อนุมัติใบลา &amp; ประวัติคำขอ'}
+                        : 'อนุมัติใบลา & ประวัติคำขอ'}
                     </span>
                   </>
                 )}
                 {activeTab === 'DASHBOARD' && (
                   <>
-                    <BarChart3 className="h-5 w-5 text-blue-600 shrink-0" />
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-[#0066FF] border border-blue-200/60 shrink-0">
+                      <BarChart3 className="h-4 w-4" />
+                    </span>
                     <span>สถิติ &amp; รายงานวันลา</span>
                   </>
                 )}
                 {activeTab === 'MANAGEMENT' && (
                   <>
-                    <Settings className="h-5 w-5 text-slate-700 shrink-0" />
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700 border border-slate-200/70 shrink-0">
+                      <Settings className="h-4 w-4" />
+                    </span>
                     <span>จัดการพนักงาน &amp; วันหยุด</span>
                   </>
                 )}
@@ -903,8 +912,8 @@ export default function HomePage() {
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               {/* Today Attendance Status Indicator */}
               {myTodayAttendance ? (
-                <span className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 shadow-2xs">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/80 px-3 py-1.5 text-xs font-semibold text-emerald-700 tabular-nums">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                   <span>
                     {myTodayAttendance.checkOutTime
                       ? `เลิกงาน ${myTodayAttendance.checkOutTime} น.`
@@ -915,8 +924,8 @@ export default function HomePage() {
                   </span>
                 </span>
               ) : (
-                <span className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 shadow-2xs">
-                  <Clock className="h-3.5 w-3.5 text-amber-600" />
+                <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-amber-50/80 px-3 py-1.5 text-xs font-semibold text-amber-800">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
                   <span>ยังไม่ Check-in วันนี้</span>
                 </span>
               )}
@@ -925,21 +934,21 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={handleOpenPolicyOnlyModal}
-                className="hidden lg:flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/80 px-2.5 py-1.5 text-xs font-semibold text-slate-600 shadow-2xs hover:bg-slate-100 hover:border-slate-300 transition cursor-pointer"
+                className="hidden lg:flex items-center gap-2 rounded-full border border-slate-200/80 bg-slate-50/80 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-white hover:border-slate-300 transition cursor-pointer tabular-nums"
                 title="คลิกเพื่อดูระเบียบและเงื่อนไขการลา"
               >
-                <span className="text-slate-400 font-bold text-[11px] mr-0.5">โควต้า:</span>
-                <span className="inline-flex items-center gap-1 text-slate-700 font-bold" title="ลาป่วยคงเหลือ">
+                <span className="text-slate-400 font-medium text-[11px]">โควต้า</span>
+                <span className="inline-flex items-center gap-1 text-slate-700 font-semibold" title="ลาป่วยคงเหลือ">
                   <Activity className="h-3 w-3 text-rose-500" />
                   <span>{systemData.myQuota.quotas.sick.remainingDays}/{systemData.myQuota.quotas.sick.totalQuota}</span>
                 </span>
-                <span className="text-slate-300">•</span>
-                <span className="inline-flex items-center gap-1 text-slate-700 font-bold" title="ลากิจคงเหลือ">
+                <span className="text-slate-300">·</span>
+                <span className="inline-flex items-center gap-1 text-slate-700 font-semibold" title="ลากิจคงเหลือ">
                   <FileText className="h-3 w-3 text-amber-500" />
                   <span>{systemData.myQuota.quotas.personal.remainingDays}/{systemData.myQuota.quotas.personal.totalQuota}</span>
                 </span>
-                <span className="text-slate-300">•</span>
-                <span className="inline-flex items-center gap-1 text-slate-700 font-bold" title="ลาพักร้อนคงเหลือ">
+                <span className="text-slate-300">·</span>
+                <span className="inline-flex items-center gap-1 text-slate-700 font-semibold" title="ลาพักร้อนคงเหลือ">
                   <Sun className="h-3 w-3 text-sky-500" />
                   <span>{systemData.myQuota.quotas.vacation.remainingDays}/{systemData.myQuota.quotas.vacation.totalQuota}</span>
                 </span>
@@ -951,7 +960,7 @@ export default function HomePage() {
                 onClick={() => handleOpenRequestModal()}
                 aria-label="ยื่นใบลา"
                 title="ยื่นใบลา"
-                className="md:hidden rounded-xl bg-gradient-to-r from-[#0066FF] to-[#1D4ED8] hover:from-blue-700 hover:to-[#0A2540] px-2.5 sm:px-3 py-2 text-xs font-black text-white shadow-xs flex items-center gap-1.5 min-h-[40px] sm:min-h-[44px] active:scale-95 transition cursor-pointer"
+                className="md:hidden rounded-xl bg-[#0066FF] hover:bg-[#0052CC] px-3 py-2 text-xs font-semibold text-white shadow-xs flex items-center gap-1.5 min-h-[38px] sm:min-h-[40px] active:scale-95 transition cursor-pointer"
               >
                 <CalendarPlus className="h-4 w-4 shrink-0" />
                 <span className={isHrOrCLevel ? 'inline' : 'hidden xs:inline'}>ยื่นใบลา</span>
@@ -961,13 +970,13 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={() => fetchDashboardData(currentUser.id)}
-                className="rounded-xl border border-slate-200 bg-white p-2 sm:p-2.5 text-slate-600 hover:bg-slate-50 transition cursor-pointer shadow-2xs min-h-[40px] min-w-[40px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center active:scale-95"
+                className="rounded-xl border border-slate-200/80 bg-white p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition cursor-pointer min-h-[38px] min-w-[38px] sm:min-h-[40px] sm:min-w-[40px] flex items-center justify-center active:scale-95"
                 title="รีเฟรชข้อมูล"
                 aria-label="รีเฟรชข้อมูล"
               >
                 <RefreshCw
                   className={`h-4 w-4 ${
-                    loadingData ? 'animate-spin text-blue-600' : ''
+                    loadingData ? 'animate-spin text-[#0066FF]' : ''
                   }`}
                 />
               </button>
@@ -976,7 +985,7 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="md:hidden rounded-xl border border-rose-200 bg-rose-50 p-2 sm:p-2.5 text-rose-700 hover:bg-rose-100 transition shadow-2xs min-h-[40px] min-w-[40px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center active:scale-95"
+                className="md:hidden rounded-xl border border-slate-200/80 bg-white p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition min-h-[38px] min-w-[38px] sm:min-h-[40px] sm:min-w-[40px] flex items-center justify-center active:scale-95"
                 title="ออกจากระบบ"
                 aria-label="ออกจากระบบ"
               >
@@ -986,34 +995,27 @@ export default function HomePage() {
           </div>
 
           {/* Mobile Quota Quick Bar */}
-          <div className="relative z-40 md:hidden border-t border-slate-100 bg-slate-50/90 px-2 sm:px-3 py-1.5">
-            <div className="flex items-center justify-between gap-1 sm:gap-1.5">
+          <div className="relative z-40 md:hidden border-t border-slate-100 bg-slate-50/90 backdrop-blur-xl px-3 py-1.5">
+            <div className="flex items-center justify-between gap-1.5">
               {(['sick', 'personal', 'vacation'] as LeaveType[]).map((type) => {
                 const meta = LEAVE_TYPE_META[type];
                 const q = systemData.myQuota.quotas[type];
 
                 const icon =
                   type === 'sick' ? (
-                    <Activity className="h-3 w-3 text-rose-600 shrink-0" />
+                    <Activity className="h-3 w-3 text-rose-500 shrink-0" />
                   ) : type === 'personal' ? (
-                    <FileText className="h-3 w-3 text-amber-600 shrink-0" />
+                    <FileText className="h-3 w-3 text-amber-500 shrink-0" />
                   ) : (
-                    <Sun className="h-3 w-3 text-sky-600 shrink-0" />
+                    <Sun className="h-3 w-3 text-sky-500 shrink-0" />
                   );
-
-                const borderClass =
-                  type === 'sick'
-                    ? 'border-rose-200/80 text-rose-700'
-                    : type === 'personal'
-                    ? 'border-amber-200/80 text-amber-700'
-                    : 'border-sky-200/80 text-sky-700';
 
                 return (
                   <button
                     key={type}
                     type="button"
                     onClick={() => setIsMobileQuotaOpen((prev) => !prev)}
-                    className={`flex-1 rounded-xl bg-white border ${borderClass} px-1.5 sm:px-2 py-1 sm:py-1.5 flex items-center justify-between text-xs shadow-2xs active:scale-95 transition cursor-pointer min-w-0`}
+                    className="flex-1 rounded-lg bg-white border border-slate-200/80 px-2 py-1.5 flex items-center justify-between text-xs active:scale-95 transition cursor-pointer min-w-0"
                     title={`โควต้า${meta.shortLabel}คงเหลือ ${q.remainingDays}/${q.totalQuota} วัน (แตะเพื่อดูรายละเอียด)`}
                   >
                     <div className="flex items-center gap-1 min-w-0">
@@ -1022,11 +1024,11 @@ export default function HomePage() {
                         {meta.shortLabel}
                       </span>
                     </div>
-                    <div className="flex items-baseline gap-0.5 shrink-0 ml-0.5 text-slate-900">
-                      <span className="font-black text-[11px] sm:text-xs">
+                    <div className="flex items-baseline gap-0.5 shrink-0 ml-0.5 text-slate-900 tabular-nums">
+                      <span className="font-bold text-[11px] sm:text-xs">
                         {q.remainingDays}
                       </span>
-                      <span className="text-[9px] sm:text-[10px] text-slate-400 font-semibold">
+                      <span className="text-[9px] sm:text-[10px] text-slate-400 font-medium">
                         /{q.totalQuota}
                       </span>
                     </div>
@@ -1038,13 +1040,15 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={() => setIsMobileQuotaOpen((prev) => !prev)}
-                className="rounded-xl border border-slate-200 bg-white p-1.5 sm:p-2 text-slate-500 hover:text-slate-800 transition active:scale-95 shadow-2xs shrink-0 flex items-center justify-center cursor-pointer min-h-[32px] min-w-[32px]"
+                aria-expanded={isMobileQuotaOpen}
+                aria-controls="mobile-quota-drawer"
+                className="rounded-lg border border-slate-200/80 bg-white p-1.5 text-slate-500 hover:text-slate-800 transition active:scale-95 shrink-0 flex items-center justify-center cursor-pointer min-h-[30px] min-w-[30px]"
                 title={isMobileQuotaOpen ? 'ซ่อนรายละเอียดโควต้า' : 'ดูรายละเอียดโควต้า'}
                 aria-label="ดูรายละเอียดโควต้า"
               >
                 <ChevronDown
                   className={`h-3.5 w-3.5 transition-transform duration-200 ${
-                    isMobileQuotaOpen ? 'rotate-180 text-blue-600' : ''
+                    isMobileQuotaOpen ? 'rotate-180 text-[#0066FF]' : ''
                   }`}
                 />
               </button>
@@ -1056,20 +1060,21 @@ export default function HomePage() {
             <>
               {/* Backdrop: clicking outside dismisses drawer */}
               <div
-                className="md:hidden fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-xs transition-opacity"
+                className="md:hidden fixed inset-0 z-30 bg-slate-950/35 backdrop-blur-xs transition-opacity"
                 onClick={() => setIsMobileQuotaOpen(false)}
                 aria-hidden="true"
               />
 
               <div
+                id="mobile-quota-drawer"
                 role="region"
                 aria-label="รายละเอียดโควต้าวันลา"
-                className="md:hidden absolute top-full inset-x-0 z-40 border-t border-slate-200 bg-white px-4 py-3.5 shadow-xl space-y-3 max-h-[calc(100dvh-120px)] overflow-y-auto momentum-scroll"
+                className="md:hidden absolute top-full inset-x-0 z-40 border-t border-slate-200/80 bg-white px-4 py-4 shadow-xl space-y-3 max-h-[calc(100dvh-120px)] overflow-y-auto momentum-scroll animate-ui-slide-up"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="h-2.5 w-2.5 rounded-full bg-blue-600 ring-2 ring-blue-500/20" />
-                    <span className="text-xs sm:text-sm font-black text-slate-900">
+                    <span className="h-2 w-2 rounded-full bg-[#0066FF]" />
+                    <span className="text-xs sm:text-sm font-bold text-slate-900">
                       รายละเอียดโควต้าวันลา ปี {currentYear}
                     </span>
                   </div>
@@ -1080,14 +1085,14 @@ export default function HomePage() {
                         setIsMobileQuotaOpen(false);
                         handleOpenPolicyOnlyModal();
                       }}
-                      className="text-xs font-bold text-blue-600 hover:text-blue-800 underline cursor-pointer p-1"
+                      className="text-xs font-semibold text-[#0066FF] hover:text-blue-800 cursor-pointer p-1"
                     >
                       เงื่อนไข
                     </button>
                     <button
                       type="button"
                       onClick={() => setIsMobileQuotaOpen(false)}
-                      className="text-xs font-bold text-slate-400 hover:text-slate-700 px-2 py-1 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+                      className="text-xs font-semibold text-slate-400 hover:text-slate-700 px-2 py-1 rounded-lg hover:bg-slate-100 transition cursor-pointer"
                       aria-label="ปิดรายละเอียดโควต้า"
                     >
                       ✕ ปิด
@@ -1110,11 +1115,11 @@ export default function HomePage() {
 
                     const icon =
                       type === 'sick' ? (
-                        <Activity className="h-4 w-4 text-rose-600 shrink-0" />
+                        <Activity className="h-4 w-4 text-rose-500 shrink-0" />
                       ) : type === 'personal' ? (
-                        <FileText className="h-4 w-4 text-amber-600 shrink-0" />
+                        <FileText className="h-4 w-4 text-amber-500 shrink-0" />
                       ) : (
-                        <Sun className="h-4 w-4 text-sky-600 shrink-0" />
+                        <Sun className="h-4 w-4 text-sky-500 shrink-0" />
                       );
 
                     const barColor =
@@ -1127,41 +1132,41 @@ export default function HomePage() {
                     return (
                       <div
                         key={type}
-                        className="rounded-2xl bg-slate-50/90 border border-slate-200/80 p-3 space-y-2 shadow-2xs"
+                        className="rounded-xl bg-slate-50/80 border border-slate-200/70 p-3 space-y-2"
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5 min-w-0">
                             {icon}
-                            <span className="text-xs font-black text-slate-800 truncate">
+                            <span className="text-xs font-semibold text-slate-800 truncate">
                               {meta.label}
                             </span>
                             {lockedByProbation && (
-                              <span className="rounded bg-amber-100 border border-amber-300 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 shrink-0">
+                              <span className="rounded bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 shrink-0">
                                 รอผ่านโปร (119 วัน)
                               </span>
                             )}
                           </div>
-                          <div className="text-xs font-extrabold text-slate-900 shrink-0 ml-2">
-                            เหลือ <span className="text-blue-700 font-black">{q.remainingDays}</span> จาก {q.totalQuota} วัน
+                          <div className="text-xs font-semibold text-slate-700 shrink-0 ml-2 tabular-nums">
+                            เหลือ <span className="text-[#0066FF] font-bold">{q.remainingDays}</span> / {q.totalQuota} วัน
                           </div>
                         </div>
 
                         {/* Progress Bar */}
-                        <div className="w-full bg-slate-200/80 rounded-full h-1.5 overflow-hidden">
+                        <div className="w-full bg-slate-200/70 rounded-full h-1.5 overflow-hidden">
                           <div
                             className={`h-full rounded-full transition-all duration-300 ${barColor}`}
                             style={{ width: `${usedPercent}%` }}
                           />
                         </div>
 
-                        <div className="flex items-center justify-between text-[11px] text-slate-600 font-medium">
+                        <div className="flex items-center justify-between text-[11px] text-slate-500 font-medium tabular-nums">
                           <span>ใช้ไปแล้ว: {q.usedDays} วัน</span>
                           {q.pendingDays > 0 ? (
-                            <span className="text-amber-800 font-bold bg-amber-100/90 px-1.5 py-0.5 rounded text-[10px]">
+                            <span className="text-amber-800 font-semibold bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded text-[10px]">
                               รออนุมัติ {q.pendingDays} วัน
                             </span>
                           ) : (
-                            <span className="text-emerald-700 font-semibold text-[10px]">
+                            <span className="text-emerald-600 font-medium text-[10px]">
                               พร้อมใช้งาน
                             </span>
                           )}
@@ -1176,15 +1181,15 @@ export default function HomePage() {
         </header>
 
       {/* Main Content Container */}
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 sm:px-6 lg:px-8 py-6 pb-28 md:pb-10 space-y-6">
+      <main className="mx-auto w-full max-w-[1360px] flex-1 px-4 sm:px-6 lg:px-8 py-5 sm:py-6 pb-24 md:pb-10 space-y-6 animate-ui-fade">
         {/* Google Sheets API Warning Banner for Admin */}
         {currentUser.role === 'admin' && systemData.storageMode === 'demo_local' && systemData.syncError && (
-          <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4 text-xs sm:text-sm text-amber-950 flex items-start gap-3 shadow-2xs">
+          <div className="rounded-2xl bg-amber-50/90 border border-amber-200/80 p-4 text-xs sm:text-sm text-amber-950 flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
-              <div className="font-bold flex items-center gap-2 flex-wrap">
+              <div className="font-semibold flex items-center gap-2 flex-wrap">
                 <span>Google Sheets ยังไม่ได้รับข้อมูลอัปเดต (ระบบกำลังบันทึกใน Local Storage ชั่วคราว)</span>
-                <span className="rounded-md bg-amber-200/90 px-2 py-0.5 text-xs font-black text-amber-950">
+                <span className="rounded-full bg-amber-100 border border-amber-200 px-2.5 py-0.5 text-[11px] font-semibold text-amber-900">
                   รอเปิดใช้งาน Sheets API
                 </span>
               </div>
@@ -1196,7 +1201,7 @@ export default function HomePage() {
                   href="https://console.developers.google.com/apis/api/sheets.googleapis.com/overview?project=112533483238"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-xl bg-amber-600 hover:bg-amber-700 text-white px-3.5 py-1.5 font-bold inline-flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
+                  className="rounded-xl bg-amber-600 hover:bg-amber-700 text-white px-3.5 py-1.5 font-semibold inline-flex items-center gap-1.5 transition cursor-pointer"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
                   <span>คลิกเพื่อเปิดใช้งาน Google Sheets API ใน Google Cloud</span>
@@ -1263,27 +1268,27 @@ export default function HomePage() {
         )}
 
         {/* Global Footer */}
-        <footer className="mt-12 pt-6 pb-20 md:pb-8 border-t border-slate-200/80 text-center text-xs text-slate-500 space-y-2">
+        <footer className="mt-10 pt-6 pb-4 md:pb-6 border-t border-slate-200/70 text-center text-xs text-slate-400 space-y-1.5">
           <div className="flex items-center justify-center gap-3 font-medium">
             <a
               href="/privacy"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-blue-600 transition-colors"
+              className="hover:text-[#0066FF] transition-colors"
             >
               นโยบายความเป็นส่วนตัว (Privacy)
             </a>
-            <span>•</span>
+            <span className="text-slate-300">•</span>
             <a
               href="/terms"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-blue-600 transition-colors"
+              className="hover:text-[#0066FF] transition-colors"
             >
               ข้อกำหนดการใช้งาน (Terms)
             </a>
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-[11px] text-slate-400">
             ระบบวันนี้ลา by DBC • Digital Business Consult Co., Ltd. สงวนลิขสิทธิ์
           </p>
         </footer>
@@ -1292,51 +1297,51 @@ export default function HomePage() {
 
       {/* Mobile Bottom Navigation Bar */}
       <nav
-        className={`md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 px-1.5 py-1.5 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] grid ${
+        className={`md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/90 backdrop-blur-xl border-t border-slate-200/75 px-2 pt-1.5 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] grid ${
           isHrOrCLevel ? 'grid-cols-5' : 'grid-cols-4'
-        } gap-1 shadow-[0_-4px_24px_rgba(15,23,42,0.08)]`}
+        } gap-1 shadow-[0_-4px_20px_rgba(15,23,42,0.05)]`}
       >
         <button
           type="button"
           onClick={() => setActiveTab('OFFICE')}
-          className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl transition min-h-[52px] active:scale-95 duration-100 ${
+          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition min-h-[50px] active:scale-95 ${
             activeTab === 'OFFICE'
-              ? 'text-blue-700 bg-blue-50/90 ring-1 ring-blue-200/80 font-bold'
-              : 'text-slate-600 hover:text-slate-900 font-medium'
+              ? 'text-[#0066FF] bg-blue-50/80 font-semibold'
+              : 'text-slate-500 hover:text-slate-900 font-medium'
           }`}
         >
-          <MapPin className="h-5 w-5 mb-0.5 shrink-0" />
-          <span className="text-[11px] sm:text-xs truncate text-center w-full">Check-in</span>
+          <MapPin className="h-[19px] w-[19px] mb-0.5 shrink-0" />
+          <span className="text-[11px] truncate text-center w-full">Check-in</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('CALENDAR')}
-          className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl transition min-h-[52px] active:scale-95 duration-100 ${
+          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition min-h-[50px] active:scale-95 ${
             activeTab === 'CALENDAR'
-              ? 'text-blue-700 bg-blue-50/90 ring-1 ring-blue-200/80 font-bold'
-              : 'text-slate-600 hover:text-slate-900 font-medium'
+              ? 'text-[#0066FF] bg-blue-50/80 font-semibold'
+              : 'text-slate-500 hover:text-slate-900 font-medium'
           }`}
         >
-          <Calendar className="h-5 w-5 mb-0.5 shrink-0" />
-          <span className="text-[11px] sm:text-xs truncate text-center w-full">ปฏิทิน</span>
+          <Calendar className="h-[19px] w-[19px] mb-0.5 shrink-0" />
+          <span className="text-[11px] truncate text-center w-full">ปฏิทิน</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('APPROVALS')}
-          className={`relative flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl transition min-h-[52px] active:scale-95 duration-100 ${
+          className={`relative flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition min-h-[50px] active:scale-95 ${
             activeTab === 'APPROVALS'
-              ? 'text-blue-700 bg-blue-50/90 ring-1 ring-blue-200/80 font-bold'
-              : 'text-slate-600 hover:text-slate-900 font-medium'
+              ? 'text-[#0066FF] bg-blue-50/80 font-semibold'
+              : 'text-slate-500 hover:text-slate-900 font-medium'
           }`}
         >
-          <CheckSquare className="h-5 w-5 mb-0.5 shrink-0" />
-          <span className="text-[11px] sm:text-xs truncate text-center w-full">
+          <CheckSquare className="h-[19px] w-[19px] mb-0.5 shrink-0" />
+          <span className="text-[11px] truncate text-center w-full">
             {currentUser.role === 'employee' ? 'ประวัติลา' : 'อนุมัติ'}
           </span>
           {currentUser.role !== 'employee' && pendingApprovalCount > 0 && (
-            <span className="absolute top-0.5 right-1 h-4 min-w-[16px] rounded-full bg-amber-500 text-white text-[10px] font-black flex items-center justify-center px-1 shadow-xs">
+            <span className="absolute top-0.5 right-1.5 h-4 min-w-[16px] rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center px-1 tabular-nums">
               {pendingApprovalCount}
             </span>
           )}
@@ -1347,37 +1352,37 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => setActiveTab('DASHBOARD')}
-              className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl transition min-h-[52px] active:scale-95 duration-100 ${
+              className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition min-h-[50px] active:scale-95 ${
                 activeTab === 'DASHBOARD'
-                  ? 'text-blue-700 bg-blue-50/90 ring-1 ring-blue-200/80 font-bold'
-                  : 'text-slate-600 hover:text-slate-900 font-medium'
+                  ? 'text-[#0066FF] bg-blue-50/80 font-semibold'
+                  : 'text-slate-500 hover:text-slate-900 font-medium'
               }`}
             >
-              <BarChart3 className="h-5 w-5 mb-0.5 shrink-0" />
-              <span className="text-[11px] sm:text-xs truncate text-center w-full">สถิติ</span>
+              <BarChart3 className="h-[19px] w-[19px] mb-0.5 shrink-0" />
+              <span className="text-[11px] truncate text-center w-full">สถิติ</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('MANAGEMENT')}
-              className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl transition min-h-[52px] active:scale-95 duration-100 ${
+              className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition min-h-[50px] active:scale-95 ${
                 activeTab === 'MANAGEMENT'
-                  ? 'text-blue-700 bg-blue-50/90 ring-1 ring-blue-200/80 font-bold'
-                  : 'text-slate-600 hover:text-slate-900 font-medium'
+                  ? 'text-[#0066FF] bg-blue-50/80 font-semibold'
+                  : 'text-slate-500 hover:text-slate-900 font-medium'
               }`}
             >
-              <Settings className="h-5 w-5 mb-0.5 shrink-0" />
-              <span className="text-[11px] sm:text-xs truncate text-center w-full">ตั้งค่า HR</span>
+              <Settings className="h-[19px] w-[19px] mb-0.5 shrink-0" />
+              <span className="text-[11px] truncate text-center w-full">ตั้งค่า HR</span>
             </button>
           </>
         ) : (
           <button
             type="button"
             onClick={() => handleOpenRequestModal()}
-            className="flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl text-white bg-[#0066FF] hover:bg-blue-700 shadow-xs min-h-[52px] font-bold active:scale-95 duration-100"
+            className="flex flex-col items-center justify-center py-1.5 px-1 rounded-xl text-white bg-[#0066FF] hover:bg-[#0052CC] shadow-xs min-h-[50px] font-semibold active:scale-95 transition"
           >
-            <CalendarPlus className="h-5 w-5 mb-0.5 shrink-0" />
-            <span className="text-[11px] sm:text-xs truncate text-center w-full">ยื่นใบลา</span>
+            <CalendarPlus className="h-[19px] w-[19px] mb-0.5 shrink-0" />
+            <span className="text-[11px] truncate text-center w-full">ยื่นใบลา</span>
           </button>
         )}
       </nav>

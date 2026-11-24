@@ -9,7 +9,7 @@ import {
   Edit3,
   Plus,
   Save,
-  ShieldCheck,
+  Search,
   Trash2,
   UserPlus,
   Users,
@@ -22,6 +22,7 @@ import {
   getCompanyAliasEmail,
   getNextEmployeeId,
   getProbationInfo,
+  getUserEmails,
   isSuperAdminEmail,
   isSuperAdminUser,
   isValidEmailFormat,
@@ -231,23 +232,23 @@ export function DepartmentDropdown({
           aria-invalid={Boolean(error)}
           onClick={() => setOpen((prev) => !prev)}
           onKeyDown={handleTriggerKeyDown}
-          className={`w-full scroll-mt-10 rounded-xl border bg-white pl-3.5 pr-2.5 py-2.5 text-base sm:text-sm text-left transition flex items-center justify-between gap-2 cursor-pointer min-h-[46px] focus:outline-hidden ${
+          className={`w-full scroll-mt-10 rounded-xl border bg-white pl-3.5 pr-2.5 py-2.5 text-base sm:text-sm text-left transition flex items-center justify-between gap-2 cursor-pointer min-h-[44px] focus:outline-hidden ${
             error
-              ? 'border-rose-500 ring-2 ring-rose-100'
+              ? 'border-rose-500 ring-4 ring-rose-500/10'
               : open
-                ? 'border-blue-600 ring-2 ring-blue-100'
-                : 'border-slate-300 hover:border-blue-400'
+                ? 'border-[#0066FF] ring-4 ring-blue-500/10'
+                : 'border-slate-200 hover:border-slate-300'
           }`}
         >
           <span className="flex items-center gap-2 min-w-0">
             <Building2
               className={`h-4 w-4 shrink-0 ${
-                trimmedValue ? 'text-blue-600' : 'text-slate-400'
+                trimmedValue ? 'text-[#0066FF]' : 'text-slate-400'
               }`}
             />
             {trimmedValue ? (
               <span
-                className={`font-bold truncate ${
+                className={`font-semibold truncate ${
                   isLegacySelected ? 'text-amber-800' : 'text-slate-900'
                 }`}
               >
@@ -262,7 +263,7 @@ export function DepartmentDropdown({
 
           <span
             className={`inline-flex items-center justify-center rounded-lg px-1.5 py-1 transition-colors shrink-0 ${
-              open ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-600'
+              open ? 'bg-blue-50 text-[#0066FF]' : 'bg-slate-100/80 text-slate-500'
             }`}
           >
             <ChevronDown
@@ -279,10 +280,10 @@ export function DepartmentDropdown({
             id="emp-department-listbox"
             role="listbox"
             aria-labelledby="emp-department-label"
-            className="absolute left-0 right-0 top-full z-30 mt-1.5 scroll-mb-6 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl ring-1 ring-slate-900/5 space-y-1"
+            className="absolute left-0 right-0 top-full z-30 mt-1.5 scroll-mb-6 rounded-2xl border border-slate-200/85 bg-white p-1.5 shadow-xl ring-1 ring-slate-900/5 space-y-1"
           >
             {error && (
-              <div className="rounded-xl bg-rose-50 border border-rose-100 px-3 py-1.5 text-xs font-bold text-rose-700">
+              <div className="rounded-xl bg-rose-50 border border-rose-100 px-3 py-1.5 text-xs font-semibold text-rose-700">
                 {error}
               </div>
             )}
@@ -305,20 +306,20 @@ export function DepartmentDropdown({
                     className={`w-full rounded-xl px-3.5 py-2.5 text-left text-sm flex items-center justify-between gap-2 transition cursor-pointer min-h-[42px] ${
                       isSelected
                         ? opt.isLegacy
-                          ? 'bg-amber-50 text-amber-800 font-extrabold'
-                          : 'bg-blue-50 text-blue-700 font-extrabold'
+                          ? 'bg-amber-50 text-amber-800 font-semibold'
+                          : 'bg-blue-50/90 text-[#0066FF] font-semibold'
                         : isHighlighted
-                          ? 'bg-slate-100 text-slate-900 font-bold'
+                          ? 'bg-slate-100 text-slate-900 font-semibold'
                           : opt.isLegacy
                             ? 'text-slate-600 hover:bg-slate-50 font-medium'
-                            : 'text-slate-800 hover:bg-slate-50 font-semibold'
+                            : 'text-slate-700 hover:bg-slate-50 font-medium'
                     }`}
                   >
                     <span className="truncate">{opt.label}</span>
                     {isSelected && (
                       <Check
                         className={`h-4 w-4 shrink-0 ${
-                          opt.isLegacy ? 'text-amber-600' : 'text-blue-600'
+                          opt.isLegacy ? 'text-amber-600' : 'text-[#0066FF]'
                         }`}
                       />
                     )}
@@ -331,7 +332,7 @@ export function DepartmentDropdown({
       </div>
 
       {!open && error ? (
-        <p className="mt-1.5 text-xs font-bold text-rose-600">{error}</p>
+        <p className="mt-1.5 text-xs font-semibold text-rose-600">{error}</p>
       ) : helperText ? (
         <p
           className={`mt-1 text-xs text-slate-500 ${
@@ -395,10 +396,26 @@ export default function HrManagementView({
   const [activeSection, setActiveSection] = useState<'EMPLOYEES' | 'HOLIDAYS'>(
     'EMPLOYEES'
   );
+  const [empSearchQuery, setEmpSearchQuery] = useState('');
   const [feedback, setFeedback] = useState<{
     type: 'success' | 'error';
     message: string;
   } | null>(null);
+
+  const filteredUsers = useMemo(() => {
+    const q = empSearchQuery.trim().toLowerCase();
+    if (!q) return users;
+    return users.filter(
+      (u) =>
+        u.name.toLowerCase().includes(q) ||
+        (u.englishName || '').toLowerCase().includes(q) ||
+        u.id.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        getUserEmails(u).some((e) => e.includes(q)) ||
+        (u.department || '').toLowerCase().includes(q) ||
+        (u.position || '').toLowerCase().includes(q)
+    );
+  }, [users, empSearchQuery]);
 
   // Employee Form Modal State (PDPA Compliant: No phone, No password stored in sheet)
   const [isEmpModalOpen, setIsEmpModalOpen] = useState(false);
@@ -436,12 +453,23 @@ export default function HrManagementView({
   const [holidayName, setHolidayName] = useState('');
   const [savingHoliday, setSavingHoliday] = useState(false);
 
-  const closeEmployeeModal = () => {
+  const closeEmployeeModal = useCallback(() => {
     setIsDeptDropdownOpen(false);
     setDeptValidationError(null);
     setModalError(null);
     setIsEmpModalOpen(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!isEmpModalOpen || isDeptDropdownOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !savingEmp) {
+        closeEmployeeModal();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isEmpModalOpen, isDeptDropdownOpen, savingEmp, closeEmployeeModal]);
 
   const openAddEmployeeModal = () => {
     const today = getBangkokNow().dateStr;
@@ -664,32 +692,40 @@ export default function HrManagementView({
 
   return (
     <div className="space-y-5">
-      {/* Sub-navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
-        <div className="flex flex-wrap items-center gap-2.5">
+      {/* Sub-navigation Segmented Control */}
+      <div className="overflow-x-auto no-scrollbar momentum-scroll pb-1">
+        <div className="inline-flex items-center gap-1 rounded-xl bg-slate-200/60 p-1">
           <button
             type="button"
             onClick={() => setActiveSection('EMPLOYEES')}
-            className={`rounded-2xl px-5 py-3 text-sm font-bold transition flex items-center gap-2.5 cursor-pointer min-h-[46px] ${
+            className={`rounded-lg px-4 py-2 text-xs sm:text-sm font-semibold transition flex items-center gap-2 cursor-pointer min-h-[38px] shrink-0 ${
               activeSection === 'EMPLOYEES'
-                ? 'bg-[#0066FF] text-white shadow-md'
-                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+                ? 'bg-white text-slate-900 shadow-xs'
+                : 'text-slate-500 hover:text-slate-900'
             }`}
           >
-            <Users className="h-4 w-4" />
+            <Users
+              className={`h-4 w-4 ${
+                activeSection === 'EMPLOYEES' ? 'text-[#0066FF]' : 'text-slate-400'
+              }`}
+            />
             <span>จัดการพนักงาน PDPA &amp; โควต้า ({users.length} คน)</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveSection('HOLIDAYS')}
-            className={`rounded-2xl px-5 py-3 text-sm font-bold transition flex items-center gap-2.5 cursor-pointer min-h-[46px] ${
+            className={`rounded-lg px-4 py-2 text-xs sm:text-sm font-semibold transition flex items-center gap-2 cursor-pointer min-h-[38px] shrink-0 ${
               activeSection === 'HOLIDAYS'
-                ? 'bg-[#0066FF] text-white shadow-md'
-                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+                ? 'bg-white text-slate-900 shadow-xs'
+                : 'text-slate-500 hover:text-slate-900'
             }`}
           >
-            <CalendarCog className="h-4 w-4" />
+            <CalendarCog
+              className={`h-4 w-4 ${
+                activeSection === 'HOLIDAYS' ? 'text-[#0066FF]' : 'text-slate-400'
+              }`}
+            />
             <span>
               จัดการวันหยุดนักขัตฤกษ์ / วันหยุดบริษัท ({holidays.length} วัน)
             </span>
@@ -699,17 +735,17 @@ export default function HrManagementView({
 
       {feedback && (
         <div
-          className={`rounded-2xl border p-4 text-xs sm:text-sm font-bold flex items-center justify-between shadow-xs ${
+          className={`rounded-xl border px-4 py-3 text-xs sm:text-sm font-medium flex items-center justify-between gap-3 animate-ui-slide-up ${
             feedback.type === 'success'
-              ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-              : 'border-rose-200 bg-rose-50 text-rose-800'
+              ? 'border-emerald-200/80 bg-emerald-50/80 text-emerald-800'
+              : 'border-rose-200/80 bg-rose-50/80 text-rose-800'
           }`}
         >
           <span>{feedback.message}</span>
           <button
             type="button"
             onClick={() => setFeedback(null)}
-            className="underline ml-3 cursor-pointer text-xs font-bold"
+            className="text-xs font-semibold opacity-75 hover:opacity-100 ml-3 cursor-pointer shrink-0"
           >
             ปิด
           </button>
@@ -718,45 +754,71 @@ export default function HrManagementView({
 
       {/* SECTION 1: EMPLOYEES MANAGEMENT */}
       {activeSection === 'EMPLOYEES' && (
-        <div className="rounded-3xl bg-white border border-slate-200 shadow-xs overflow-hidden">
-          <div className="p-5 sm:p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="rounded-2xl bg-white border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden">
+          <div className="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
             <div>
-              <h3 className="text-base sm:text-lg font-black text-slate-900">
+              <h3 className="text-base font-bold text-slate-900 tracking-tight">
                 รายชื่อพนักงาน ({users.length} คน)
               </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                จัดการสิทธิ์การเข้าใช้งาน Whitelist และรองรับอีเมลองค์กรทั้ง 2 โดเมน
+              </p>
             </div>
 
-            <button
-              type="button"
-              onClick={openAddEmployeeModal}
-              className="rounded-xl bg-[#0066FF] hover:bg-blue-700 px-5 py-2.5 text-xs sm:text-sm font-bold text-white transition flex items-center gap-2 cursor-pointer shadow-xs shrink-0 min-h-[44px]"
-            >
-              <UserPlus className="h-4 w-4" />
-              <span>เพิ่มพนักงานใหม่</span>
-            </button>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+              <div className="relative">
+                <Search className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={empSearchQuery}
+                  onChange={(e) => setEmpSearchQuery(e.target.value)}
+                  placeholder="ค้นหาชื่อ / อีเมล / แผนก..."
+                  className="w-full sm:w-56 rounded-xl border border-slate-200 bg-slate-50/70 pl-9 pr-8 py-2 text-base sm:text-xs text-slate-900 placeholder:text-slate-400 hover:border-slate-300 focus:border-[#0066FF] focus:bg-white focus:outline-hidden min-h-[40px] transition"
+                />
+                {empSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setEmpSearchQuery('')}
+                    aria-label="ล้างคำค้นหา"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 transition cursor-pointer"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={openAddEmployeeModal}
+                className="rounded-xl bg-[#0066FF] hover:bg-[#0052CC] px-4 py-2 text-xs sm:text-sm font-semibold text-white transition flex items-center justify-center gap-2 cursor-pointer shadow-xs shrink-0 min-h-[40px]"
+              >
+                <UserPlus className="h-4 w-4" />
+                <span>เพิ่มพนักงานใหม่</span>
+              </button>
+            </div>
           </div>
 
           <div className="overflow-x-auto momentum-scroll pb-2">
             <table className="w-full text-left border-collapse text-xs sm:text-sm">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-black">
-                  <th className="py-4 px-5">รหัส / ชื่อภาษาไทย</th>
-                  <th className="py-4 px-4">Google Email / EN</th>
-                  <th className="py-4 px-3">บทบาท</th>
-                  <th className="py-4 px-3">ฝ่าย / ตำแหน่ง</th>
-                  <th className="py-4 px-3">เริ่มงาน (โปร 119 วัน)</th>
-                  <th className="py-4 px-3 text-center">
+                <tr className="bg-slate-50/80 border-b border-slate-100 text-slate-500 font-semibold text-xs">
+                  <th className="py-3.5 px-5">รหัส / ชื่อภาษาไทย</th>
+                  <th className="py-3.5 px-4">Google Email / EN</th>
+                  <th className="py-3.5 px-3">บทบาท</th>
+                  <th className="py-3.5 px-3">ฝ่าย / ตำแหน่ง</th>
+                  <th className="py-3.5 px-3">เริ่มงาน (โปร 119 วัน)</th>
+                  <th className="py-3.5 px-3 text-center">
                     โควต้า (ป่วย/กิจ/พักร้อน)
                   </th>
-                  <th className="py-4 px-5 text-right">จัดการ</th>
+                  <th className="py-3.5 px-5 text-right">จัดการ</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 font-medium">
-                {users.map((u) => {
+              <tbody className="divide-y divide-slate-100">
+                {filteredUsers.map((u) => {
                   const prob = getProbationInfo(u.startDate);
                   return (
                     <tr key={u.id} className="hover:bg-slate-50/70 transition">
-                      <td className="py-4 px-5">
+                      <td className="py-3.5 px-5">
                         <div className="flex items-center gap-3">
                           <UserAvatar
                             name={u.name}
@@ -764,49 +826,49 @@ export default function HrManagementView({
                             sizeClass="h-9 w-9"
                             roundedClass="rounded-full"
                             textClass="text-xs"
-                            fallbackBgClass="bg-slate-100 border border-slate-200 text-slate-600"
+                            fallbackBgClass="bg-slate-100 text-slate-600"
                           />
                           <div>
-                            <div className="font-extrabold text-sm sm:text-base text-slate-900">{u.name}</div>
-                            <div className="font-mono text-xs text-slate-400 font-bold mt-0.5">
+                            <div className="font-semibold text-sm text-slate-900">{u.name}</div>
+                            <div className="font-mono text-[11px] text-slate-400 mt-0.5">
                               {u.id}
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td className="py-4 px-4">
-                        <div className="font-bold text-blue-700">
+                      <td className="py-3.5 px-4">
+                        <div className="font-semibold text-[#0066FF] text-xs sm:text-sm">
                           {u.email}
                         </div>
                         {getAdditionalUserEmails(u).map((altEmail) => (
                           <div
                             key={altEmail}
-                            className="text-xs font-semibold text-indigo-600 mt-0.5"
+                            className="text-xs font-medium text-indigo-600 mt-0.5"
                           >
                             ↳ {altEmail}
                           </div>
                         ))}
-                        <div className="text-xs mt-0.5 font-medium">
+                        <div className="text-xs mt-0.5">
                           {u.englishName ? (
-                            <span className="text-slate-500">EN: {u.englishName}</span>
+                            <span className="text-slate-400">EN: {u.englishName}</span>
                           ) : (
-                            <span className="text-amber-600 font-semibold">
+                            <span className="text-amber-600 font-medium">
                               EN: รอดึงจาก Google Login
                             </span>
                           )}
                         </div>
                       </td>
-                      <td className="py-4 px-3">
+                      <td className="py-3.5 px-3">
                         <span
-                          className={`rounded-md border px-2.5 py-0.5 text-xs font-bold ${
+                          className={`inline-flex whitespace-nowrap rounded-md border px-2 py-0.5 text-[11px] font-semibold ${
                             ROLE_META[u.role].badgeClass
                           }`}
                         >
                           {ROLE_META[u.role].label}
                         </span>
                       </td>
-                      <td className="py-4 px-3">
-                        <div className="font-bold text-slate-800">
+                      <td className="py-3.5 px-3">
+                        <div className="font-semibold text-slate-800 text-xs sm:text-sm">
                           {u.department &&
                           u.department !== 'Executive (C-Level)' &&
                           u.department !== 'Executive (Admin)' &&
@@ -820,50 +882,50 @@ export default function HrManagementView({
                                 ? 'ผู้ดูแลระบบสูงสุด'
                                 : '-'}
                         </div>
-                        <div className="text-slate-500 text-xs mt-0.5 font-medium">
+                        <div className="text-slate-400 text-xs mt-0.5">
                           {u.position}
                         </div>
                         {u.role === 'manager' && u.cLevelApproverId && (
-                          <div className="text-[11px] text-blue-700 font-semibold mt-0.5">
+                          <div className="text-[11px] text-[#0066FF] font-medium mt-0.5">
                             C-Level:{' '}
                             {users.find((c) => c.id === u.cLevelApproverId)
                               ?.name.split(' ')[0] || u.cLevelApproverId}
                           </div>
                         )}
                       </td>
-                      <td className="py-4 px-3">
+                      <td className="py-3.5 px-3 whitespace-nowrap">
                         {u.role === 'c_level' || u.role === 'admin' || !u.startDate ? (
-                          <span className="inline-flex items-center rounded-lg bg-purple-50 border border-purple-200 px-2.5 py-1 text-xs font-bold text-purple-700">
+                          <span className="inline-flex items-center rounded-md bg-purple-50 border border-purple-200/70 px-2 py-0.5 text-[11px] font-semibold text-purple-700">
                             ผู้บริหาร (ไม่เช็คโปร)
                           </span>
                         ) : (
                           <>
-                            <div className="font-mono text-slate-800 font-bold">
+                            <div className="font-mono text-xs text-slate-700 font-semibold tabular-nums">
                               {u.startDate}
                             </div>
                             <div className="mt-1">
                               {prob.passed ? (
-                                <span className="text-xs font-bold text-emerald-700">
+                                <span className="text-[11px] font-semibold text-emerald-700">
                                   ✓ ผ่านโปรแล้ว ({prob.daysWorked} วัน)
                                 </span>
                               ) : (
-                                <span className="text-xs font-bold text-amber-700">
-                                  ⏳ ทดลองงาน (เหลือ {prob.daysRemaining} วัน)
+                                <span className="text-[11px] font-semibold text-amber-700">
+                                  ทดลองงาน (เหลือ {prob.daysRemaining} วัน)
                                 </span>
                               )}
                             </div>
                           </>
                         )}
                       </td>
-                      <td className="py-4 px-3 text-center font-bold text-slate-800 text-xs sm:text-sm">
+                      <td className="py-3.5 px-3 text-center font-semibold text-slate-700 text-xs sm:text-sm tabular-nums whitespace-nowrap">
                         {(u.quotas?.sick ?? STANDARD_LEAVE_QUOTAS.sick)} / {(u.quotas?.personal ?? STANDARD_LEAVE_QUOTAS.personal)} / {(u.quotas?.vacation ?? STANDARD_LEAVE_QUOTAS.vacation)}
                       </td>
-                      <td className="py-4 px-5 text-right">
-                        <div className="inline-flex items-center gap-2">
+                      <td className="py-3.5 px-5 text-right whitespace-nowrap">
+                        <div className="inline-flex items-center gap-1.5">
                           <button
                             type="button"
                             onClick={() => openEditEmployeeModal(u)}
-                            className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-100 transition inline-flex items-center gap-1.5 cursor-pointer min-h-[36px]"
+                            className="rounded-lg border border-slate-200/90 bg-white hover:bg-blue-50 hover:border-blue-200 hover:text-[#0066FF] px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition inline-flex items-center gap-1.5 cursor-pointer min-h-[34px]"
                           >
                             <Edit3 className="h-3.5 w-3.5" />
                             <span>แก้ไข</span>
@@ -875,7 +937,7 @@ export default function HrManagementView({
                               <button
                                 type="button"
                                 onClick={() => handleDeleteEmployeeClick(u)}
-                                className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition inline-flex items-center gap-1.5 cursor-pointer min-h-[36px]"
+                                className="rounded-lg border border-slate-200/90 bg-white hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 px-2.5 py-1.5 text-xs font-semibold text-slate-500 transition inline-flex items-center gap-1.5 cursor-pointer min-h-[34px]"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                                 <span>ลบ</span>
@@ -886,6 +948,16 @@ export default function HrManagementView({
                     </tr>
                   );
                 })}
+                {filteredUsers.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className="py-10 text-center text-sm text-slate-400"
+                    >
+                      ไม่พบข้อมูลพนักงานที่ตรงกับคำค้นหา
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -894,22 +966,25 @@ export default function HrManagementView({
 
       {/* SECTION 2: HOLIDAYS MANAGEMENT */}
       {activeSection === 'HOLIDAYS' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           {/* Left: Add/Edit Holiday Form */}
-          <div className="lg:col-span-5 rounded-3xl bg-white p-6 border border-slate-200 shadow-xs space-y-5">
-            <div>
-              <h3 className="text-base sm:text-lg font-black text-slate-900">
+          <div className="lg:col-span-5 rounded-2xl bg-white p-5 sm:p-6 border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] space-y-4">
+            <div className="border-b border-slate-100 pb-3.5">
+              <h3 className="text-base font-bold text-slate-900 tracking-tight">
                 {editingHolidayId
                   ? 'แก้ไขวันหยุดบริษัท'
                   : 'เพิ่มวันหยุดบริษัท'}
               </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                วันหยุดที่เพิ่มจะถูกหักออกจากการคำนวณวันลาอัตโนมัติ
+              </p>
             </div>
 
             <form onSubmit={handleAddHoliday} className="space-y-4 text-xs sm:text-sm">
               <div>
                 <label
                   htmlFor="holiday-date"
-                  className="block font-bold text-slate-800 mb-1.5"
+                  className="block font-semibold text-slate-700 mb-1.5"
                 >
                   วันที่หยุด (YYYY-MM-DD) <span className="text-rose-500">*</span>
                 </label>
@@ -918,7 +993,7 @@ export default function HrManagementView({
                   type="date"
                   value={holidayDate}
                   onChange={(e) => setHolidayDate(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm text-slate-900 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 focus:outline-hidden font-medium"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base sm:text-sm text-slate-900 hover:border-slate-300 focus:border-[#0066FF] focus:ring-4 focus:ring-blue-500/10 focus:outline-hidden transition"
                   required
                 />
               </div>
@@ -926,7 +1001,7 @@ export default function HrManagementView({
               <div>
                 <label
                   htmlFor="holiday-name"
-                  className="block font-bold text-slate-800 mb-1.5"
+                  className="block font-semibold text-slate-700 mb-1.5"
                 >
                   ชื่อวันหยุดนักขัตฤกษ์ / วันหยุดบริษัท <span className="text-rose-500">*</span>
                 </label>
@@ -936,17 +1011,17 @@ export default function HrManagementView({
                   value={holidayName}
                   onChange={(e) => setHolidayName(e.target.value)}
                   placeholder="เช่น วันสงกรานต์ หรือ วันหยุดประจำปีบริษัท"
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm text-slate-900 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 focus:outline-hidden font-medium"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 hover:border-slate-300 focus:border-[#0066FF] focus:ring-4 focus:ring-blue-500/10 focus:outline-hidden transition"
                   required
                 />
               </div>
 
-              <div className="flex items-center gap-2.5 pt-1">
+              <div className="flex items-center gap-2 pt-1">
                 {editingHolidayId && (
                   <button
                     type="button"
                     onClick={handleCancelEditHoliday}
-                    className="rounded-xl border border-slate-300 bg-white py-3 px-5 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer min-h-[46px]"
+                    className="rounded-xl border border-slate-200 bg-white py-2.5 px-4 text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-50 transition cursor-pointer min-h-[42px]"
                   >
                     ยกเลิกแก้ไข
                   </button>
@@ -954,7 +1029,7 @@ export default function HrManagementView({
                 <button
                   type="submit"
                   disabled={savingHoliday}
-                  className="flex-1 rounded-xl bg-[#0066FF] py-3 px-5 text-xs sm:text-sm font-extrabold text-white hover:bg-blue-700 disabled:opacity-50 transition flex items-center justify-center gap-2 cursor-pointer shadow-xs min-h-[46px]"
+                  className="flex-1 rounded-xl bg-[#0066FF] py-2.5 px-4 text-xs sm:text-sm font-semibold text-white hover:bg-[#0052CC] disabled:opacity-50 transition flex items-center justify-center gap-2 cursor-pointer shadow-xs min-h-[42px]"
                 >
                   {editingHolidayId ? (
                     <Save className="h-4 w-4" />
@@ -974,38 +1049,41 @@ export default function HrManagementView({
           </div>
 
           {/* Right: Holidays List */}
-          <div className="lg:col-span-7 rounded-3xl bg-white border border-slate-200 shadow-xs overflow-hidden">
-            <div className="p-5 sm:p-6 border-b border-slate-200">
-              <h3 className="text-base sm:text-lg font-black text-slate-900">
-                รายการวันหยุดประจำปีทั้งหมด ({holidays.length} วัน)
+          <div className="lg:col-span-7 rounded-2xl bg-white border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden">
+            <div className="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-base font-bold text-slate-900 tracking-tight">
+                รายการวันหยุดประจำปีทั้งหมด
               </h3>
+              <span className="rounded-full bg-slate-100 border border-slate-200/70 px-2.5 py-0.5 text-xs font-semibold text-slate-600 tabular-nums">
+                {holidays.length} วัน
+              </span>
             </div>
 
-            <div className="divide-y divide-slate-100 max-h-[520px] overflow-y-auto">
+            <div className="divide-y divide-slate-100 max-h-[520px] overflow-y-auto momentum-scroll">
               {holidays.map((h) => (
                 <div
                   key={h.id}
-                  className="p-4 sm:p-5 flex items-center justify-between gap-3 hover:bg-slate-50 transition text-xs sm:text-sm"
+                  className="px-5 py-3.5 flex items-center justify-between gap-3 hover:bg-slate-50/70 transition text-xs sm:text-sm"
                 >
-                  <div className="flex items-center gap-3.5">
-                    <span className="rounded-xl bg-emerald-100 border border-emerald-200 px-3.5 py-2 font-mono font-bold text-emerald-800 text-xs sm:text-sm">
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <span className="rounded-lg bg-emerald-50 border border-emerald-200/75 px-3 py-1.5 font-mono font-semibold text-emerald-700 text-xs tabular-nums shrink-0">
                       {h.date}
                     </span>
-                    <div>
-                      <div className="font-extrabold text-sm sm:text-base text-slate-900">
+                    <div className="min-w-0">
+                      <div className="font-semibold text-sm text-slate-900 truncate">
                         {h.name}
                       </div>
-                      <div className="text-slate-500 text-xs font-medium mt-0.5">
+                      <div className="text-slate-400 text-xs mt-0.5">
                         {formatThaiDate(h.date)}
                       </div>
                     </div>
                   </div>
 
-                  <div className="inline-flex items-center gap-2">
+                  <div className="inline-flex items-center gap-1.5 shrink-0">
                     <button
                       type="button"
                       onClick={() => handleEditHolidayClick(h)}
-                      className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-100 transition inline-flex items-center gap-1.5 cursor-pointer min-h-[36px]"
+                      className="rounded-lg border border-slate-200/90 bg-white hover:bg-blue-50 hover:border-blue-200 hover:text-[#0066FF] px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition inline-flex items-center gap-1.5 cursor-pointer min-h-[34px]"
                     >
                       <Edit3 className="h-3.5 w-3.5" />
                       <span>แก้ไข</span>
@@ -1013,7 +1091,7 @@ export default function HrManagementView({
                     <button
                       type="button"
                       onClick={() => handleDeleteHolidayClick(h)}
-                      className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition inline-flex items-center gap-1.5 cursor-pointer min-h-[36px]"
+                      className="rounded-lg border border-slate-200/90 bg-white hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 px-2.5 py-1.5 text-xs font-semibold text-slate-500 transition inline-flex items-center gap-1.5 cursor-pointer min-h-[34px]"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                       <span>ลบ</span>
@@ -1028,20 +1106,38 @@ export default function HrManagementView({
 
       {/* Employee Add/Edit Modal (PDPA Compliant) */}
       {isEmpModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 p-0 sm:p-4 backdrop-blur-xs">
-          <div className="w-full max-w-2xl rounded-t-[28px] sm:rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
-            <div className="flex items-center justify-between bg-gradient-to-r from-[#0A2540] to-[#0066FF] px-5 sm:px-6 py-4 text-white">
-              <div>
-                <h3 className="font-black text-base sm:text-lg">
-                  {editingEmpId
-                    ? `แก้ไขข้อมูลพนักงาน (${editingEmpId})`
-                    : 'เพิ่มพนักงานใหม่'}
-                </h3>
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !savingEmp) {
+              closeEmployeeModal();
+            }
+          }}
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-950/45 p-0 sm:p-4 backdrop-blur-xs animate-ui-fade"
+        >
+          <div className="w-full max-w-2xl rounded-t-3xl sm:rounded-2xl bg-white shadow-2xl border border-slate-200/80 overflow-hidden animate-ui-modal">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-white px-5 sm:px-6 py-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-[#0066FF] border border-blue-200/60 shrink-0">
+                  <UserPlus className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-base text-slate-900 tracking-tight truncate">
+                    {editingEmpId
+                      ? `แก้ไขข้อมูลพนักงาน (${editingEmpId})`
+                      : 'เพิ่มพนักงานใหม่'}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    PDPA Compliant • เชื่อมโยง Google Workspace Whitelist
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={closeEmployeeModal}
-                className="rounded-xl bg-white/10 p-2 text-white hover:bg-white/20 cursor-pointer transition min-h-[40px] min-w-[40px] flex items-center justify-center"
+                className="rounded-xl p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer transition min-h-[38px] min-w-[38px] flex items-center justify-center shrink-0"
+                aria-label="ปิดหน้าต่าง"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1049,18 +1145,18 @@ export default function HrManagementView({
 
             <form
               onSubmit={handleSaveEmployee}
-              className="p-5 sm:p-7 space-y-4 sm:space-y-5 text-xs sm:text-sm max-h-[82dvh] sm:max-h-[82vh] overflow-y-auto momentum-scroll pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]"
+              className="p-5 sm:p-6 space-y-4 text-xs sm:text-sm max-h-[82dvh] sm:max-h-[82vh] overflow-y-auto momentum-scroll pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]"
             >
               {modalError && (
                 <div
                   role="alert"
-                  className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs sm:text-sm font-bold text-rose-800 flex items-center justify-between gap-3"
+                  className="rounded-xl border border-rose-200/80 bg-rose-50 px-4 py-3 text-xs sm:text-sm font-medium text-rose-800 flex items-center justify-between gap-3"
                 >
                   <span>{modalError}</span>
                   <button
                     type="button"
                     onClick={() => setModalError(null)}
-                    className="text-xs underline shrink-0 cursor-pointer"
+                    className="text-xs font-semibold shrink-0 cursor-pointer hover:underline"
                   >
                     ปิด
                   </button>
@@ -1069,7 +1165,7 @@ export default function HrManagementView({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-bold text-slate-800 mb-1.5">
+                  <label className="block font-semibold text-slate-700 mb-1.5">
                     รหัสพนักงาน <span className="text-rose-500">*</span>
                   </label>
                   <input
@@ -1078,7 +1174,7 @@ export default function HrManagementView({
                     onChange={(e) => setEmpCustomId(e.target.value)}
                     disabled={Boolean(editingEmpId)}
                     placeholder="เช่น EMP012"
-                    className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm font-mono font-bold text-slate-900 bg-slate-50 disabled:bg-slate-100 disabled:text-slate-500 focus:border-blue-600 focus:outline-hidden"
+                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-base sm:text-sm font-mono font-semibold text-slate-900 bg-slate-50/70 disabled:bg-slate-100 disabled:text-slate-400 focus:border-[#0066FF] focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:outline-hidden transition"
                     required
                   />
                 </div>
@@ -1086,7 +1182,7 @@ export default function HrManagementView({
                 <div>
                   <label
                     htmlFor="emp-role-select"
-                    className="block font-bold text-slate-800 mb-1.5"
+                    className="block font-semibold text-slate-700 mb-1.5"
                   >
                     บทบาท (Role) <span className="text-rose-500">*</span>
                   </label>
@@ -1111,7 +1207,7 @@ export default function HrManagementView({
                         }
                         setModalError(null);
                       }}
-                      className="w-full appearance-none rounded-xl border border-slate-300 pl-4 pr-11 py-3 text-base sm:text-sm text-slate-900 bg-white font-medium hover:border-blue-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 focus:outline-hidden cursor-pointer min-h-[46px]"
+                      className="w-full appearance-none rounded-xl border border-slate-200 pl-3.5 pr-10 py-2.5 text-base sm:text-sm text-slate-900 bg-white font-medium hover:border-slate-300 focus:border-[#0066FF] focus:ring-4 focus:ring-blue-500/10 focus:outline-hidden cursor-pointer min-h-[44px] transition"
                     >
                       <option value="employee">พนักงานทั่วไป (Employee)</option>
                       <option value="manager">หัวหน้าฝ่าย (Manager)</option>
@@ -1125,10 +1221,8 @@ export default function HrManagementView({
                         </option>
                       )}
                     </select>
-                    <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5">
-                      <span className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-1.5 py-1 text-slate-600">
-                        <ChevronDown className="h-4 w-4" />
-                      </span>
+                    <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                      <ChevronDown className="h-4 w-4 text-slate-400" />
                     </span>
                   </div>
                 </div>
@@ -1137,7 +1231,7 @@ export default function HrManagementView({
                   <div className="sm:col-span-2">
                     <label
                       htmlFor="emp-clevel-approver-select"
-                      className="block font-bold text-slate-800 mb-1.5"
+                      className="block font-semibold text-slate-700 mb-1.5"
                     >
                       ผู้บริหารที่สังกัด (C-Level ผู้อนุมัติ)
                     </label>
@@ -1146,7 +1240,7 @@ export default function HrManagementView({
                         id="emp-clevel-approver-select"
                         value={empCLevelApproverId}
                         onChange={(e) => setEmpCLevelApproverId(e.target.value)}
-                        className="w-full appearance-none rounded-xl border border-slate-300 pl-4 pr-11 py-3 text-base sm:text-sm text-slate-900 bg-white font-medium hover:border-blue-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 focus:outline-hidden cursor-pointer min-h-[46px]"
+                        className="w-full appearance-none rounded-xl border border-slate-200 pl-3.5 pr-10 py-2.5 text-base sm:text-sm text-slate-900 bg-white font-medium hover:border-slate-300 focus:border-[#0066FF] focus:ring-4 focus:ring-blue-500/10 focus:outline-hidden cursor-pointer min-h-[44px] transition"
                       >
                         <option value="">-- ไม่ระบุ (ผู้บริหาร C-Level ท่านใดก็ได้) --</option>
                         {users
@@ -1161,17 +1255,15 @@ export default function HrManagementView({
                             </option>
                           ))}
                       </select>
-                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5">
-                        <span className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-1.5 py-1 text-slate-600">
-                          <ChevronDown className="h-4 w-4" />
-                        </span>
+                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                        <ChevronDown className="h-4 w-4 text-slate-400" />
                       </span>
                     </div>
                   </div>
                 )}
 
                 <div className="sm:col-span-2">
-                  <label className="block font-bold text-slate-800 mb-1.5">
+                  <label className="block font-semibold text-slate-700 mb-1.5">
                     อีเมล Google <span className="text-rose-500">*</span>
                   </label>
                   <input
@@ -1180,11 +1272,11 @@ export default function HrManagementView({
                     value={empEmail}
                     onChange={(e) => setEmpEmail(e.target.value)}
                     placeholder="name@digitalbusinessconsult.asia หรือ name@dbcgroup.asia"
-                    className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm text-slate-900 font-medium focus:border-blue-600 focus:outline-hidden"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 hover:border-slate-300 focus:border-[#0066FF] focus:ring-4 focus:ring-blue-500/10 focus:outline-hidden transition"
                     required
                   />
                   {getCompanyAliasEmail(empEmail) ? (
-                    <p className="mt-1.5 text-xs font-semibold text-emerald-700">
+                    <p className="mt-1.5 text-xs font-medium text-emerald-700">
                       ✓ รองรับการเข้าสู่ระบบทั้ง 2 อีเมลอัตโนมัติ:{' '}
                       <span className="font-mono underline">
                         {parseEmailList(empEmail)[0] || empEmail.trim().toLowerCase()}
@@ -1195,12 +1287,12 @@ export default function HrManagementView({
                       </span>
                     </p>
                   ) : (
-                    <p className="mt-1.5 text-xs text-slate-500">
+                    <p className="mt-1.5 text-xs text-slate-400">
                       รองรับทั้ง @digitalbusinessconsult.asia และ @dbcgroup.asia (เชื่อมโยงผู้ใช้คนเดียวกันอัตโนมัติ)
                     </p>
                   )}
                   <div className="mt-3">
-                    <label className="block font-bold text-slate-700 mb-1 text-xs">
+                    <label className="block font-semibold text-slate-600 mb-1 text-xs">
                       อีเมลรอง / อีเมลลูกเพิ่มเติม{' '}
                       <span className="font-normal text-slate-400">
                         (ไม่บังคับ • กรณีชื่อหน้า @ ของ 2 อีเมลไม่เหมือนกัน)
@@ -1211,13 +1303,13 @@ export default function HrManagementView({
                       value={empSecondaryEmail}
                       onChange={(e) => setEmpSecondaryEmail(e.target.value)}
                       placeholder="เช่น alias@dbcgroup.asia"
-                      className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-base sm:text-sm text-slate-900 font-medium focus:border-blue-600 focus:outline-hidden"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 hover:border-slate-300 focus:border-[#0066FF] focus:ring-4 focus:ring-blue-500/10 focus:outline-hidden transition"
                     />
                   </div>
                   {editingEmpId && (
-                    <div className="mt-2 inline-flex items-center gap-2 rounded-xl bg-slate-50 border border-slate-200 px-3 py-1.5 text-xs">
-                      <span className="font-bold text-slate-600">ชื่อจาก Google:</span>
-                      <span className="font-bold text-blue-700">
+                    <div className="mt-2 inline-flex items-center gap-2 rounded-lg bg-slate-50 border border-slate-200/70 px-3 py-1.5 text-xs">
+                      <span className="font-medium text-slate-500">ชื่อจาก Google:</span>
+                      <span className="font-semibold text-[#0066FF]">
                         {editingEnglishName || 'รอดึงอัตโนมัติ'}
                       </span>
                     </div>
@@ -1229,11 +1321,11 @@ export default function HrManagementView({
                     <label
                       id="emp-department-label"
                       htmlFor="emp-department-trigger"
-                      className="block font-bold text-slate-800"
+                      className="block font-semibold text-slate-700"
                     >
                       ฝ่าย / แผนก{' '}
                       {isExecutiveRole ? (
-                        <span className="text-xs font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-md ml-1">
+                        <span className="text-[11px] font-semibold text-purple-700 bg-purple-50 border border-purple-200/70 px-1.5 py-0.5 rounded-md ml-1">
                           เป็น Manager ร่วมด้วย
                         </span>
                       ) : (
@@ -1247,7 +1339,7 @@ export default function HrManagementView({
                           setEmpDepartment('');
                           setDeptValidationError(null);
                         }}
-                        className="text-xs text-slate-500 hover:text-rose-600 underline cursor-pointer"
+                        className="text-xs text-slate-400 hover:text-rose-600 underline cursor-pointer"
                       >
                         ล้างฝ่าย (ผู้บริหารภาพรวม)
                       </button>
@@ -1273,25 +1365,25 @@ export default function HrManagementView({
                     triggerRef={deptTriggerRef}
                   />
                   {empRole === 'c_level' && (
-                    <p className="mt-1.5 text-xs text-slate-500">
+                    <p className="mt-1.5 text-xs text-slate-400">
                       {empDepartment &&
                       empDepartment !== 'Executive (C-Level)' &&
                       empDepartment !== 'ผู้บริหาร (C-Level)'
-                        ? `👑 ผู้บริหารท่านนี้จะทำหน้าที่เป็นหัวหน้าฝ่าย (Manager) ดูแลและอนุมัติใบลาขั้นที่ 1 ของฝ่าย "${empDepartment}" ด้วย`
+                        ? `ผู้บริหารท่านนี้จะทำหน้าที่เป็นหัวหน้าฝ่าย (Manager) ดูแลและอนุมัติใบลาขั้นที่ 1 ของฝ่าย "${empDepartment}" ด้วย`
                         : 'C-Level: ไม่ต้องเลือกฝ่ายและไม่ต้องระบุวันเริ่มทำงาน (หากต้องการเป็น Manager ประจำฝ่าย ให้เลือกฝ่ายด้านบน)'}
                     </p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-800 mb-1.5">
+                  <label className="block font-semibold text-slate-700 mb-1.5">
                     วันที่เริ่มงาน{' '}
                     {isExecutiveRole ? (
                       <span className="text-xs font-normal text-slate-400">
                         (ไม่บังคับสำหรับผู้บริหาร)
                       </span>
                     ) : (
-                      <span className="text-xs font-normal text-slate-500">
+                      <span className="text-xs font-normal text-slate-400">
                         (โปร 119 วัน) <span className="text-rose-500">*</span>
                       </span>
                     )}
@@ -1300,52 +1392,52 @@ export default function HrManagementView({
                     type="date"
                     value={empStartDate}
                     onChange={(e) => setEmpStartDate(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm text-slate-900 font-medium focus:border-blue-600 focus:outline-hidden min-h-[46px]"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base sm:text-sm text-slate-900 hover:border-slate-300 focus:border-[#0066FF] focus:ring-4 focus:ring-blue-500/10 focus:outline-hidden min-h-[44px] transition"
                     required={!isExecutiveRole}
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-800 mb-1.5">
+                  <label className="block font-semibold text-slate-700 mb-1.5">
                     ชื่อภาษาไทย{' '}
-                    <span className="text-xs font-medium text-slate-400">(ไม่บังคับ)</span>
+                    <span className="text-xs font-normal text-slate-400">(ไม่บังคับ)</span>
                   </label>
                   <input
                     type="text"
                     value={empName}
                     onChange={(e) => setEmpName(e.target.value)}
                     placeholder="เช่น สมชาย ใจดี"
-                    className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm text-slate-900 font-medium focus:border-blue-600 focus:outline-hidden"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 hover:border-slate-300 focus:border-[#0066FF] focus:ring-4 focus:ring-blue-500/10 focus:outline-hidden transition"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-800 mb-1.5">
+                  <label className="block font-semibold text-slate-700 mb-1.5">
                     ตำแหน่ง{' '}
-                    <span className="text-xs font-medium text-slate-400">(ไม่บังคับ)</span>
+                    <span className="text-xs font-normal text-slate-400">(ไม่บังคับ)</span>
                   </label>
                   <input
                     type="text"
                     value={empPosition}
                     onChange={(e) => setEmpPosition(e.target.value)}
                     placeholder={isExecutiveRole ? 'C-Level' : 'เช่น AE / Consultant'}
-                    className="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm text-slate-900 font-medium focus:border-blue-600 focus:outline-hidden"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 hover:border-slate-300 focus:border-[#0066FF] focus:ring-4 focus:ring-blue-500/10 focus:outline-hidden transition"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2.5 pt-3.5 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={closeEmployeeModal}
-                  className="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 cursor-pointer min-h-[44px]"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer min-h-[42px] transition"
                 >
                   ยกเลิก
                 </button>
                 <button
                   type="submit"
                   disabled={savingEmp}
-                  className="rounded-xl bg-[#0066FF] hover:bg-blue-700 px-6 py-2.5 text-sm font-extrabold text-white disabled:opacity-50 cursor-pointer shadow-md min-h-[44px]"
+                  className="rounded-xl bg-[#0066FF] hover:bg-[#0052CC] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer shadow-xs min-h-[42px] transition"
                 >
                   {savingEmp ? 'กำลังบันทึก...' : 'บันทึกข้อมูลพนักงาน'}
                 </button>

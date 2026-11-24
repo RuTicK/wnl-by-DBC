@@ -10,11 +10,9 @@ import {
   Building2,
   Lock,
   UserCheck,
-  HelpCircle,
   Clock,
   Briefcase,
   Globe,
-  ExternalLink,
 } from 'lucide-react';
 
 export const metadata = {
@@ -25,13 +23,13 @@ export const metadata = {
 
 export default function TermsOfServicePage() {
   return (
-    <div className="min-h-screen bg-slate-50 py-8 sm:py-12 px-4 sm:px-6 lg:px-8 font-sans">
-      <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
+    <div className="min-h-screen bg-[#F7F8FA] py-8 sm:py-12 px-4 sm:px-6 lg:px-8 font-sans">
+      <div className="max-w-4xl mx-auto space-y-6">
         {/* Top Navigation Bar */}
         <div className="flex items-center justify-between">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-xs hover:shadow-sm"
+            className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-700 hover:text-[#0066FF] transition-colors bg-white px-3.5 py-2 rounded-xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.03)]"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>กลับสู่หน้าหลัก</span>
@@ -40,7 +38,7 @@ export default function TermsOfServicePage() {
           <div className="flex items-center gap-3">
             <Link
               href="/privacy"
-              className="text-xs font-semibold text-slate-500 hover:text-slate-800 underline transition-colors"
+              className="text-xs font-medium text-slate-500 hover:text-[#0066FF] transition-colors"
             >
               นโยบายความเป็นส่วนตัว (Privacy)
             </Link>
@@ -48,21 +46,21 @@ export default function TermsOfServicePage() {
         </div>
 
         {/* Header Card */}
-        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 sm:p-10 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-blue-50 via-sky-50/40 to-transparent rounded-bl-full pointer-events-none -mr-16 -mt-16" />
+        <div className="bg-white rounded-2xl border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] p-6 sm:p-9 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-blue-50/70 via-sky-50/30 to-transparent rounded-bl-full pointer-events-none -mr-16 -mt-16" />
 
           <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/70 text-blue-700 text-xs font-bold mb-4">
-              <FileText className="w-4 h-4 text-blue-600" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/70 text-[#0066FF] text-xs font-semibold mb-4">
+              <FileText className="w-3.5 h-3.5" />
               <span>Enterprise Terms of Service &amp; Work Regulations</span>
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-slate-100">
               <div>
-                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
                   ข้อกำหนดและเงื่อนไขการใช้งาน
                 </h1>
-                <p className="text-sm sm:text-base font-semibold text-blue-600 mt-1">
+                <p className="text-sm sm:text-base font-semibold text-[#0066FF] mt-1">
                   Terms of Service • วันนี้ลา by DBC (Wan-Nee-La by DBC)
                 </p>
                 <p className="text-xs text-slate-500 mt-1">
@@ -70,41 +68,41 @@ export default function TermsOfServicePage() {
                 </p>
               </div>
 
-              <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 text-xs text-slate-600 sm:text-right shrink-0 space-y-1">
-                <div className="font-bold text-slate-800">ผู้ให้บริการและเจ้าของลิขสิทธิ์</div>
-                <div className="text-slate-700 font-medium">Digital Business Consult Co., Ltd. (DBC)</div>
-                <div className="text-slate-500 font-mono text-xs">ปรับปรุงล่าสุด: 10 พฤศจิกายน 2026 (v1.1)</div>
+              <div className="bg-slate-50/80 border border-slate-200/70 rounded-xl p-3.5 text-xs text-slate-600 sm:text-right shrink-0 space-y-1">
+                <div className="font-semibold text-slate-800">ผู้ให้บริการและเจ้าของลิขสิทธิ์</div>
+                <div className="text-slate-600 font-medium">Digital Business Consult Co., Ltd. (DBC)</div>
+                <div className="text-slate-400 font-mono text-xs">ปรับปรุงล่าสุด: 10 พฤศจิกายน 2026 (v1.1)</div>
               </div>
             </div>
 
             {/* Quick Summary Highlights */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-6">
-              <div className="p-3.5 rounded-2xl bg-blue-50/60 border border-blue-100/80">
-                <div className="flex items-center gap-2 text-blue-900 font-bold text-xs mb-1">
-                  <UserCheck className="w-4 h-4 text-blue-600 shrink-0" />
+              <div className="p-3.5 rounded-xl bg-slate-50/75 border border-slate-200/65">
+                <div className="flex items-center gap-2 text-slate-900 font-semibold text-xs mb-1">
+                  <UserCheck className="w-4 h-4 text-[#0066FF] shrink-0" />
                   <span>ระบบภายในองค์กร</span>
                 </div>
-                <p className="text-xs text-blue-950/80 leading-relaxed">
+                <p className="text-xs text-slate-500 leading-relaxed">
                   สำหรับบุคลากรของบริษัท DBC เท่านั้น เข้าสู่ระบบด้วยอีเมล Whitelist ที่ได้รับอนุมัติล่วงหน้า
                 </p>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-100/80">
-                <div className="flex items-center gap-2 text-emerald-900 font-bold text-xs mb-1">
+              <div className="p-3.5 rounded-xl bg-slate-50/75 border border-slate-200/65">
+                <div className="flex items-center gap-2 text-slate-900 font-semibold text-xs mb-1">
                   <Clock className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span>บันทึกตามข้อเท็จจริง</span>
                 </div>
-                <p className="text-xs text-emerald-950/80 leading-relaxed">
+                <p className="text-xs text-slate-500 leading-relaxed">
                   ผู้ใช้งานต้องบันทึกเวลา Check-in และยื่นคำขอลาตามความเป็นจริงและระเบียบการทำงานของบริษัท
                 </p>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-amber-50/60 border border-amber-100/80">
-                <div className="flex items-center gap-2 text-amber-900 font-bold text-xs mb-1">
+              <div className="p-3.5 rounded-xl bg-slate-50/75 border border-slate-200/65">
+                <div className="flex items-center gap-2 text-slate-900 font-semibold text-xs mb-1">
                   <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
                   <span>สงวนลิขสิทธิ์ของ DBC</span>
                 </div>
-                <p className="text-xs text-amber-950/80 leading-relaxed">
+                <p className="text-xs text-slate-500 leading-relaxed">
                   ระบบ ซอฟต์แวร์ และข้อมูลทั้งหมดเป็นทรัพย์สินทางปัญญาของบริษัท DBC แต่เพียงผู้เดียว
                 </p>
               </div>
@@ -116,49 +114,49 @@ export default function TermsOfServicePage() {
             TERMS OF SERVICE ENGLISH EXECUTIVE SUMMARY
             For Google Cloud Reviewers & International Audits
             ================================================================= */}
-        <div className="bg-gradient-to-br from-[#07192C] via-[#0A2540] to-[#0B192C] text-white rounded-3xl p-6 sm:p-8 shadow-md border border-blue-800/40 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-blue-700/40 pb-4">
+        <div className="bg-[#0A2540] text-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-800 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-white/10 pb-4">
             <div className="flex items-center gap-2.5">
               <Globe className="w-5 h-5 text-blue-400 shrink-0" />
               <div>
-                <h2 className="text-sm sm:text-base font-extrabold tracking-tight text-white">
+                <h2 className="text-sm sm:text-base font-bold tracking-tight text-white">
                   Terms of Service Summary (English Version)
                 </h2>
-                <p className="text-xs text-blue-200">
+                <p className="text-xs text-slate-300">
                   For Google Verification Reviewers &amp; International Compliance
                 </p>
               </div>
             </div>
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-300 border border-blue-400/30">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-white/10 text-blue-200 border border-white/15">
               Enterprise Internal System
             </span>
           </div>
 
-          <div className="space-y-2.5 text-xs sm:text-sm text-blue-100 leading-relaxed">
+          <div className="space-y-2.5 text-xs sm:text-sm text-slate-200 leading-relaxed">
             <p>
-              <strong>Platform Description:</strong> &quot;วันนี้ลา by DBC&quot; (Wan-Nee-La by DBC) is a proprietary enterprise human resource management and attendance recording web application operated exclusively by <strong>Digital Business Consult Co., Ltd. (DBC)</strong>.
+              <strong className="text-white">Platform Description:</strong> &quot;วันนี้ลา by DBC&quot; (Wan-Nee-La by DBC) is a proprietary enterprise human resource management and attendance recording web application operated exclusively by <strong className="text-white">Digital Business Consult Co., Ltd. (DBC)</strong>.
             </p>
             <p>
-              <strong>Authorized Access:</strong> Access is restricted strictly to active company employees, contractors, and authorized personnel who are listed in the internal Google Workspace Whitelist. Unauthenticated or unregistered accounts will receive an &quot;Access Denied&quot; notification.
+              <strong className="text-white">Authorized Access:</strong> Access is restricted strictly to active company employees, contractors, and authorized personnel who are listed in the internal Google Workspace Whitelist. Unauthenticated or unregistered accounts will receive an &quot;Access Denied&quot; notification.
             </p>
             <p>
-              <strong>User Conduct &amp; Authenticity:</strong> All users are required to submit accurate attendance check-in logs and honest leave requests. Falsification of records constitutes a serious breach of company policy and Thai Labor Law.
+              <strong className="text-white">User Conduct &amp; Authenticity:</strong> All users are required to submit accurate attendance check-in logs and honest leave requests. Falsification of records constitutes a serious breach of company policy and Thai Labor Law.
             </p>
             <p>
-              <strong>Intellectual Property:</strong> All source code, user interface designs, trademarks, and associated documentation are the exclusive intellectual property of Digital Business Consult Co., Ltd.
+              <strong className="text-white">Intellectual Property:</strong> All source code, user interface designs, trademarks, and associated documentation are the exclusive intellectual property of Digital Business Consult Co., Ltd.
             </p>
             <p>
-              <strong>Governing Law:</strong> These terms are governed by and construed in accordance with the laws of the Kingdom of Thailand.
+              <strong className="text-white">Governing Law:</strong> These terms are governed by and construed in accordance with the laws of the Kingdom of Thailand.
             </p>
           </div>
         </div>
 
         {/* Content Document */}
-        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 sm:p-10 space-y-8 text-xs sm:text-sm text-slate-700 leading-relaxed">
+        <div className="bg-white rounded-2xl border border-slate-200/75 shadow-[0_1px_2px_rgba(15,23,42,0.03)] p-6 sm:p-9 space-y-8 text-xs sm:text-sm text-slate-700 leading-relaxed">
           {/* Section 1: Acceptance of Terms */}
           <section className="space-y-3">
             <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2.5 pb-2 border-b border-slate-100">
-              <CheckCircle2 className="w-5 h-5 text-blue-600 shrink-0" />
+              <CheckCircle2 className="w-5 h-5 text-[#0066FF] shrink-0" />
               <span>1. การยอมรับข้อกำหนด (Acceptance of Terms)</span>
             </h2>
             <p className="text-slate-600">
@@ -169,7 +167,7 @@ export default function TermsOfServicePage() {
           {/* Section 2: Eligibility & Authentication */}
           <section className="space-y-3">
             <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2.5 pb-2 border-b border-slate-100">
-              <UserCheck className="w-5 h-5 text-blue-600 shrink-0" />
+              <UserCheck className="w-5 h-5 text-[#0066FF] shrink-0" />
               <span>2. สิทธิ์การใช้งานและการยืนยันตัวตน (Authorized Users &amp; Whitelist Authentication)</span>
             </h2>
             <div className="space-y-2 text-slate-600">
@@ -194,7 +192,7 @@ export default function TermsOfServicePage() {
           {/* Section 3: Account Responsibilities */}
           <section className="space-y-3">
             <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2.5 pb-2 border-b border-slate-100">
-              <Lock className="w-5 h-5 text-blue-600 shrink-0" />
+              <Lock className="w-5 h-5 text-[#0066FF] shrink-0" />
               <span>3. บัญชีผู้ใช้และความรับผิดชอบต่อความปลอดภัย (User Account &amp; Security)</span>
             </h2>
             <ul className="list-disc pl-5 space-y-1.5 text-slate-600">
@@ -207,7 +205,7 @@ export default function TermsOfServicePage() {
           {/* Section 4: Attendance & Leave Accuracy */}
           <section className="space-y-3">
             <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2.5 pb-2 border-b border-slate-100">
-              <Briefcase className="w-5 h-5 text-blue-600 shrink-0" />
+              <Briefcase className="w-5 h-5 text-[#0066FF] shrink-0" />
               <span>4. ความถูกต้องในการบันทึกเวลาและการยื่นคำขอลา (Attendance &amp; Leave Regulations)</span>
             </h2>
             <div className="space-y-2.5 text-slate-600">
@@ -220,8 +218,8 @@ export default function TermsOfServicePage() {
               <p>
                 <strong>4.3 เงื่อนไขการผ่านทดลองงาน (Probation 119 วัน):</strong> พนักงานที่อยู่ระหว่างทดลองงาน (อายุงานน้อยกว่า 119 วัน) ระบบจะคำนวณและแสดงผลสถานะวันทำงานคงเหลือโดยอัตโนมัติ โดยไม่อนุญาตให้ใช้สิทธิ์ลาพักร้อน (vacation), WFH หรือ WFA ในระหว่างช่วงทดลองงาน เว้นแต่กรณีลาป่วย (sick), ลากิจจำเป็น (personal) หรือทำงานนอกสถานที่ (offsite) ตามที่ได้รับอนุญาต
               </p>
-              <div className="rounded-2xl bg-rose-50 border border-rose-200 p-3.5 text-xs text-rose-900 space-y-1">
-                <div className="font-bold flex items-center gap-1.5">
+              <div className="rounded-xl bg-rose-50/75 border border-rose-200/80 p-3.5 text-xs text-rose-900 space-y-1">
+                <div className="font-semibold flex items-center gap-1.5 text-rose-950">
                   <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
                   <span>บทลงโทษทางวินัยกรณีบันทึกข้อมูลเท็จ</span>
                 </div>
@@ -235,7 +233,7 @@ export default function TermsOfServicePage() {
           {/* Section 5: Intellectual Property */}
           <section className="space-y-3">
             <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2.5 pb-2 border-b border-slate-100">
-              <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0" />
+              <ShieldCheck className="w-5 h-5 text-[#0066FF] shrink-0" />
               <span>5. ทรัพย์สินทางปัญญาและลิขสิทธิ์ (Intellectual Property &amp; Proprietary Rights)</span>
             </h2>
             <p className="text-slate-600">
@@ -251,7 +249,7 @@ export default function TermsOfServicePage() {
           {/* Section 6: System Availability */}
           <section className="space-y-3">
             <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2.5 pb-2 border-b border-slate-100">
-              <Building2 className="w-5 h-5 text-blue-600 shrink-0" />
+              <Building2 className="w-5 h-5 text-[#0066FF] shrink-0" />
               <span>6. ความพร้อมใช้งานและการบำรุงรักษาระบบ (System Availability &amp; Maintenance)</span>
             </h2>
             <div className="space-y-2 text-slate-600">
@@ -267,7 +265,7 @@ export default function TermsOfServicePage() {
           {/* Section 7: Limitation of Liability */}
           <section className="space-y-3">
             <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2.5 pb-2 border-b border-slate-100">
-              <Scale className="w-5 h-5 text-blue-600 shrink-0" />
+              <Scale className="w-5 h-5 text-[#0066FF] shrink-0" />
               <span>7. ข้อจำกัดความรับผิด (Limitation of Liability)</span>
             </h2>
             <p className="text-slate-600">
@@ -278,7 +276,7 @@ export default function TermsOfServicePage() {
           {/* Section 8: Termination */}
           <section className="space-y-3">
             <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2.5 pb-2 border-b border-slate-100">
-              <AlertTriangle className="w-5 h-5 text-blue-600 shrink-0" />
+              <AlertTriangle className="w-5 h-5 text-[#0066FF] shrink-0" />
               <span>8. การระงับและการสิ้นสุดสิทธิ์การใช้งาน (Suspension &amp; Termination)</span>
             </h2>
             <p className="text-slate-600">
@@ -289,7 +287,7 @@ export default function TermsOfServicePage() {
           {/* Section 9: Governing Law */}
           <section className="space-y-3">
             <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2.5 pb-2 border-b border-slate-100">
-              <Scale className="w-5 h-5 text-blue-600 shrink-0" />
+              <Scale className="w-5 h-5 text-[#0066FF] shrink-0" />
               <span>9. กฎหมายที่ใช้บังคับและการระงับข้อพิพาท (Governing Law &amp; Jurisdiction)</span>
             </h2>
             <p className="text-slate-600">
@@ -300,11 +298,11 @@ export default function TermsOfServicePage() {
           {/* Section 10: Contact Information */}
           <section className="space-y-3 pt-2">
             <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2.5 pb-2 border-b border-slate-100">
-              <Building2 className="w-5 h-5 text-blue-600 shrink-0" />
+              <Building2 className="w-5 h-5 text-[#0066FF] shrink-0" />
               <span>10. ช่องทางการติดต่อ (Contact Information)</span>
             </h2>
-            <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-sky-50 border border-blue-100 p-5 space-y-3">
-              <p className="text-slate-800 font-bold">
+            <div className="rounded-xl bg-blue-50/55 border border-blue-200/70 p-5 space-y-3">
+              <p className="text-slate-900 font-semibold">
                 หากท่านมีข้อสงสัยเกี่ยวกับข้อกำหนดการใช้งานนี้ หรือต้องการความช่วยเหลือทางเทคนิค สามารถติดต่อได้ที่:
               </p>
               <div className="space-y-1.5 text-xs sm:text-sm text-slate-700">
@@ -327,14 +325,14 @@ export default function TermsOfServicePage() {
             <div className="flex items-center gap-3">
               <Link
                 href="/privacy"
-                className="font-bold text-blue-600 hover:text-blue-800 underline"
+                className="font-semibold text-[#0066FF] hover:text-blue-800 hover:underline transition-colors"
               >
                 นโยบายความเป็นส่วนตัว (Privacy Policy)
               </Link>
-              <span>•</span>
+              <span className="text-slate-300">•</span>
               <Link
                 href="/"
-                className="font-bold text-slate-700 hover:text-slate-900"
+                className="font-semibold text-slate-700 hover:text-slate-900 transition-colors"
               >
                 กลับสู่หน้าหลัก
               </Link>
