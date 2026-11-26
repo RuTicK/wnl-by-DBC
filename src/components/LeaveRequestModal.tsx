@@ -11,7 +11,6 @@ import {
   Info,
   Link2,
   Lock,
-  MapPin,
   Upload,
   X,
 } from 'lucide-react';
@@ -74,7 +73,6 @@ export default function LeaveRequestModal({
   const [durationType, setDurationType] = useState<LeaveDuration>('full');
   const [startDate, setStartDate] = useState<string>(initialDate || todayStr);
   const [endDate, setEndDate] = useState<string>(initialDate || todayStr);
-  const [locationDetail, setLocationDetail] = useState<string>('');
   const [reason, setReason] = useState<string>('');
   const [attachmentUrl, setAttachmentUrl] = useState<string>('');
   const [attachmentName, setAttachmentName] = useState<string>('');
@@ -278,7 +276,6 @@ export default function LeaveRequestModal({
         startDate,
         endDate: durationType === 'full' ? endDate : startDate,
         reason: reason.trim(),
-        locationDetail: locationDetail.trim() || undefined,
         attachmentUrl: attachmentUrl.trim() || undefined,
         attachmentName: attachmentName.trim() || undefined,
       });
@@ -287,7 +284,6 @@ export default function LeaveRequestModal({
         setError(res.error || 'ไม่สามารถยื่นใบลาได้');
       } else {
         setReason('');
-        setLocationDetail('');
         setAttachmentUrl('');
         setAttachmentName('');
         onClose();
@@ -301,7 +297,7 @@ export default function LeaveRequestModal({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="ยื่นคำขอวันลา / ปฏิบัติงาน"
+      aria-label="ยื่นคำขอวันลา"
       onClick={(e) => {
         if (e.target === e.currentTarget && !submitting) onClose();
       }}
@@ -319,7 +315,7 @@ export default function LeaveRequestModal({
             </div>
             <div className="min-w-0">
               <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight truncate">
-                ยื่นคำขอวันลา / ปฏิบัติงาน
+                ยื่นคำขอวันลา
               </h2>
               <p className="text-xs text-slate-500 mt-0.5 truncate">
                 สายอนุมัติของคุณ: {getApprovalFlowLabel(currentUser?.role)}
@@ -363,17 +359,17 @@ export default function LeaveRequestModal({
               <span className="font-medium">
                 ทดลองงาน 119 วัน (ผ่านโปร{' '}
                 {formatThaiDate(probationCheck.probation.passDate, true)}) —
-                ล็อก ลาพักร้อน / WFH / WFA
+                ล็อก ลาพักร้อน
               </span>
             </div>
           )}
 
-          {/* 1. เลือกประเภทการลา / รูปแบบการปฏิบัติงาน */}
+          {/* 1. เลือกประเภทการลา */}
           <div>
             <label className="block text-xs sm:text-sm font-semibold text-slate-700 mb-2">
               1. เลือกประเภท ({effectiveQuota.year})
             </label>
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
               {REQUESTABLE_LEAVE_TYPES.map((type) => {
                 const meta = LEAVE_TYPE_META[type];
                 const q = effectiveQuota.quotas[type];
@@ -394,7 +390,7 @@ export default function LeaveRequestModal({
                     type="button"
                     onClick={() => setLeaveType(type)}
                     className={`rounded-xl border p-3 sm:p-3.5 text-left transition cursor-pointer flex flex-col justify-between min-h-[78px] ${
-                      type === 'wfa' ? 'col-span-2 lg:col-span-1' : ''
+                      type === 'vacation' ? 'col-span-2 sm:col-span-1' : ''
                     } ${
                       isSelected
                         ? 'border-[#0066FF] bg-blue-50/50 ring-2 ring-blue-500/15'
@@ -447,7 +443,7 @@ export default function LeaveRequestModal({
               })}
             </div>
             <p className="mt-2 text-xs text-slate-400">
-              หมายเหตุ: การทำงานนอกสถานที่ (พบลูกค้า/ออกบูธ) ไม่ต้องยื่นขออนุมัติล่วงหน้า สามารถกด Check-in นอกสถานที่ในหน้าลงเวลาเข้างานได้ทันที
+              หมายเหตุ: การทำงานที่บ้าน (WFH พร้อมแนบลิงก์ Google Meet) และการทำงานนอกสถานที่ (พบลูกค้า/ออกบูธ) ไม่ต้องยื่นขออนุมัติล่วงหน้า สามารถกด Check-in (WFH / นอกสถานที่) ในหน้าลงเวลาเข้างานได้ทันที
             </p>
           </div>
 
@@ -456,9 +452,7 @@ export default function LeaveRequestModal({
             <div className="flex items-center justify-between gap-2">
               <span className="font-semibold text-slate-800 flex items-center gap-1.5">
                 <BookOpen className="h-3.5 w-3.5 text-[#0066FF] shrink-0" />
-                {leaveType === 'wfh' || leaveType === 'wfa'
-                  ? `เงื่อนไข ${LEAVE_TYPE_META[leaveType].label}:`
-                  : `เงื่อนไขการ${LEAVE_TYPE_META[leaveType].label}:`}
+                {`เงื่อนไขการ${LEAVE_TYPE_META[leaveType].label}:`}
               </span>
               <button
                 type="button"
@@ -486,17 +480,6 @@ export default function LeaveRequestModal({
                 <li>ได้รับการอนุมัติจากหัวหน้างานล่วงหน้าไม่น้อยกว่า <strong className="font-semibold text-slate-800">3 วันทำงาน</strong></li>
                 <li>ใช้ได้ต่อเมื่อปฏิบัติงานครบ 1 ปี (เฉลี่ยตาม Prorate)</li>
                 <li>ในกรณีที่พนักงานใช้สิทธิหยุดพักผ่อนประจำปีไม่ครบตามสิทธิ <strong className="font-semibold text-slate-800">ไม่สามารถนำมาสะสมในปีถัดไปได้</strong></li>
-              </ul>
-            )}
-            {leaveType === 'wfh' && (
-              <ul className="space-y-1 text-slate-600 list-disc list-inside text-xs">
-                <li>ได้รับการอนุมัติจากหัวหน้างาน เป็นกรณีที่สมเหตุสมผล สามารถดำเนินงานได้ตามปกติ</li>
-                <li><strong className="font-semibold text-slate-800">เปิดหน้าจอ Google Meet</strong> ระหว่างเวลาการทำงาน และสามารถติดต่อสื่อสารได้ตลอดเวลา</li>
-              </ul>
-            )}
-            {leaveType === 'wfa' && (
-              <ul className="space-y-1 text-slate-600 list-disc list-inside text-xs">
-                <li>ได้รับการอนุมัติจากหัวหน้างาน สามารถดำเนินงานได้ตามปกติและติดต่อสื่อสารได้ตลอดเวลา</li>
               </ul>
             )}
           </div>
@@ -675,27 +658,6 @@ export default function LeaveRequestModal({
               </div>
             )}
           </div>
-
-          {/* ช่องระบุสถานที่ปฏิบัติงาน (แสดงเมื่อเลือก WFA / WFH) */}
-          {(leaveType === 'wfa' || leaveType === 'wfh') && (
-            <div className="rounded-xl border border-teal-200/75 bg-teal-50/40 p-4 space-y-2">
-              <label
-                htmlFor="leave-location-detail"
-                className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-teal-900"
-              >
-                <MapPin className="h-4 w-4 text-teal-600" />
-                <span>สถานที่ปฏิบัติงาน (WFH / WFA)</span>
-              </label>
-              <input
-                id="leave-location-detail"
-                type="text"
-                value={locationDetail}
-                onChange={(e) => setLocationDetail(e.target.value)}
-                placeholder="เช่น ทำงานที่บ้าน หรือ ระบุจังหวัด/สถานที่ปฏิบัติงาน"
-                className="w-full rounded-xl border border-teal-200 bg-white px-3.5 py-2.5 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:ring-4 focus:ring-teal-500/10 focus:outline-hidden transition"
-              />
-            </div>
-          )}
 
           {/* 4. เหตุผลการลา / รายละเอียดงาน */}
           <div>

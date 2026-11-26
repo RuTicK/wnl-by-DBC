@@ -91,7 +91,7 @@ export default function LeavePolicyModal({
               <span>เกณฑ์การผ่านทดลองงาน: 119 วัน (Probation)</span>
             </div>
             <p className="text-amber-900/85 leading-relaxed">
-              พนักงานต้องปฏิบัติงานครบ <strong className="font-semibold">119 วัน</strong> จึงจะถือว่าผ่านการทดลองงาน โดยในช่วงระหว่างทดลองงานจะไม่สามารถใช้สิทธิ <strong className="font-semibold">ลาพักร้อน (Vacation), Work From Home (WFH) หรือ Work From Anywhere (WFA)</strong> ได้ (สามารถใช้สิทธิลาป่วย ลากิจ หรือ ทำงานนอกสถานที่ได้ตามปกติ)
+              พนักงานต้องปฏิบัติงานครบ <strong className="font-semibold">119 วัน</strong> จึงจะถือว่าผ่านการทดลองงาน โดยในช่วงระหว่างทดลองงานจะไม่สามารถใช้สิทธิ <strong className="font-semibold">ลาพักร้อน (Vacation) หรือ Work From Home (WFH)</strong> ได้ (สามารถใช้สิทธิลาป่วย ลากิจ หรือ ทำงานนอกสถานที่ได้ตามปกติ)
             </p>
           </div>
 
@@ -198,7 +198,7 @@ export default function LeavePolicyModal({
               </div>
             </div>
 
-            {/* 4. WFH / WFA (Work From Home & Work From Anywhere) */}
+            {/* 4. WFH (Work From Home) */}
             <div className="rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 flex flex-col justify-between space-y-3">
               <div>
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
@@ -206,22 +206,22 @@ export default function LeavePolicyModal({
                     <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-[#0066FF] border border-blue-200/60 shrink-0">
                       <Home className="h-4 w-4" />
                     </span>
-                    <span>Work From Home (WFH) / WFA</span>
+                    <span>Work From Home (WFH)</span>
                   </div>
                   <span className="rounded-full bg-blue-50 text-[#0066FF] border border-blue-200/80 px-2.5 py-0.5 text-xs font-semibold shrink-0 whitespace-nowrap">
-                    ไม่มีโควต้า (ไม่จำกัด)
+                    Check-in โดยตรง
                   </span>
                 </div>
 
                 <ul className="mt-3 space-y-2 text-xs sm:text-sm text-slate-600 leading-relaxed">
                   <li className="flex items-start gap-2">
                     <span className="text-blue-400 font-bold shrink-0 mt-0.5">•</span>
-                    <span>ได้รับการอนุมัติจากหัวหน้างาน</span>
+                    <span>ไม่ต้องยื่นใบขออนุมัติล่วงหน้า สามารถกด Check-in (WFH) ได้ที่หน้าลงเวลาเข้างานโดยตรง</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-blue-400 font-bold shrink-0 mt-0.5">•</span>
                     <span>
-                      ทำงานที่บ้าน (WFH) หรือทำงานต่างจังหวัด/ที่อื่น (WFA) ตามเหตุผลที่สมควร
+                      <strong className="font-semibold text-slate-800">ต้องแนบลิงก์ Google Meet</strong> ทุกครั้งเมื่อกด Check-in WFH
                     </span>
                   </li>
                   <li className="flex items-start gap-2">

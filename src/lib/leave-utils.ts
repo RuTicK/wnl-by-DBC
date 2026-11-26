@@ -25,16 +25,216 @@ export const ALL_LEAVE_TYPES: LeaveType[] = [
 ];
 
 /**
+ * สวิตช์เปิด-ปิดระบบ Work From Anywhere (WFA) ชั่วคราว (ยังไม่ตกลงเงื่อนไขกับผู้บริหาร)
+ * คง type และคอลัมน์ในฐานข้อมูลไว้เพื่อรองรับการเปิดใช้งานในอนาคตโดยไม่กระทบข้อมูลเดิม
+ */
+export const ENABLE_WFA = false;
+
+/**
  * รายการประเภทคำขอที่สามารถยื่นขออนุมัติผ่าน LeaveRequestModal ได้
- * (การทำงานนอกสถานที่ / offsite รวมเข้าสู่ขั้นตอน Check-in โดยตรง ไม่ต้องยื่นขออนุมัติล่วงหน้า)
+ * - WFH (ทำงานที่บ้าน พร้อมแนบลิงก์ Google Meet) และ การทำงานนอกสถานที่ (offsite)
+ *   รวมเข้าสู่ขั้นตอน Check-in โดยตรง ไม่ต้องยื่นใบขออนุมัติล่วงหน้า
+ * - WFA (Work From Anywhere) ซ่อนไว้ชั่วคราว (ENABLE_WFA = false)
  */
 export const REQUESTABLE_LEAVE_TYPES: LeaveType[] = [
   'sick',
   'personal',
   'vacation',
-  'wfh',
-  'wfa',
 ];
+
+/**
+ * รายการสถานที่ปฏิบัติงานที่แสดงในหน้า Check-in
+ */
+export const VISIBLE_WORK_LOCATIONS: WorkLocationType[] = ENABLE_WFA
+  ? ['office', 'wfh', 'offsite', 'wfa']
+  : ['office', 'wfh', 'offsite'];
+
+/**
+ * ตรวจสอบและจัดรูปแบบลิงก์ Google Meet สำหรับการ Check-in WFH
+ * รองรับ:
+ * - https://meet.google.com/abc-defg-hij (รวมถึง query params)
+ * - meet.google.com/abc-defg-hij (เติม https:// ให้อัตโนมัติ)
+ * - https://g.co/meet/room-name
+ * ปฏิเสธ URL ที่ไม่ใช่ห้องประชุม Google Meet, พาธว่าง (/), /new, ช่องว่าง หรือโปรโตคอลอันตราย (javascript:, data:)
+ */
+export function normalizeAndValidateMeetLink(raw?: string | null): {
+  valid: boolean;
+  normalizedUrl?: string;
+  error?: string;
+} {
+  const trimmed = (raw || '').trim();
+  if (!trimmed) {
+    return {
+      valid: false,
+      error:
+        'กรุณาแนบลิงก์ Google Meet (เช่น https://meet.google.com/abc-defg-hij) สำหรับการ Check-in WFH',
+    };
+  }
+
+  if (/\s/.test(trimmed)) {
+    return {
+      valid: false,
+      error: 'รูปแบบลิงก์ Google Meet ไม่ถูกต้อง (ห้ามมีช่องว่างในลิงก์)',
+    };
+  }
+
+  const withProtocol =
+    /^meet\.google\.com\//i.test(trimmed) || /^g\.co\/meet\//i.test(trimmed)
+      ? `https://${trimmed}`
+      : trimmed;
+
+  let parsed: URL;
+  try {
+    parsed = new URL(withProtocol);
+  } catch {
+    return {
+      valid: false,
+      error:
+        'รูปแบบลิงก์ Google Meet ไม่ถูกต้อง กรุณากรอกลิงก์ที่ขึ้นต้นด้วย https://meet.google.com/...',
+    };
+  }
+
+  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+    return {
+      valid: false,
+      error:
+        'ลิงก์ Google Meet ต้องขึ้นต้นด้วย https://meet.google.com/... เท่านั้น',
+    };
+  }
+
+  if (parsed.username || parsed.password || parsed.port) {
+    return {
+      valid: false,
+      error:
+        'รูปแบบลิงก์ Google Meet ไม่ถูกต้อง กรุณาใช้ลิงก์จาก https://meet.google.com/... โดยตรง',
+    };
+  }
+
+  const host = parsed.hostname.toLowerCase();
+  const pathname = parsed.pathname.replace(/\/+$/, '');
+  const lowerPath = pathname.toLowerCase();
+
+  if (host === 'meet.google.com' && lowerPath === '/new') {
+    return {
+      valid: false,
+      error:
+        'กรุณาสร้างห้องประชุม Google Meet ก่อนแล้วคัดลอกลิงก์ห้องจริงมาวาง (ไม่ใช่ meet.google.com/new)',
+    };
+  }
+
+  const RESERVED_NON_ROOM_PATHS = new Set([
+    '/new',
+    '/lookup',
+    '/landing',
+    '/about',
+    '/whoops',
+    '/get-started',
+    '/calling',
+  ]);
+
+  const isSafeRoomSlug = (slug: string): boolean =>
+    /^[a-zA-Z0-9._-]{3,128}$/.test(slug) && !slug.includes('..');
+
+  let isValidMeetRoom = false;
+  if (host === 'meet.google.com' && pathname.length > 1) {
+    if (!RESERVED_NON_ROOM_PATHS.has(lowerPath)) {
+      if (lowerPath.startsWith('/lookup/')) {
+        isValidMeetRoom = isSafeRoomSlug(pathname.slice('/lookup/'.length));
+      } else if (lowerPath.startsWith('/_meet/')) {
+        const rest = pathname.slice('/_meet/'.length);
+        isValidMeetRoom = rest.length >= 3 && !rest.includes('..');
+      } else if (!pathname.slice(1).includes('/')) {
+        isValidMeetRoom = isSafeRoomSlug(pathname.slice(1));
+      }
+    }
+  } else if (host === 'g.co' && lowerPath.startsWith('/meet/')) {
+    const slug = pathname.slice('/meet/'.length);
+    isValidMeetRoom = isSafeRoomSlug(slug);
+  }
+
+  if (!isValidMeetRoom) {
+    return {
+      valid: false,
+      error:
+        'กรุณากรอกลิงก์ห้องประชุม Google Meet ที่ถูกต้อง (เช่น https://meet.google.com/abc-defg-hij)',
+    };
+  }
+
+  parsed.protocol = 'https:';
+  return {
+    valid: true,
+    normalizedUrl: parsed.toString(),
+  };
+}
+
+export function isValidMeetLink(raw?: string | null): boolean {
+  return normalizeAndValidateMeetLink(raw).valid;
+}
+
+/**
+ * แยกลิงก์ Google Meet และหมายเหตุเพิ่มเติมออกจาก AttendanceRecord (สำหรับ WFH)
+ */
+export function extractWfhMeetLinkAndNote(
+  record?: {
+    workLocation?: WorkLocationType;
+    meetLink?: string;
+    note?: string;
+  } | null
+): { meetLink?: string; extraNote?: string } {
+  if (!record) return {};
+  const rawNote = (record.note || '').trim();
+  if (record.workLocation && record.workLocation !== 'wfh') {
+    return { meetLink: undefined, extraNote: rawNote || undefined };
+  }
+
+  const sepIdx = rawNote.indexOf(' • ');
+  const firstPart = sepIdx >= 0 ? rawNote.slice(0, sepIdx).trim() : rawNote;
+  const restPart = sepIdx >= 0 ? rawNote.slice(sepIdx + 3).trim() : '';
+  const firstPartCheck = firstPart
+    ? normalizeAndValidateMeetLink(firstPart)
+    : { valid: false as const };
+
+  const directMeet = (record.meetLink || '').trim();
+  if (directMeet) {
+    const check = normalizeAndValidateMeetLink(directMeet);
+    const validMeet = check.valid ? check.normalizedUrl : undefined;
+    let extraNote = rawNote;
+    if (rawNote) {
+      if (rawNote.startsWith(`${directMeet} • `)) {
+        extraNote = rawNote.slice(directMeet.length + 3).trim();
+      } else if (validMeet && rawNote.startsWith(`${validMeet} • `)) {
+        extraNote = rawNote.slice(validMeet.length + 3).trim();
+      } else if (rawNote === directMeet || (validMeet && rawNote === validMeet)) {
+        extraNote = '';
+      } else if (
+        validMeet &&
+        firstPartCheck.valid &&
+        firstPartCheck.normalizedUrl === validMeet
+      ) {
+        extraNote = restPart;
+      }
+    }
+    return {
+      meetLink: validMeet,
+      extraNote: extraNote || undefined,
+    };
+  }
+
+  if (rawNote) {
+    if (firstPartCheck.valid && firstPartCheck.normalizedUrl) {
+      return {
+        meetLink: firstPartCheck.normalizedUrl,
+        extraNote: restPart || undefined,
+      };
+    }
+    return {
+      meetLink: undefined,
+      extraNote: rawNote,
+    };
+  }
+
+  return {};
+}
 
 /**
  * โควต้ามาตรฐานตายตัวของบริษัท (HR ไม่ต้องตั้งค่าเอง):
@@ -1440,7 +1640,7 @@ export function generateQuotaSummaryCsv(
     'ใช้ไป (ลาพักร้อน)',
     'คงเหลือ (ลาพักร้อน)',
     'ใช้ไป (WFH)',
-    'ใช้ไป (WFA)',
+    ...(ENABLE_WFA ? ['ใช้ไป (WFA)'] : []),
     'ใช้ไป (ทำงานนอกสถานที่)',
     'รวมวันลา/ปฏิบัติงานนอกสถานที่ทั้งหมด',
     'รวมรออนุมัติ',
@@ -1468,7 +1668,7 @@ export function generateQuotaSummaryCsv(
     o.quotas.vacation.usedDays,
     o.quotas.vacation.remainingDays,
     o.quotas.wfh.usedDays,
-    o.quotas.wfa.usedDays,
+    ...(ENABLE_WFA ? [o.quotas.wfa.usedDays] : []),
     o.quotas.offsite.usedDays,
     o.totalUsed,
     o.totalPending,
@@ -1495,20 +1695,27 @@ export function generateAttendanceCsv(records: AttendanceRecord[]): string {
     'เวลา Check-in',
     'เวลา Check-out',
     'สถานที่ปฏิบัติงาน',
-    'หมายเหตุ / รายละเอียดลูกค้า',
+    'หมายเหตุ / ลิงก์ Meet / รายละเอียดลูกค้า',
   ];
 
-  const rows = records.map((r) => [
-    r.id,
-    r.date,
-    r.userId,
-    r.userName,
-    r.department,
-    r.checkInTime,
-    r.checkOutTime || '-',
-    WORK_LOCATION_META[r.workLocation]?.label || r.workLocation,
-    r.note || '-',
-  ]);
+  const rows = records.map((r) => {
+    let detail = r.note || r.locationName || '-';
+    if (r.workLocation === 'wfh') {
+      const { meetLink, extraNote } = extractWfhMeetLinkAndNote(r);
+      detail = [meetLink, extraNote].filter(Boolean).join(' • ') || '-';
+    }
+    return [
+      r.id,
+      r.date,
+      r.userId,
+      r.userName,
+      r.department,
+      r.checkInTime,
+      r.checkOutTime || '-',
+      WORK_LOCATION_META[r.workLocation]?.label || r.workLocation,
+      detail,
+    ];
+  });
 
   const lines = [
     headers.map(escapeCsvCell).join(','),

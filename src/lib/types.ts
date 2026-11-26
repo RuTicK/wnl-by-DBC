@@ -128,7 +128,8 @@ export interface AttendanceRecord {
   checkOutTime?: string;// HH:mm
   workLocation: WorkLocationType; // 'office' | 'wfh' | 'wfa' | 'offsite'
   locationName?: string;// สถานที่ปฏิบัติงาน / ชื่อลูกค้า (สำหรับการ Check-in นอกสถานที่)
-  note?: string;        // หมายเหตุ / ชื่อลูกค้า (ไม่เก็บพิกัด GPS หรือภาพถ่ายใบหน้าตาม PDPA)
+  meetLink?: string;    // ลิงก์ Google Meet (จำเป็นสำหรับการ Check-in WFH)
+  note?: string;        // หมายเหตุ / ชื่อลูกค้า / ลิงก์ Meet (ไม่เก็บพิกัด GPS หรือภาพถ่ายใบหน้าตาม PDPA)
 }
 
 export interface LeaveCalculationResult {

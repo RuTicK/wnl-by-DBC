@@ -85,7 +85,7 @@ export default function HrDashboardView({
     let pendingHrCount = 0;
 
     for (const l of scopedLeaves) {
-      if (l.leaveType === 'offsite') continue;
+      if (!REQUESTABLE_LEAVE_TYPES.includes(l.leaveType)) continue;
       const daysInYear = getLeaveDaysInYear(l, year, holidays);
       if (daysInYear <= 0) continue;
 
@@ -111,7 +111,7 @@ export default function HrDashboardView({
     };
   }, [scopedLeaves, year, holidays, allQuotas]);
 
-  // สถิติการลารายเดือน (12 เดือน แยกตามประเภทคำขอ 5 ประเภท)
+  // สถิติการลารายเดือน (12 เดือน แยกตามประเภทการลาทั้ง 3 ประเภท)
   const monthlyStats = useMemo(() => {
     const months = Array.from({ length: 12 }, (_, idx) => ({
       monthIndex: idx,
@@ -126,7 +126,9 @@ export default function HrDashboardView({
     }));
 
     for (const l of scopedLeaves) {
-      if (l.status !== 'approved' || l.leaveType === 'offsite') continue;
+      if (l.status !== 'approved' || !REQUESTABLE_LEAVE_TYPES.includes(l.leaveType)) {
+        continue;
+      }
       const monthBreakdown = getLeaveDaysByMonthInYear(l, year, holidays);
       for (let m = 0; m < 12; m++) {
         if (monthBreakdown[m] > 0) {
@@ -152,8 +154,6 @@ export default function HrDashboardView({
         sick: number;
         personal: number;
         vacation: number;
-        wfh: number;
-        wfa: number;
         total: number;
         headcount: number;
       }
@@ -167,8 +167,6 @@ export default function HrDashboardView({
           sick: 0,
           personal: 0,
           vacation: 0,
-          wfh: 0,
-          wfa: 0,
           total: 0,
           headcount: 0,
         });
@@ -178,14 +176,10 @@ export default function HrDashboardView({
       entry.sick += q.quotas.sick.usedDays;
       entry.personal += q.quotas.personal.usedDays;
       entry.vacation += q.quotas.vacation.usedDays;
-      entry.wfh += q.quotas.wfh.usedDays;
-      entry.wfa += q.quotas.wfa.usedDays;
       entry.total +=
         q.quotas.sick.usedDays +
         q.quotas.personal.usedDays +
-        q.quotas.vacation.usedDays +
-        q.quotas.wfh.usedDays +
-        q.quotas.wfa.usedDays;
+        q.quotas.vacation.usedDays;
     }
 
     const list = Array.from(map.values()).sort((a, b) => b.total - a.total);
@@ -391,10 +385,10 @@ export default function HrDashboardView({
             <div className="min-w-0">
               <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
                 <BarChart3 className="h-4.5 w-4.5 text-[#0066FF] shrink-0" />
-                <span>กราฟสรุปจำนวนวันลา &amp; WFH/WFA รายเดือน (ม.ค. - ธ.ค.)</span>
+                <span>กราฟสรุปจำนวนวันลารายเดือน (ม.ค. - ธ.ค.)</span>
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                แสดงจำนวนวันแยกตามประเภททั้ง 5 ประเภทในแต่ละเดือน
+                แสดงจำนวนวันแยกตามประเภทการลาทั้ง 3 ประเภทในแต่ละเดือน
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2.5 text-[11px] text-slate-500 font-medium shrink-0">
@@ -431,7 +425,7 @@ export default function HrDashboardView({
                       <div
                         style={{ height: `${heightPct}%` }}
                         className="w-full flex flex-col justify-end rounded-t-md overflow-hidden transition-all group-hover:brightness-95"
-                        title={`${m.label}: รวม ${m.total} วัน (ป่วย ${m.sick}, กิจ ${m.personal}, พักร้อน ${m.vacation}, WFH ${m.wfh}, WFA ${m.wfa})`}
+                        title={`${m.label}: รวม ${m.total} วัน (ป่วย ${m.sick}, กิจ ${m.personal}, พักร้อน ${m.vacation})`}
                       >
                         {REQUESTABLE_LEAVE_TYPES.map((t) =>
                           m[t] > 0 ? (
@@ -465,7 +459,7 @@ export default function HrDashboardView({
               <span>สถิติแยกตามแผนก (Department Summary)</span>
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              เปรียบเทียบจำนวนวันลาและ WFH/WFA ในแต่ละแผนก
+              เปรียบเทียบจำนวนวันลาในแต่ละแผนก
             </p>
           </div>
 
@@ -501,8 +495,6 @@ export default function HrDashboardView({
                     <span>ป่วย {d.sick}</span>
                     <span>กิจ {d.personal}</span>
                     <span>พักร้อน {d.vacation}</span>
-                    <span>WFH {d.wfh}</span>
-                    <span>WFA {d.wfa}</span>
                   </div>
                 </div>
               );
@@ -590,12 +582,6 @@ export default function HrDashboardView({
                     ลาพักร้อน
                   </span>
                 </th>
-                <th className="py-3.5 px-3 text-center">
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-[#0066FF]" />
-                    WFH / WFA
-                  </span>
-                </th>
                 <th className="py-3.5 px-4 text-center">รออนุมัติ</th>
               </tr>
             </thead>
@@ -673,20 +659,6 @@ export default function HrDashboardView({
                       </td>
                     );
                   })}
-                  <td className="py-3.5 px-3 text-center tabular-nums whitespace-nowrap">
-                    <div className="text-xs font-semibold text-blue-700">
-                      WFH: ใช้ {row.quotas.wfh.usedDays}
-                      {row.quotas.wfh.isUnlimited
-                        ? ' (ไม่จำกัด)'
-                        : ` / ${row.quotas.wfh.totalQuota}`}
-                    </div>
-                    <div className="text-xs font-semibold text-violet-700 mt-1">
-                      WFA: ใช้ {row.quotas.wfa.usedDays}
-                      {row.quotas.wfa.isUnlimited
-                        ? ' (ไม่จำกัด)'
-                        : ` / ${row.quotas.wfa.totalQuota}`}
-                    </div>
-                  </td>
                   <td className="py-3.5 px-4 text-center tabular-nums whitespace-nowrap">
                     {row.totalPending > 0 ? (
                       <span className="rounded-full bg-amber-50 border border-amber-200/80 px-2.5 py-1 font-semibold text-amber-800 text-xs inline-block">
@@ -701,7 +673,7 @@ export default function HrDashboardView({
               {filteredQuotas.length === 0 && (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={6}
                     className="py-10 text-center text-sm text-slate-400"
                   >
                     ไม่พบข้อมูลพนักงานที่ตรงกับเงื่อนไขการค้นหา

@@ -126,11 +126,9 @@ export default function LoginView({ onLoginSuccess }: LoginViewProps) {
       try {
         const res = await fetch('/api/auth', {
           method: 'POST',
+          credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            isGoogleLogin: true,
-            ...payload,
-          }),
+          body: JSON.stringify(payload),
         });
         const data = await res.json();
 
@@ -341,11 +339,11 @@ export default function LoginView({ onLoginSuccess }: LoginViewProps) {
             <div className="flex items-center justify-center gap-2 flex-wrap">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 border border-slate-200/70 px-3 py-1 text-[11px] font-medium text-slate-600">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                Check-in รายวัน
+                Check-in &amp; WFH
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 border border-slate-200/70 px-3 py-1 text-[11px] font-medium text-slate-600">
                 <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                ยื่นใบลา &amp; WFH
+                ยื่นใบลาออนไลน์
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 border border-slate-200/70 px-3 py-1 text-[11px] font-medium text-slate-600">
                 <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />

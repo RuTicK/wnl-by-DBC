@@ -543,7 +543,9 @@ describe('LeaveCalendar & Departmental Approval Isolation UI Tests', () => {
       />
     );
     expect(attendanceHtml).toContain('พบลูกค้า/ออกบูธ');
-    expect(attendanceHtml).toContain('ทำงานต่างจังหวัด/ที่อื่น');
+    // WFA is temporarily hidden from UI
+    expect(attendanceHtml).not.toContain('ทำงานต่างจังหวัด/ที่อื่น');
+    expect(attendanceHtml).not.toContain('>WFA<');
     expect(attendanceHtml).not.toContain('นอกสถานที่ทำงาน');
     expect(attendanceHtml).not.toContain('id="attendance-note"');
 
@@ -564,7 +566,7 @@ describe('LeaveCalendar & Departmental Approval Isolation UI Tests', () => {
       createdAt: '2026-11-10T08:00:00.000Z',
     };
 
-    // LeaveCalendar legend and cells should only display the 5 requestable leave/remote types + holiday (excluding legacy offsite)
+    // LeaveCalendar legend and cells should only display the 3 requestable leave types + holiday (excluding offsite, wfh, wfa)
     const calendarHtml = renderToStaticMarkup(
       <LeaveCalendar
         currentUser={hrUser}
@@ -574,11 +576,12 @@ describe('LeaveCalendar & Departmental Approval Isolation UI Tests', () => {
       />
     );
     expect(calendarHtml).not.toContain('bg-teal-500" /> นอกสถานที่');
+    expect(calendarHtml).not.toContain('WFA');
     expect(calendarHtml).not.toContain('วรพล ยอดเยี่ยม');
-    expect(calendarHtml).toContain('ไม่มีรายการวันลาหรือ WFH/WFA ในวันนี้');
+    expect(calendarHtml).toContain('ไม่มีรายการวันลาในวันนี้');
     expect(calendarContent).not.toContain('เหตุผลส่วนตัว (ซ่อนข้อมูลสำหรับเพื่อนร่วมแผนกตาม PDPA)');
 
-    // HrDashboardView chart and KPIs should show 5 requestable types and exclude legacy offsite from approvedDays KPI & quota table
+    // HrDashboardView chart and KPIs should show 3 requestable leave types and exclude offsite/wfh/wfa from approvedDays KPI & quota table
     const dashboardHtml = renderToStaticMarkup(
       <HrDashboardView
         currentUser={hrUser}
@@ -589,8 +592,9 @@ describe('LeaveCalendar & Departmental Approval Isolation UI Tests', () => {
         onNavigateToApprovals={() => {}}
       />
     );
-    expect(dashboardHtml).toContain('แสดงจำนวนวันแยกตามประเภททั้ง 5 ประเภทในแต่ละเดือน');
+    expect(dashboardHtml).toContain('แสดงจำนวนวันแยกตามประเภทการลาทั้ง 3 ประเภทในแต่ละเดือน');
     expect(dashboardHtml).not.toContain('แสดงจำนวนวันแยกตามประเภททั้ง 6 ประเภทในแต่ละเดือน');
+    expect(dashboardHtml).not.toContain('WFA');
     expect(dashboardHtml).not.toContain('bg-teal-50/60 text-teal-800');
     expect(dashboardHtml).toContain('วัน (1 รายการ)');
 

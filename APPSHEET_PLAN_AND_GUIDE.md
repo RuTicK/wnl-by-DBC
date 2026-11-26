@@ -1,7 +1,7 @@
 # แผนการเปลี่ยนระบบเป็น Google AppSheet & คู่มือตั้งค่าแบบจับมือทำ (Step-by-Step)
 ## ระบบ "วันนี้ลา By DBC" — PDPA-Compliant HR Leave, WFH/WFA/Offsite & Office Check-in
 
-เอกสารฉบับนี้ออกแบบมาเพื่อให้คุณสามารถนำไฟล์ Google Sheet **"วันนี้ลา By DBC"** (`1cm3fCZR8eblrugsYA_Ncdn7M-IfQeysGcyl9-vNsb4c`) ไปสร้างเป็นแอปพลิเคชันบน **Google AppSheet** ได้ทันที โดยรองรับนโยบาย **PDPA (Data Minimization)** ของบริษัทครบทุกข้อ
+เอกสารฉบับนี้ออกแบบมาเพื่อให้คุณสามารถนำไฟล์ Google Sheet **"วันนี้ลา By DBC"** (`<YOUR_GOOGLE_SHEET_ID>`) ไปสร้างเป็นแอปพลิเคชันบน **Google AppSheet** ได้ทันที โดยรองรับนโยบาย **PDPA (Data Minimization)** ของบริษัทครบทุกข้อ
 
 ---
 
@@ -57,7 +57,7 @@
 ## 2. ขั้นตอนการสร้างแอปบน AppSheet แบบจับมือทำ
 
 ### Step 1: เชื่อมต่อ Google Sheet เข้ากับ AppSheet
-1. เปิดไฟล์ Google Sheet **"วันนี้ลา By DBC"**: `https://docs.google.com/spreadsheets/d/1cm3fCZR8eblrugsYA_Ncdn7M-IfQeysGcyl9-vNsb4c/edit`
+1. เปิดไฟล์ Google Sheet **"วันนี้ลา By DBC"**: `https://docs.google.com/spreadsheets/d/<YOUR_GOOGLE_SHEET_ID>/edit`
 2. ไปที่เมนู **Extensions (ส่วนขยาย) > AppSheet > Create an app**
 3. ในเมนู **Data > Tables** ให้กดเพิ่มตารางให้ครบทั้ง 4 ตาราง: `Users`, `LeaveRequests`, `Attendance`, `Holidays`
 

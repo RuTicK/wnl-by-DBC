@@ -15,9 +15,10 @@ import {
   sendGoogleChatOffsiteCheckInNotification,
 } from '../hr-service';
 import {
-  DEFAULT_GOOGLE_CHAT_WEBHOOK_URL,
   saveRuntimeAppConfig,
 } from '../storage';
+import { createSessionToken, SESSION_COOKIE_NAME } from '../session';
+import { INITIAL_USERS } from '../mock-data';
 import { AttendanceRecord, SafeUser } from '../types';
 import LeaveRequestModal from '@/components/LeaveRequestModal';
 import AttendanceAndOfficeView from '@/components/AttendanceAndOfficeView';
@@ -40,24 +41,35 @@ describe('Offsite Check-in Consolidation & Google Chat Notification Tests', () =
   });
 
   describe('1. Leave Request Modal Constraints', () => {
-    it('excludes offsite from REQUESTABLE_LEAVE_TYPES while preserving ALL_LEAVE_TYPES for backward compatibility', () => {
+    it('excludes offsite, wfh, and wfa from REQUESTABLE_LEAVE_TYPES while preserving ALL_LEAVE_TYPES for backward compatibility', () => {
       expect(REQUESTABLE_LEAVE_TYPES).not.toContain('offsite');
+      expect(REQUESTABLE_LEAVE_TYPES).not.toContain('wfh');
+      expect(REQUESTABLE_LEAVE_TYPES).not.toContain('wfa');
       expect(REQUESTABLE_LEAVE_TYPES).toEqual([
         'sick',
         'personal',
         'vacation',
-        'wfh',
-        'wfa',
       ]);
       expect(ALL_LEAVE_TYPES).toContain('offsite');
+      expect(ALL_LEAVE_TYPES).toContain('wfh');
+      expect(ALL_LEAVE_TYPES).toContain('wfa');
     });
 
     it('does not render "ทำงานนอกสถานที่" option in LeaveRequestModal and shows guidance note', () => {
       const quotaOverview = {
-        userId: testUser.id,
-        userName: testUser.name,
-        department: testUser.department,
+        user: testUser,
         year: 2026,
+        probation: {
+          passed: true,
+          daysWorked: 365,
+          daysRemaining: 0,
+          passDate: '2022-06-28',
+          startDate: testUser.startDate,
+          probationDaysRequired: 119,
+        },
+        totalUsed: 0,
+        totalPending: 0,
+        totalRemaining: 39,
         quotas: {
           sick: {
             leaveType: 'sick' as const,
@@ -133,19 +145,21 @@ describe('Offsite Check-in Consolidation & Google Chat Notification Tests', () =
         />
       );
 
-      // Should contain 5 options
+      // Should contain ONLY the 3 leave types (sick, personal, vacation)
       expect(html).toContain('ลาป่วย');
       expect(html).toContain('ลากิจ');
       expect(html).toContain('ลาพักร้อน');
-      expect(html).toContain('Work From Home');
-      expect(html).toContain('Work From Anywhere');
 
-      // Should NOT contain the option button for offsite leave
+      // Should NOT contain option buttons for WFH, WFA, or offsite leave
+      expect(html).not.toContain('Work From Home (ทำงานที่บ้าน)');
+      expect(html).not.toContain('Work From Anywhere');
       expect(html).not.toContain('ทำงานนอกสถานที่ (พบลูกค้า/ประชุม/ออกบูธ)');
 
-      // Should explain to employees that offsite is handled on check-in
-      expect(html).toContain('การทำงานนอกสถานที่ (พบลูกค้า/ออกบูธ) ไม่ต้องยื่นขออนุมัติล่วงหน้า');
-      expect(html).toContain('Check-in นอกสถานที่');
+      // Should explain to employees that both WFH (with Google Meet link) and offsite are handled on check-in
+      expect(html).toContain('การทำงานที่บ้าน (WFH พร้อมแนบลิงก์ Google Meet)');
+      expect(html).toContain('การทำงานนอกสถานที่ (พบลูกค้า/ออกบูธ)');
+      expect(html).toContain('ไม่ต้องยื่นขออนุมัติล่วงหน้า');
+      expect(html).toContain('Check-in (WFH / นอกสถานที่)');
     });
   });
 
@@ -258,9 +272,12 @@ describe('Offsite Check-in Consolidation & Google Chat Notification Tests', () =
   });
 
   describe('3. Google Chat Webhook Triggering on Offsite Check-in', () => {
+    const TEST_CHAT_WEBHOOK =
+      'https://chat.googleapis.com/v1/spaces/TEST_SPACE/messages?key=test-key&token=test-token';
+
     it('triggers Google Chat webhook formatted message on offsite check-in and skips for office check-in', async () => {
       saveRuntimeAppConfig({
-        googleChatWebhookUrl: DEFAULT_GOOGLE_CHAT_WEBHOOK_URL,
+        googleChatWebhookUrl: TEST_CHAT_WEBHOOK,
       });
 
       const originalFetch = global.fetch;
@@ -311,7 +328,7 @@ describe('Offsite Check-in Consolidation & Google Chat Notification Tests', () =
 
     it('sendGoogleChatOffsiteCheckInNotification handles network failures gracefully without throwing', async () => {
       saveRuntimeAppConfig({
-        googleChatWebhookUrl: 'https://chat.googleapis.com/v1/spaces/AAQAxhyo86I/messages?key=invalid&token=invalid',
+        googleChatWebhookUrl: 'https://chat.googleapis.com/v1/spaces/TEST_SPACE/messages?key=invalid&token=invalid',
       });
 
       const originalFetch = global.fetch;
@@ -345,7 +362,7 @@ describe('Offsite Check-in Consolidation & Google Chat Notification Tests', () =
 
     it('correctly formats message and strips location prefix from note when only record is supplied', async () => {
       saveRuntimeAppConfig({
-        googleChatWebhookUrl: DEFAULT_GOOGLE_CHAT_WEBHOOK_URL,
+        googleChatWebhookUrl: TEST_CHAT_WEBHOOK,
       });
 
       const originalFetch = global.fetch;
@@ -390,12 +407,20 @@ describe('Offsite Check-in Consolidation & Google Chat Notification Tests', () =
   });
 
   describe('4. /api/attendance Endpoint Integration', () => {
+    const makeCookieHeader = () => {
+      const emp001 = INITIAL_USERS[0];
+      const token = createSessionToken({ id: emp001.id, email: emp001.email });
+      return `${SESSION_COOKIE_NAME}=${token}`;
+    };
+
     it('accepts locationName in POST body and passes through to offsite check-in', async () => {
       const req = new NextRequest('http://localhost/api/attendance', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          cookie: makeCookieHeader(),
+        },
         body: JSON.stringify({
-          actorId: testUser.id,
           date: '2026-11-17',
           checkInTime: '08:45',
           workLocation: 'offsite',
@@ -415,9 +440,11 @@ describe('Offsite Check-in Consolidation & Google Chat Notification Tests', () =
     it('returns status 400 when offsite check-in is submitted without location details', async () => {
       const req = new NextRequest('http://localhost/api/attendance', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          cookie: makeCookieHeader(),
+        },
         body: JSON.stringify({
-          actorId: testUser.id,
           date: '2026-11-17',
           checkInTime: '08:45',
           workLocation: 'offsite',

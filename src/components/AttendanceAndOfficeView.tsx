@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  ExternalLink,
   Globe,
   Home,
   LogOut,
@@ -15,13 +16,17 @@ import {
   Search,
   UserCheck,
   Users,
+  Video,
   X,
 } from 'lucide-react';
 import {
+  ENABLE_WFA,
+  extractWfhMeetLinkAndNote,
   formatThaiDate,
   getBangkokNow,
   getProbationInfo,
   LEAVE_TYPE_META,
+  normalizeAndValidateMeetLink,
   ROLE_META,
   WORK_LOCATION_META,
 } from '@/lib/leave-utils';
@@ -44,6 +49,7 @@ interface AttendanceAndOfficeViewProps {
     checkInTime?: string;
     workLocation: WorkLocationType;
     locationName?: string;
+    meetLink?: string;
     note?: string;
   }) => Promise<{ success: boolean; error?: string }>;
   onCheckOut: (payload: {
@@ -80,18 +86,23 @@ export default function AttendanceAndOfficeView({
   const [offsiteLocation, setOffsiteLocation] = useState<string>('');
   const [offsiteNote, setOffsiteNote] = useState<string>('');
   const [offsiteError, setOffsiteError] = useState<string | null>(null);
+  const [isWfhModalOpen, setIsWfhModalOpen] = useState<boolean>(false);
+  const [wfhMeetLink, setWfhMeetLink] = useState<string>('');
+  const [wfhNote, setWfhNote] = useState<string>('');
+  const [wfhError, setWfhError] = useState<string | null>(null);
 
-  // Close offsite modal on Escape key press
+  // Close offsite/WFH modal on Escape key press
   useEffect(() => {
-    if (!isOffsiteModalOpen) return;
+    if (!isOffsiteModalOpen && !isWfhModalOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !submitting) {
         setIsOffsiteModalOpen(false);
+        setIsWfhModalOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOffsiteModalOpen, submitting]);
+  }, [isOffsiteModalOpen, isWfhModalOpen, submitting]);
 
   // Real-time clock update (Thailand time Asia/Bangkok)
   useEffect(() => {
@@ -123,7 +134,10 @@ export default function AttendanceAndOfficeView({
   const myTodayRecord = useMemo(
     () =>
       attendance.find(
-        (a) => a.userId === currentUser.id && a.date === todayStr
+        (a) =>
+          a.userId === currentUser.id &&
+          a.date === todayStr &&
+          (ENABLE_WFA || a.workLocation !== 'wfa')
       ),
     [attendance, currentUser.id, todayStr]
   );
@@ -148,6 +162,7 @@ export default function AttendanceAndOfficeView({
 
     const activeDayLeaves = leaves.filter(
       (l) =>
+        (ENABLE_WFA || l.leaveType !== 'wfa') &&
         (l.status === 'approved' ||
           l.status === 'pending_hr' ||
           l.status === 'pending_manager' ||
@@ -191,7 +206,10 @@ export default function AttendanceAndOfficeView({
       if (att) {
         if (att.workLocation === 'office') {
           inOffice.push({ user: u, record: att });
-        } else if (att.workLocation === 'wfh' || att.workLocation === 'wfa') {
+        } else if (
+          att.workLocation === 'wfh' ||
+          (ENABLE_WFA && att.workLocation === 'wfa')
+        ) {
           remoteWfhWfa.push({
             user: u,
             record: att,
@@ -200,9 +218,14 @@ export default function AttendanceAndOfficeView({
           });
         } else if (att.workLocation === 'offsite') {
           offsiteClient.push({ user: u, record: att, leave: userLeave });
+        } else if (!ENABLE_WFA && att.workLocation === 'wfa') {
+          notCheckedIn.push(u);
         }
       } else if (userLeave) {
-        if (userLeave.leaveType === 'wfh' || userLeave.leaveType === 'wfa') {
+        if (
+          userLeave.leaveType === 'wfh' ||
+          (ENABLE_WFA && userLeave.leaveType === 'wfa')
+        ) {
           remoteWfhWfa.push({
             user: u,
             leave: userLeave,
@@ -210,6 +233,8 @@ export default function AttendanceAndOfficeView({
           });
         } else if (userLeave.leaveType === 'offsite') {
           offsiteClient.push({ user: u, leave: userLeave });
+        } else if (!ENABLE_WFA && userLeave.leaveType === 'wfa') {
+          notCheckedIn.push(u);
         } else {
           onLeave.push({ user: u, leave: userLeave });
         }
@@ -277,13 +302,42 @@ export default function AttendanceAndOfficeView({
     setIsOffsiteModalOpen(true);
   };
 
+  const handleOpenWfhModal = () => {
+    setFeedback(null);
+    if (!myProbation.passed) {
+      setFeedback({
+        type: 'error',
+        message: `ช่วงทดลองงาน (< 119 วัน) ยังไม่สามารถเลือกลงเวลา WFH ได้ (เริ่มงาน ${formatThaiDate(myProbation.startDate, true)} ผ่านโปร ${formatThaiDate(myProbation.passDate, true)})`,
+      });
+      return;
+    }
+
+    const isCurrentWfh = myTodayRecord?.workLocation === 'wfh';
+    const extracted = isCurrentWfh
+      ? extractWfhMeetLinkAndNote(myTodayRecord)
+      : {};
+    setWfhMeetLink(extracted.meetLink || '');
+    setWfhNote(extracted.extraNote || '');
+    setWfhError(null);
+    setIsWfhModalOpen(true);
+  };
+
   const handleDirectCheckIn = async (loc: WorkLocationType) => {
     setFeedback(null);
+    if (loc === 'wfa' && !ENABLE_WFA) {
+      return;
+    }
     if (!myProbation.passed && (loc === 'wfh' || loc === 'wfa')) {
       setFeedback({
         type: 'error',
-        message: `ช่วงทดลองงาน (< 119 วัน) ยังไม่สามารถเลือกลงเวลา WFH หรือ WFA ได้ (เริ่มงาน ${formatThaiDate(myProbation.startDate, true)} ผ่านโปร ${formatThaiDate(myProbation.passDate, true)})`,
+        message: `ช่วงทดลองงาน (< 119 วัน) ยังไม่สามารถเลือกลงเวลา ${
+          ENABLE_WFA ? 'WFH หรือ WFA' : 'WFH'
+        } ได้ (เริ่มงาน ${formatThaiDate(myProbation.startDate, true)} ผ่านโปร ${formatThaiDate(myProbation.passDate, true)})`,
       });
+      return;
+    }
+    if (loc === 'wfh') {
+      handleOpenWfhModal();
       return;
     }
     if (loc === 'offsite') {
@@ -311,6 +365,53 @@ export default function AttendanceAndOfficeView({
         });
         setShowLocationPicker(false);
       }
+    } catch {
+      setFeedback({
+        type: 'error',
+        message: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง',
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleWfhSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const meetCheck = normalizeAndValidateMeetLink(wfhMeetLink);
+    if (!meetCheck.valid || !meetCheck.normalizedUrl) {
+      setWfhError(
+        meetCheck.error ||
+          'กรุณาแนบลิงก์ Google Meet ที่ถูกต้อง (เช่น https://meet.google.com/abc-defg-hij)'
+      );
+      return;
+    }
+    setSubmitting(true);
+    setWfhError(null);
+    try {
+      const bkk = getBangkokNow();
+      const effectiveCheckInTime = myTodayRecord?.checkInTime || bkk.timeStr;
+      const res = await onCheckIn({
+        date: todayStr || bkk.dateStr,
+        checkInTime: effectiveCheckInTime,
+        workLocation: 'wfh',
+        meetLink: meetCheck.normalizedUrl,
+        note: wfhNote.trim() || undefined,
+      });
+      if (!res.success) {
+        setWfhError(res.error || 'ไม่สามารถบันทึก Check-in WFH ได้');
+      } else {
+        setIsWfhModalOpen(false);
+        setWfhMeetLink('');
+        setWfhNote('');
+        setShowLocationPicker(false);
+        setFeedback({
+          type: 'success',
+          message:
+            'ลงเวลา Check-in WFH พร้อมแนบลิงก์ Google Meet สำเร็จ และส่งข้อความแจ้งเตือนเข้า Google Chat เรียบร้อยแล้ว',
+        });
+      }
+    } catch {
+      setWfhError('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง');
     } finally {
       setSubmitting(false);
     }
@@ -347,6 +448,8 @@ export default function AttendanceAndOfficeView({
             'ลงเวลา Check-in นอกสถานที่สำเร็จ และส่งข้อความแจ้งเตือนเข้า Google Chat เรียบร้อยแล้ว',
         });
       }
+    } catch {
+      setOffsiteError('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง');
     } finally {
       setSubmitting(false);
     }
@@ -372,6 +475,11 @@ export default function AttendanceAndOfficeView({
           message: 'ลงเวลา Check-out เลิกงานเรียบร้อยแล้ว',
         });
       }
+    } catch {
+      setFeedback({
+        type: 'error',
+        message: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง',
+      });
     } finally {
       setSubmitting(false);
     }
@@ -448,7 +556,8 @@ export default function AttendanceAndOfficeView({
               <div className="rounded-xl bg-amber-50/80 border border-amber-200/70 px-3.5 py-2.5 text-xs font-medium text-amber-900 flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
                 <span>
-                  ช่วงทดลองงาน ({myProbation.daysWorked}/119 วัน): ยังไม่สามารถเลือก WFH / WFA ได้
+                  ช่วงทดลองงาน ({myProbation.daysWorked}/119 วัน): ยังไม่สามารถเลือก{' '}
+                  {ENABLE_WFA ? 'WFH / WFA' : 'WFH'} ได้
                 </span>
               </div>
             )}
@@ -473,10 +582,16 @@ export default function AttendanceAndOfficeView({
                     </div>
                     <span
                       className={`rounded-lg border px-2.5 py-1 text-xs font-semibold ${
-                        WORK_LOCATION_META[myTodayRecord.workLocation].badgeClass
+                        (
+                          WORK_LOCATION_META[myTodayRecord.workLocation] ||
+                          WORK_LOCATION_META.office
+                        ).badgeClass
                       }`}
                     >
-                      {WORK_LOCATION_META[myTodayRecord.workLocation].label}
+                      {(
+                        WORK_LOCATION_META[myTodayRecord.workLocation] ||
+                        WORK_LOCATION_META.office
+                      ).label}
                     </span>
                   </div>
 
@@ -503,12 +618,49 @@ export default function AttendanceAndOfficeView({
                     </div>
                   </div>
 
-                  {(myTodayRecord.note || myTodayRecord.locationName) && (
-                    <div className="rounded-xl bg-white p-3 text-xs sm:text-sm text-slate-700 border border-slate-200/70">
-                      <span className="font-semibold text-slate-900">หมายเหตุ / สถานที่:</span>{' '}
-                      {myTodayRecord.note || myTodayRecord.locationName}
-                    </div>
-                  )}
+                  {(() => {
+                    if (myTodayRecord.workLocation === 'wfh') {
+                      const { meetLink, extraNote } =
+                        extractWfhMeetLinkAndNote(myTodayRecord);
+                      if (!meetLink && !extraNote) return null;
+                      return (
+                        <div className="rounded-xl bg-white p-3 text-xs sm:text-sm text-slate-700 border border-blue-200/70 space-y-1.5">
+                          {meetLink && (
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <span className="inline-flex items-center gap-1.5 font-semibold text-slate-900">
+                                <Video className="h-3.5 w-3.5 text-[#0066FF] shrink-0" />
+                                <span>Google Meet:</span>
+                              </span>
+                              <a
+                                href={meetLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 font-semibold text-[#0066FF] hover:text-blue-800 hover:underline break-all"
+                              >
+                                <span>{meetLink}</span>
+                                <ExternalLink className="h-3 w-3 shrink-0" />
+                              </a>
+                            </div>
+                          )}
+                          {extraNote && (
+                            <div className="text-slate-600">
+                              <span className="font-semibold text-slate-900">หมายเหตุ:</span>{' '}
+                              {extraNote}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    if (myTodayRecord.note || myTodayRecord.locationName) {
+                      return (
+                        <div className="rounded-xl bg-white p-3 text-xs sm:text-sm text-slate-700 border border-slate-200/70">
+                          <span className="font-semibold text-slate-900">หมายเหตุ / สถานที่:</span>{' '}
+                          {myTodayRecord.note || myTodayRecord.locationName}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
 
                   {/* Check-Out Button if not yet checked out */}
                   {!myTodayRecord.checkOutTime ? (
@@ -561,7 +713,13 @@ export default function AttendanceAndOfficeView({
                     ? 'เลือกสถานที่ทำงานใหม่'
                     : 'เลือกสถานที่ลงเวลาเข้างาน'}
                 </label>
-                <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+                <div
+                  className={`grid gap-2.5 sm:gap-3 ${
+                    ENABLE_WFA
+                      ? 'grid-cols-2'
+                      : 'grid-cols-2 sm:grid-cols-3 xl:grid-cols-2'
+                  }`}
+                >
                   {/* 1. Office Button */}
                   <button
                     type="button"
@@ -593,11 +751,11 @@ export default function AttendanceAndOfficeView({
                     </div>
                   </button>
 
-                  {/* 2. WFH Button */}
+                  {/* 2. WFH Button (opens WFH modal requiring Google Meet link) */}
                   <button
                     type="button"
                     disabled={submitting || !myProbation.passed}
-                    onClick={() => handleDirectCheckIn('wfh')}
+                    onClick={handleOpenWfhModal}
                     className={`group rounded-xl border p-3.5 text-left transition min-h-[84px] flex flex-col justify-between disabled:opacity-55 disabled:cursor-not-allowed ${
                       !myProbation.passed
                         ? 'border-slate-200/70 bg-slate-50 cursor-not-allowed'
@@ -625,7 +783,7 @@ export default function AttendanceAndOfficeView({
                           ? 'รอผ่านโปร 119 วัน'
                           : submitting
                             ? 'กำลังบันทึก...'
-                            : 'ทำงานที่บ้าน'}
+                            : 'ทำงานที่บ้าน (แนบลิงก์ Meet)'}
                       </div>
                     </div>
                   </button>
@@ -636,6 +794,8 @@ export default function AttendanceAndOfficeView({
                     disabled={submitting}
                     onClick={handleOpenOffsiteModal}
                     className={`group rounded-xl border p-3.5 text-left transition min-h-[84px] flex flex-col justify-between active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed ${
+                      !ENABLE_WFA ? 'col-span-2 sm:col-span-1 xl:col-span-2' : ''
+                    } ${
                       myTodayRecord?.workLocation === 'offsite'
                         ? 'border-teal-500 bg-teal-50/60 ring-2 ring-teal-500/15'
                         : 'border-slate-200/90 bg-white hover:border-teal-300 hover:bg-teal-50/30 cursor-pointer'
@@ -661,42 +821,44 @@ export default function AttendanceAndOfficeView({
                     </div>
                   </button>
 
-                  {/* 4. WFA Button */}
-                  <button
-                    type="button"
-                    disabled={submitting || !myProbation.passed}
-                    onClick={() => handleDirectCheckIn('wfa')}
-                    className={`group rounded-xl border p-3.5 text-left transition min-h-[84px] flex flex-col justify-between disabled:opacity-55 disabled:cursor-not-allowed ${
-                      !myProbation.passed
-                        ? 'border-slate-200/70 bg-slate-50 cursor-not-allowed'
-                        : myTodayRecord?.workLocation === 'wfa'
-                          ? 'border-violet-500 bg-violet-50/60 ring-2 ring-violet-500/15 cursor-pointer active:scale-[0.98]'
-                          : 'border-slate-200/90 bg-white hover:border-violet-300 hover:bg-violet-50/30 cursor-pointer active:scale-[0.98]'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-1.5">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 text-violet-600 border border-violet-200/60 group-hover:bg-violet-600 group-hover:text-white group-hover:border-violet-600 transition shrink-0">
-                        <Globe className="h-4 w-4" />
+                  {/* 4. WFA Button (hidden when ENABLE_WFA = false) */}
+                  {ENABLE_WFA && (
+                    <button
+                      type="button"
+                      disabled={submitting || !myProbation.passed}
+                      onClick={() => handleDirectCheckIn('wfa')}
+                      className={`group rounded-xl border p-3.5 text-left transition min-h-[84px] flex flex-col justify-between disabled:opacity-55 disabled:cursor-not-allowed ${
+                        !myProbation.passed
+                          ? 'border-slate-200/70 bg-slate-50 cursor-not-allowed'
+                          : myTodayRecord?.workLocation === 'wfa'
+                            ? 'border-violet-500 bg-violet-50/60 ring-2 ring-violet-500/15 cursor-pointer active:scale-[0.98]'
+                            : 'border-slate-200/90 bg-white hover:border-violet-300 hover:bg-violet-50/30 cursor-pointer active:scale-[0.98]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1.5">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 text-violet-600 border border-violet-200/60 group-hover:bg-violet-600 group-hover:text-white group-hover:border-violet-600 transition shrink-0">
+                          <Globe className="h-4 w-4" />
+                        </div>
+                        {myTodayRecord?.workLocation === 'wfa' && (
+                          <span className="rounded-full bg-violet-600 text-white text-[10px] font-semibold px-2 py-0.5 shrink-0">
+                            ปัจจุบัน
+                          </span>
+                        )}
                       </div>
-                      {myTodayRecord?.workLocation === 'wfa' && (
-                        <span className="rounded-full bg-violet-600 text-white text-[10px] font-semibold px-2 py-0.5 shrink-0">
-                          ปัจจุบัน
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-2.5">
-                      <div className="font-bold text-sm text-slate-900 truncate">
-                        WFA
+                      <div className="mt-2.5">
+                        <div className="font-bold text-sm text-slate-900 truncate">
+                          WFA
+                        </div>
+                        <div className="text-[11px] text-slate-500 font-medium truncate">
+                          {!myProbation.passed
+                            ? 'รอผ่านโปร 119 วัน'
+                            : submitting
+                              ? 'กำลังบันทึก...'
+                              : 'ทำงานต่างจังหวัด/ที่อื่น'}
+                        </div>
                       </div>
-                      <div className="text-[11px] text-slate-500 font-medium truncate">
-                        {!myProbation.passed
-                          ? 'รอผ่านโปร 119 วัน'
-                          : submitting
-                            ? 'กำลังบันทึก...'
-                            : 'ทำงานต่างจังหวัด/ที่อื่น'}
-                      </div>
-                    </div>
-                  </button>
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -754,7 +916,9 @@ export default function AttendanceAndOfficeView({
 
             <div className="rounded-xl bg-slate-50/70 border border-slate-200/65 p-3.5 transition hover:border-blue-200 hover:bg-blue-50/25">
               <div className="flex items-center justify-between gap-1.5 text-xs font-medium text-slate-500">
-                <span className="whitespace-nowrap">WFH / WFA</span>
+                <span className="whitespace-nowrap">
+                  {ENABLE_WFA ? 'WFH / WFA' : 'WFH'}
+                </span>
                 <span className="h-2 w-2 rounded-full bg-[#0066FF] shrink-0" />
               </div>
               <div className="mt-2 text-2xl font-bold text-slate-900 tabular-nums tracking-tight whitespace-nowrap">
@@ -832,7 +996,7 @@ export default function AttendanceAndOfficeView({
                     (dailyBoard.remoteWfhWfa.length / (dailyBoard.totalFiltered || 1)) * 100
                   )}%`,
                 }}
-                title={`WFH/WFA: ${dailyBoard.remoteWfhWfa.length} คน`}
+                title={`${ENABLE_WFA ? 'WFH/WFA' : 'WFH'}: ${dailyBoard.remoteWfhWfa.length} คน`}
               />
               <div
                 className="bg-teal-500 h-full transition-all duration-500"
@@ -1004,7 +1168,7 @@ export default function AttendanceAndOfficeView({
             </div>
           </div>
 
-          {/* Column 2: ทำงานนอกสถานที่ (พบลูกค้า/ออกบูธ) & WFH / WFA */}
+          {/* Column 2: ทำงานนอกสถานที่ (พบลูกค้า/ออกบูธ) & WFH */}
           <div
             className={`${
               mobileBoardTab === 'remote' ? 'block' : 'hidden'
@@ -1015,7 +1179,7 @@ export default function AttendanceAndOfficeView({
                 <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-[#0066FF] border border-blue-200/60">
                   <MapPin className="h-4 w-4" />
                 </span>
-                <span>WFH / WFA &amp; นอกสถานที่</span>
+                <span>{ENABLE_WFA ? 'WFH / WFA & นอกสถานที่' : 'WFH & นอกสถานที่'}</span>
               </div>
               <span className="rounded-full bg-blue-50 border border-blue-200/70 px-2.5 py-0.5 text-xs font-semibold text-[#0066FF] tabular-nums">
                 {dailyBoard.remoteWfhWfa.length + dailyBoard.offsiteClient.length}
@@ -1026,7 +1190,9 @@ export default function AttendanceAndOfficeView({
               {dailyBoard.offsiteClient.length === 0 &&
               dailyBoard.remoteWfhWfa.length === 0 ? (
                 <div className="py-12 px-4 text-center text-xs sm:text-sm text-slate-400">
-                  ไม่มีพนักงาน WFH / WFA หรือไปพบลูกค้านอกสถานที่ในวันนี้
+                  {ENABLE_WFA
+                    ? 'ไม่มีพนักงาน WFH / WFA หรือไปพบลูกค้านอกสถานที่ในวันนี้'
+                    : 'ไม่มีพนักงาน WFH หรือไปพบลูกค้านอกสถานที่ในวันนี้'}
                 </div>
               ) : (
                 <>
@@ -1072,45 +1238,70 @@ export default function AttendanceAndOfficeView({
                   ))}
 
                   {dailyBoard.remoteWfhWfa.map(
-                    ({ user, record, leave, locationType }) => (
-                      <div
-                        key={`remote-${user.id}`}
-                        className="px-4 py-3 hover:bg-blue-50/30 transition space-y-2"
-                      >
-                        <div className="flex items-center justify-between gap-2.5">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <UserAvatar
-                              name={user.name}
-                              avatarUrl={user.avatarUrl}
-                              sizeClass="h-8 w-8"
-                              roundedClass="rounded-full"
-                              textClass="text-xs"
-                            />
-                            <div className="min-w-0">
-                              <div className="font-semibold text-sm text-slate-900 truncate">
-                                {user.name}
-                              </div>
-                              <div className="text-xs text-slate-400 truncate">
-                                {user.department} · {user.position}
+                    ({ user, record, leave, locationType }) => {
+                      const extractedWfh =
+                        locationType === 'wfh'
+                          ? extractWfhMeetLinkAndNote(record)
+                          : {};
+                      const displayNote =
+                        locationType === 'wfh'
+                          ? extractedWfh.extraNote || leave?.reason
+                          : record?.note || leave?.reason;
+
+                      return (
+                        <div
+                          key={`remote-${user.id}`}
+                          className="px-4 py-3 hover:bg-blue-50/30 transition space-y-2"
+                        >
+                          <div className="flex items-center justify-between gap-2.5">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <UserAvatar
+                                name={user.name}
+                                avatarUrl={user.avatarUrl}
+                                sizeClass="h-8 w-8"
+                                roundedClass="rounded-full"
+                                textClass="text-xs"
+                              />
+                              <div className="min-w-0">
+                                <div className="font-semibold text-sm text-slate-900 truncate">
+                                  {user.name}
+                                </div>
+                                <div className="text-xs text-slate-400 truncate">
+                                  {user.department} · {user.position}
+                                </div>
                               </div>
                             </div>
+                            <span
+                              className={`rounded-lg border px-2 py-0.5 text-[11px] font-semibold shrink-0 tabular-nums ${
+                                WORK_LOCATION_META[locationType].badgeClass
+                              }`}
+                            >
+                              {WORK_LOCATION_META[locationType].shortLabel}
+                              {record ? ` (${record.checkInTime})` : ''}
+                            </span>
                           </div>
-                          <span
-                            className={`rounded-lg border px-2 py-0.5 text-[11px] font-semibold shrink-0 tabular-nums ${
-                              WORK_LOCATION_META[locationType].badgeClass
-                            }`}
-                          >
-                            {WORK_LOCATION_META[locationType].shortLabel}
-                            {record ? ` (${record.checkInTime})` : ''}
-                          </span>
+                          {extractedWfh.meetLink && (
+                            <a
+                              href={extractedWfh.meetLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-[#0066FF] hover:text-blue-800 bg-blue-50/60 hover:bg-blue-50 rounded-lg px-2.5 py-1.5 border border-blue-200/70 flex items-center justify-between gap-2 transition"
+                            >
+                              <span className="inline-flex items-center gap-1.5 min-w-0 font-semibold">
+                                <Video className="h-3.5 w-3.5 shrink-0" />
+                                <span className="truncate">{extractedWfh.meetLink}</span>
+                              </span>
+                              <ExternalLink className="h-3 w-3 shrink-0" />
+                            </a>
+                          )}
+                          {displayNote && (
+                            <div className="text-xs text-slate-600 bg-slate-50 rounded-lg px-2.5 py-1.5 border border-slate-100">
+                              {displayNote}
+                            </div>
+                          )}
                         </div>
-                        {(record?.note || leave?.reason) && (
-                          <div className="text-xs text-slate-600 bg-slate-50 rounded-lg px-2.5 py-1.5 border border-slate-100">
-                            {record?.note || leave?.reason}
-                          </div>
-                        )}
-                      </div>
-                    )
+                      );
+                    }
                   )}
                 </>
               )}
@@ -1209,6 +1400,179 @@ export default function AttendanceAndOfficeView({
         </div>
       </div>
 
+      {/* WFH Check-in Modal (Requires Google Meet Link) */}
+      {isWfhModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Check-in Work From Home (WFH)"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-950/45 p-0 sm:p-4 backdrop-blur-xs animate-ui-fade"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !submitting) {
+              setIsWfhModalOpen(false);
+            }
+          }}
+        >
+          <div className="relative flex h-auto max-h-[92dvh] sm:max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl sm:rounded-2xl bg-white shadow-2xl border border-slate-200/80 animate-ui-modal">
+            {/* Clean Modern Modal Header */}
+            <div className="shrink-0 flex items-center justify-between border-b border-slate-100 bg-white px-5 sm:px-6 py-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-[#0066FF] border border-blue-200/60 shrink-0">
+                  <Video className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-base font-bold text-slate-900 tracking-tight truncate">
+                    Check-in Work From Home (WFH)
+                  </h3>
+                  <p className="text-xs text-slate-500 truncate mt-0.5">
+                    ทำงานที่บ้าน • ต้องแนบลิงก์ Google Meet ทุกครั้ง
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => !submitting && setIsWfhModalOpen(false)}
+                className="rounded-xl p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer shrink-0 min-h-[38px] min-w-[38px] flex items-center justify-center"
+                aria-label="ปิดหน้าต่าง"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Modal Body Form */}
+            <form
+              onSubmit={handleWfhSubmit}
+              noValidate
+              className="flex-1 overflow-y-auto momentum-scroll p-5 sm:p-6 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] space-y-4 text-sm"
+            >
+              {wfhError && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-2.5 rounded-xl bg-rose-50 border border-rose-200/80 p-3.5 text-xs sm:text-sm text-rose-700 font-medium"
+                >
+                  <AlertCircle className="h-4.5 w-4.5 text-rose-500 shrink-0 mt-0.5" />
+                  <span>{wfhError}</span>
+                </div>
+              )}
+
+              {/* User and Time Card */}
+              <div className="rounded-xl bg-slate-50/80 border border-slate-200/70 p-3.5 flex items-center justify-between gap-3 text-xs sm:text-sm">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <UserAvatar
+                    name={currentUser.name}
+                    avatarUrl={currentUser.avatarUrl}
+                    sizeClass="h-9 w-9"
+                    roundedClass="rounded-xl"
+                    textClass="text-xs"
+                  />
+                  <div className="min-w-0">
+                    <div className="font-semibold text-slate-900 truncate">
+                      {currentUser.name}
+                    </div>
+                    <div className="text-xs text-slate-500 truncate">
+                      ฝ่าย {currentUser.department || '-'}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="text-[11px] text-slate-400 font-medium">เวลา Check-in</div>
+                  <div className="text-sm font-bold font-mono tabular-nums text-[#0066FF]">
+                    {myTodayRecord?.checkInTime || liveTime || getBangkokNow().timeStr} น.
+                  </div>
+                </div>
+              </div>
+
+              {/* Field: Google Meet Link (Required) */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="wfh-modal-meet-link"
+                  className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-700"
+                >
+                  <Video className="h-4 w-4 text-[#0066FF] shrink-0" />
+                  <span>
+                    ลิงก์ Google Meet สำหรับปฏิบัติงาน WFH{' '}
+                    <span className="text-rose-500">*</span>
+                  </span>
+                </label>
+                <input
+                  id="wfh-modal-meet-link"
+                  type="text"
+                  inputMode="url"
+                  autoFocus
+                  required
+                  aria-required="true"
+                  aria-invalid={Boolean(wfhError)}
+                  value={wfhMeetLink}
+                  onChange={(e) => {
+                    setWfhMeetLink(e.target.value);
+                    if (wfhError) setWfhError(null);
+                  }}
+                  placeholder="https://meet.google.com/abc-defg-hij"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 hover:border-slate-300 focus:border-[#0066FF] focus:ring-4 focus:ring-blue-500/10 focus:outline-hidden transition"
+                />
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  ต้องสร้างห้องประชุม Google Meet จริงและเปิดออนไลน์ไว้ตลอดเวลาทำงานเพื่อให้ทีมติดต่อได้
+                </p>
+              </div>
+
+              {/* Field: Extra Note (Optional) */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="wfh-modal-note"
+                  className="block text-xs sm:text-sm font-semibold text-slate-700"
+                >
+                  หมายเหตุ / รายละเอียดงานวันนี้ (ถ้ามี)
+                </label>
+                <textarea
+                  id="wfh-modal-note"
+                  rows={2}
+                  value={wfhNote}
+                  onChange={(e) => setWfhNote(e.target.value)}
+                  placeholder="เช่น ประชุมออนไลน์กับลูกค้า, โฟกัสทำรายงานประจำเดือน"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 hover:border-slate-300 focus:border-[#0066FF] focus:ring-4 focus:ring-blue-500/10 focus:outline-hidden resize-none transition"
+                />
+              </div>
+
+              {/* Webhook notification notice */}
+              <div className="rounded-xl bg-blue-50/55 border border-blue-200/70 p-3 text-xs text-blue-950 space-y-1">
+                <div className="font-semibold text-blue-950">
+                  แจ้งเตือนเข้า Google Chat พร้อมลิงก์ Meet อัตโนมัติ
+                </div>
+                <p className="text-blue-900/85 leading-relaxed">
+                  เมื่อกดยืนยัน ระบบจะลงเวลา WFH พร้อมส่งลิงก์ Google Meet แจ้งเตือนเข้าห้องแชทบริษัททันที โดยไม่ต้องยื่นใบขออนุมัติล่วงหน้า
+                </p>
+              </div>
+
+              {/* Modal Actions */}
+              <div className="pt-3 flex items-center justify-end gap-2.5 border-t border-slate-100">
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => setIsWfhModalOpen(false)}
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-50 transition cursor-pointer min-h-[42px]"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="rounded-xl bg-[#0066FF] hover:bg-[#0052CC] text-white px-5 py-2.5 text-xs sm:text-sm font-semibold transition cursor-pointer shadow-xs disabled:opacity-50 min-h-[42px] flex items-center justify-center gap-2"
+                >
+                  {submitting ? (
+                    'กำลังบันทึก...'
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span>ยืนยัน Check-in WFH</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Offsite Check-in Modal */}
       {isOffsiteModalOpen && (
         <div
@@ -1251,10 +1615,14 @@ export default function AttendanceAndOfficeView({
             {/* Modal Body Form */}
             <form
               onSubmit={handleOffsiteSubmit}
+              noValidate
               className="flex-1 overflow-y-auto momentum-scroll p-5 sm:p-6 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] space-y-4 text-sm"
             >
               {offsiteError && (
-                <div className="flex items-start gap-2.5 rounded-xl bg-rose-50 border border-rose-200/80 p-3.5 text-xs sm:text-sm text-rose-700 font-medium">
+                <div
+                  role="alert"
+                  className="flex items-start gap-2.5 rounded-xl bg-rose-50 border border-rose-200/80 p-3.5 text-xs sm:text-sm text-rose-700 font-medium"
+                >
                   <AlertCircle className="h-4.5 w-4.5 text-rose-500 shrink-0 mt-0.5" />
                   <span>{offsiteError}</span>
                 </div>

@@ -19,6 +19,7 @@ import {
   formatThaiDate,
   getBangkokNow,
   LEAVE_TYPE_META,
+  REQUESTABLE_LEAVE_TYPES,
   STATUS_META,
 } from '@/lib/leave-utils';
 import {
@@ -108,7 +109,7 @@ export default function LeaveCalendar({
 
   const filteredLeaves = useMemo(() => {
     return leaves.filter((l) => {
-      if (l.leaveType === 'offsite') return false;
+      if (!REQUESTABLE_LEAVE_TYPES.includes(l.leaveType)) return false;
       if (l.status === 'rejected' || l.status === 'cancelled') return false;
       if (statusFilter === 'APPROVED_ONLY' && l.status !== 'approved') {
         return false;
@@ -367,12 +368,6 @@ export default function LeaveCalendar({
               <span className="h-2 w-2 rounded-full bg-sky-500" /> พักร้อน
             </span>
             <span className="inline-flex items-center gap-1.5 shrink-0">
-              <span className="h-2 w-2 rounded-full bg-[#0066FF]" /> WFH
-            </span>
-            <span className="inline-flex items-center gap-1.5 shrink-0">
-              <span className="h-2 w-2 rounded-full bg-violet-500" /> WFA
-            </span>
-            <span className="inline-flex items-center gap-1.5 shrink-0">
               <span className="h-2 w-2 rounded-full bg-emerald-500" /> วันหยุด
             </span>
           </div>
@@ -608,7 +603,7 @@ export default function LeaveCalendar({
           {/* Leaves on Selected Date */}
           <div className="space-y-3">
             <div className="text-xs font-semibold text-slate-500 flex items-center justify-between">
-              <span>รายการลางานและปฏิบัติงาน</span>
+              <span>รายการลางาน</span>
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 tabular-nums">
                 {selectedDayInfo.dayLeaves.length} รายการ
               </span>
@@ -616,7 +611,7 @@ export default function LeaveCalendar({
 
             {selectedDayInfo.dayLeaves.length === 0 ? (
               <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/40 py-10 px-4 text-center text-xs sm:text-sm text-slate-400">
-                ไม่มีรายการวันลาหรือ WFH/WFA ในวันนี้
+                ไม่มีรายการวันลาในวันนี้
               </div>
             ) : (
               <div className="space-y-2.5 max-h-[460px] overflow-y-auto momentum-scroll pr-0.5">

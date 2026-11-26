@@ -1,14 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   authenticateUser,
-  registerGoogleUser,
-  updateOwnTestingProfile,
   verifyGoogleOAuthCredentials,
 } from '@/lib/hr-service';
+import { clearSessionCookie, setSessionCookie } from '@/lib/session';
+import { GoogleSheetsUnavailableError } from '@/lib/storage';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    let body: Record<string, any>;
+    try {
+      const parsed = await req.json();
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return NextResponse.json(
+          { error: 'รูปแบบข้อมูลคำขอไม่ถูกต้อง' },
+          { status: 400 }
+        );
+      }
+      body = parsed;
+    } catch {
+      return NextResponse.json(
+        { error: 'รูปแบบ JSON ไม่ถูกต้อง' },
+        { status: 400 }
+      );
+    }
+
+    // 0. ออกจากระบบ (ล้าง HttpOnly Session Cookie)
+    if (body.action === 'logout') {
+      const res = NextResponse.json({ success: true });
+      clearSessionCookie(res, req);
+      return res;
+    }
 
     // 1. นโยบาย Whitelist: การเพิ่มพนักงานใหม่ต้องทำผ่าน HR หรือ C-Level เท่านั้น (ไม่อนุญาตให้บุคคลภายนอก Self-Onboard เอง)
     if (body.action === 'onboard_google_user') {
@@ -21,107 +43,78 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. กรณีผู้ใช้งานสลับ Role หรือสถานะทดลองงาน 120 วันของบัญชีตัวเองเพื่อทดสอบสิทธิ์
+    // 2. ปิดคำสั่งเปลี่ยนสิทธิ์ตัวเอง (Privilege Escalation Prevention)
     if (body.action === 'update_self_role') {
-      const res = await updateOwnTestingProfile(body.userId, {
-        role: body.role,
-        startDate: body.startDate,
-        department: body.department,
-        name: body.name,
-      });
-      if (!res.success) {
-        return NextResponse.json(
-          { error: res.error || 'อัปเดตบทบาทไม่สำเร็จ' },
-          { status: 400 }
-        );
-      }
-      return NextResponse.json({
-        user: res.user,
-        storageMode: res.mode,
-      });
-    }
-
-    // 3. กรณีล็อกอินผ่าน Google OAuth 2.0 / Google Identity Services จริง (ส่ง googleIdToken หรือ googleAccessToken มาตรวจสอบ)
-    if (body.googleIdToken || body.googleAccessToken) {
-      const verified = await verifyGoogleOAuthCredentials({
-        googleIdToken: body.googleIdToken,
-        googleAccessToken: body.googleAccessToken,
-      });
-
-      if (!verified.success || !verified.profile) {
-        return NextResponse.json(
-          {
-            error:
-              verified.error ||
-              'ไม่สามารถยืนยันตัวตนกับ Google OAuth ได้ กรุณาลองใหม่อีกครั้ง',
-          },
-          { status: 401 }
-        );
-      }
-
-      const authRes = await authenticateUser(
-        verified.profile.email,
-        undefined,
-        {
-          isGoogleLogin: true,
-          googleEmail: verified.profile.email,
-          googleEnglishName: verified.profile.englishName,
-          googlePicture: verified.profile.picture,
-        }
-      );
-
-      if (!authRes.success) {
-        return NextResponse.json(
-          {
-            error:
-              authRes.error ||
-              'ไม่พบบัญชีอีเมลนี้ในระบบพนักงาน กรุณาติดต่อฝ่ายบุคคล (HR) หรือผู้บริหาร (C-Level)',
-            unregisteredEmail:
-              authRes.unregisteredEmail || verified.profile.email,
-          },
-          { status: 403 }
-        );
-      }
-
-      return NextResponse.json({
-        user: authRes.user,
-        googleProfile: verified.profile,
-        storageMode: authRes.mode,
-      });
-    }
-
-    // 4. กรณีเรียก authenticateUser โดยตรง (รองรับทั้ง Google Email Lookup & Unit Tests)
-    const {
-      identifier,
-      password,
-      isGoogleLogin,
-      googleEmail,
-      googleEnglishName,
-      googlePicture,
-    } = body;
-
-    const result = await authenticateUser(identifier, password, {
-      isGoogleLogin: Boolean(isGoogleLogin),
-      googleEmail,
-      googleEnglishName,
-      googlePicture,
-    });
-
-    if (!result.success) {
       return NextResponse.json(
         {
-          error: result.error || 'เข้าสู่ระบบไม่สำเร็จ',
-          unregisteredEmail: result.unregisteredEmail,
+          error:
+            'ไม่อนุญาตให้เปลี่ยนสิทธิ์หรือบทบาทด้วยตนเอง กรุณาติดต่อฝ่ายบุคคล (HR) หรือผู้ดูแลระบบ (Admin)',
         },
-        { status: result.unregisteredEmail ? 403 : 401 }
+        { status: 403 }
       );
     }
 
-    return NextResponse.json({
-      user: result.user,
-      storageMode: result.mode,
+    // 3. บังคับตรวจสอบ Google OAuth Token จริงเท่านั้น (ไม่อนุญาตให้ส่งอีเมลเปล่าหรือรหัสผ่าน 1234/GOOGLE_SSO)
+    if (!body.googleIdToken && !body.googleAccessToken) {
+      return NextResponse.json(
+        {
+          error:
+            'กรุณาเข้าสู่ระบบผ่านบัญชี Google (Google Sign-In) ที่ยืนยันตัวตนแล้วเท่านั้น',
+        },
+        { status: 401 }
+      );
+    }
+
+    const verified = await verifyGoogleOAuthCredentials({
+      googleIdToken: body.googleIdToken,
+      googleAccessToken: body.googleAccessToken,
     });
+
+    if (!verified.success || !verified.profile) {
+      return NextResponse.json(
+        {
+          error:
+            verified.error ||
+            'ไม่สามารถยืนยันตัวตนกับ Google OAuth ได้ กรุณาลองใหม่อีกครั้ง',
+        },
+        { status: 401 }
+      );
+    }
+
+    const authRes = await authenticateUser(verified.profile.email, undefined, {
+      isGoogleLogin: true,
+      googleEmail: verified.profile.email,
+      googleEnglishName: verified.profile.englishName,
+      googlePicture: verified.profile.picture,
+    });
+
+    if (!authRes.success || !authRes.user) {
+      return NextResponse.json(
+        {
+          error:
+            authRes.error ||
+            'ไม่พบบัญชีอีเมลนี้ในระบบพนักงาน กรุณาติดต่อฝ่ายบุคคล (HR) หรือผู้บริหาร (C-Level)',
+          unregisteredEmail:
+            authRes.unregisteredEmail || verified.profile.email,
+        },
+        { status: 403 }
+      );
+    }
+
+    const res = NextResponse.json({
+      user: authRes.user,
+      googleProfile: verified.profile,
+      storageMode: authRes.mode,
+    });
+    setSessionCookie(res, authRes.user, req);
+    return res;
   } catch (err) {
+    if (err instanceof GoogleSheetsUnavailableError) {
+      return NextResponse.json(
+        { error: err.message, storageUnavailable: true },
+        { status: 503 }
+      );
+    }
     return NextResponse.json(
       {
         error:
@@ -130,4 +123,10 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+export async function DELETE(req: NextRequest) {
+  const res = NextResponse.json({ success: true });
+  clearSessionCookie(res, req);
+  return res;
 }

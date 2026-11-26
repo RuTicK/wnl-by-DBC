@@ -27,6 +27,7 @@ import LeaveRequestModal from '@/components/LeaveRequestModal';
 import LoginView from '@/components/LoginView';
 import UserAvatar from '@/components/UserAvatar';
 import {
+  ENABLE_WFA,
   LEAVE_TYPE_META,
   PROBATION_RESTRICTED_TYPES,
   ROLE_META,
@@ -52,6 +53,7 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState<MainTab>('OFFICE');
   const [loadingData, setLoadingData] = useState<boolean>(false);
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
+  const [storageError, setStorageError] = useState<string | null>(null);
   const [isPolicyModalOpen, setIsPolicyModalOpen] = useState<boolean>(false);
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState<boolean>(false);
   const [isMobileQuotaOpen, setIsMobileQuotaOpen] = useState<boolean>(false);
@@ -67,69 +69,53 @@ export default function HomePage() {
     currentUser?.role === 'c_level' ||
     currentUser?.role === 'admin';
 
-  const fetchDashboardData = useCallback(
-    async (userId: string) => {
-      setLoadingData(true);
-      try {
-        const res = await fetch(
-          `/api/system?userId=${encodeURIComponent(userId)}&year=${currentYear}`
+  const fetchDashboardData = useCallback(async () => {
+    setLoadingData(true);
+    try {
+      const res = await fetch(`/api/system?year=${currentYear}`, {
+        credentials: 'same-origin',
+      });
+      const data = await res.json();
+      if (res.ok && data.currentUser) {
+        setStorageError(null);
+        setSystemData(data);
+        setCurrentUser(data.currentUser);
+        setActiveTab((prev) =>
+          (prev === 'MANAGEMENT' || prev === 'DASHBOARD') &&
+          data.currentUser.role !== 'hr' &&
+          data.currentUser.role !== 'c_level' &&
+          data.currentUser.role !== 'admin'
+            ? 'OFFICE'
+            : prev
         );
-        const data = await res.json();
-        if (res.ok && data.currentUser) {
-          setSystemData(data);
-          setCurrentUser(data.currentUser);
-          setActiveTab((prev) =>
-            (prev === 'MANAGEMENT' || prev === 'DASHBOARD') &&
-            data.currentUser.role !== 'hr' &&
-            data.currentUser.role !== 'c_level' &&
-            data.currentUser.role !== 'admin'
-              ? 'OFFICE'
-              : prev
-          );
-          try {
-            localStorage.setItem('hr_active_user_id', data.currentUser.id);
-          } catch {
-            // Ignore
-          }
-        } else {
-          try {
-            localStorage.removeItem('hr_active_user_id');
-          } catch {
-            // Ignore
-          }
-          setCurrentUser(null);
-          setSystemData(null);
-        }
-      } catch {
-        try {
-          localStorage.removeItem('hr_active_user_id');
-        } catch {
-          // Ignore
-        }
+      } else if (res.status === 401) {
+        setStorageError(null);
         setCurrentUser(null);
         setSystemData(null);
-      } finally {
-        setLoadingData(false);
+      } else if (res.status === 503 || data.storageUnavailable) {
+        setStorageError(
+          data.error ||
+            'ไม่สามารถเชื่อมต่อฐานข้อมูล Google Sheets ได้ชั่วคราว กรุณาลองใหม่อีกครั้ง'
+        );
       }
-    },
-    [currentYear]
-  );
+    } catch {
+      // Preserve current UI state on transient network errors instead of forcing logout
+    } finally {
+      setLoadingData(false);
+    }
+  }, [currentYear]);
 
-  // Restore session from localStorage if available
+  // Restore session from server HttpOnly session cookie
   useEffect(() => {
     let active = true;
     try {
-      const savedUserId = localStorage.getItem('hr_active_user_id');
-      if (savedUserId) {
-        fetchDashboardData(savedUserId).finally(() => {
-          if (active) setIsInitializing(false);
-        });
-      } else {
-        setIsInitializing(false);
-      }
+      localStorage.removeItem('hr_active_user_id');
     } catch {
-      setIsInitializing(false);
+      // Ignore
     }
+    fetchDashboardData().finally(() => {
+      if (active) setIsInitializing(false);
+    });
     return () => {
       active = false;
     };
@@ -164,17 +150,20 @@ export default function HomePage() {
   }, [isMobileQuotaOpen]);
 
   const handleLoginSuccess = (user: SafeUser) => {
-    try {
-      localStorage.setItem('hr_active_user_id', user.id);
-    } catch {
-      // Ignore
-    }
     setCurrentUser(user);
     setActiveTab('OFFICE');
-    fetchDashboardData(user.id);
+    fetchDashboardData();
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth', {
+        method: 'DELETE',
+        credentials: 'same-origin',
+      });
+    } catch {
+      // Ignore network error on logout
+    }
     try {
       localStorage.removeItem('hr_active_user_id');
     } catch {
@@ -216,7 +205,10 @@ export default function HomePage() {
   const myTodayAttendance = useMemo(() => {
     if (!systemData?.attendance || !currentUser) return null;
     return systemData.attendance.find(
-      (a) => a.userId === currentUser.id && a.date === todayStr
+      (a) =>
+        a.userId === currentUser.id &&
+        a.date === todayStr &&
+        (ENABLE_WFA || a.workLocation !== 'wfa')
     );
   }, [systemData?.attendance, currentUser, todayStr]);
 
@@ -244,20 +236,25 @@ export default function HomePage() {
     attachmentName?: string;
   }): Promise<{ success: boolean; error?: string }> => {
     if (!currentUser) return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
-    const res = await fetch('/api/leaves', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        actorId: currentUser.id,
-        ...payload,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      return { success: false, error: data.error || 'ยื่นคำขอไม่สำเร็จ' };
+    try {
+      const res = await fetch('/api/leaves', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { success: false, error: data.error || 'ยื่นคำขอไม่สำเร็จ' };
+      }
+      await fetchDashboardData();
+      return { success: true };
+    } catch {
+      return {
+        success: false,
+        error: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง',
+      };
     }
-    await fetchDashboardData(currentUser.id);
-    return { success: true };
   };
 
   const handleProcessLeaveAction = async (
@@ -266,22 +263,29 @@ export default function HomePage() {
     comment?: string
   ): Promise<{ success: boolean; error?: string }> => {
     if (!currentUser) return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
-    const res = await fetch('/api/leaves', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        actorId: currentUser.id,
-        leaveId,
-        action,
-        comment,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      return { success: false, error: data.error || 'ดำเนินการไม่สำเร็จ' };
+    try {
+      const res = await fetch('/api/leaves', {
+        method: 'PATCH',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leaveId,
+          action,
+          comment,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { success: false, error: data.error || 'ดำเนินการไม่สำเร็จ' };
+      }
+      await fetchDashboardData();
+      return { success: true };
+    } catch {
+      return {
+        success: false,
+        error: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง',
+      };
     }
-    await fetchDashboardData(currentUser.id);
-    return { success: true };
   };
 
   const handleCheckIn = async (payload: {
@@ -289,28 +293,37 @@ export default function HomePage() {
     checkInTime?: string;
     workLocation: WorkLocationType;
     locationName?: string;
+    meetLink?: string;
     note?: string;
   }): Promise<{ success: boolean; error?: string }> => {
     if (!currentUser) return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
-    const bkk = getBangkokNow();
-    const res = await fetch('/api/attendance', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        actorId: currentUser.id,
-        date: payload.date || bkk.dateStr,
-        checkInTime: payload.checkInTime || bkk.timeStr,
-        workLocation: payload.workLocation,
-        locationName: payload.locationName,
-        note: payload.note,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      return { success: false, error: data.error || 'บันทึกเวลาเข้างานไม่สำเร็จ' };
+    try {
+      const bkk = getBangkokNow();
+      const res = await fetch('/api/attendance', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: payload.date || bkk.dateStr,
+          checkInTime: payload.checkInTime || bkk.timeStr,
+          workLocation: payload.workLocation,
+          locationName: payload.locationName,
+          meetLink: payload.meetLink,
+          note: payload.note,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { success: false, error: data.error || 'บันทึกเวลาเข้างานไม่สำเร็จ' };
+      }
+      await fetchDashboardData();
+      return { success: true };
+    } catch {
+      return {
+        success: false,
+        error: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง',
+      };
     }
-    await fetchDashboardData(currentUser.id);
-    return { success: true };
   };
 
   const handleCheckOut = async (payload: {
@@ -319,23 +332,30 @@ export default function HomePage() {
     note?: string;
   }): Promise<{ success: boolean; error?: string }> => {
     if (!currentUser) return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
-    const bkk = getBangkokNow();
-    const res = await fetch('/api/attendance', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        actorId: currentUser.id,
-        date: payload.date || bkk.dateStr,
-        checkOutTime: payload.checkOutTime || bkk.timeStr,
-        note: payload.note,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      return { success: false, error: data.error || 'บันทึกเวลาออกงานไม่สำเร็จ' };
+    try {
+      const bkk = getBangkokNow();
+      const res = await fetch('/api/attendance', {
+        method: 'PATCH',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: payload.date || bkk.dateStr,
+          checkOutTime: payload.checkOutTime || bkk.timeStr,
+          note: payload.note,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { success: false, error: data.error || 'บันทึกเวลาออกงานไม่สำเร็จ' };
+      }
+      await fetchDashboardData();
+      return { success: true };
+    } catch {
+      return {
+        success: false,
+        error: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง',
+      };
     }
-    await fetchDashboardData(currentUser.id);
-    return { success: true };
   };
 
   const handleUpsertEmployee = async (employeeData: {
@@ -362,9 +382,9 @@ export default function HomePage() {
     if (!currentUser) return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
     const res = await fetch('/api/employees', {
       method: 'POST',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        actorId: currentUser.id,
         employee: employeeData,
       }),
     });
@@ -372,7 +392,7 @@ export default function HomePage() {
     if (!res.ok) {
       return { success: false, error: data.error || 'บันทึกไม่สำเร็จ' };
     }
-    await fetchDashboardData(currentUser.id);
+    await fetchDashboardData();
     return { success: true };
   };
 
@@ -381,16 +401,14 @@ export default function HomePage() {
   ): Promise<{ success: boolean; error?: string }> => {
     if (!currentUser) return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
     const res = await fetch(
-      `/api/employees?actorId=${encodeURIComponent(
-        currentUser.id
-      )}&userId=${encodeURIComponent(targetUserId)}`,
-      { method: 'DELETE' }
+      `/api/employees?userId=${encodeURIComponent(targetUserId)}`,
+      { method: 'DELETE', credentials: 'same-origin' }
     );
     const data = await res.json();
     if (!res.ok) {
       return { success: false, error: data.error || 'ลบไม่สำเร็จ' };
     }
-    await fetchDashboardData(currentUser.id);
+    await fetchDashboardData();
     return { success: true };
   };
 
@@ -402,9 +420,9 @@ export default function HomePage() {
     if (!currentUser) return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
     const res = await fetch('/api/holidays', {
       method: 'POST',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        actorId: currentUser.id,
         holiday: holidayData,
       }),
     });
@@ -412,7 +430,7 @@ export default function HomePage() {
     if (!res.ok) {
       return { success: false, error: data.error || 'บันทึกวันหยุดไม่สำเร็จ' };
     }
-    await fetchDashboardData(currentUser.id);
+    await fetchDashboardData();
     return { success: true };
   };
 
@@ -421,16 +439,14 @@ export default function HomePage() {
   ): Promise<{ success: boolean; error?: string }> => {
     if (!currentUser) return { success: false, error: 'กรุณาเข้าสู่ระบบ' };
     const res = await fetch(
-      `/api/holidays?actorId=${encodeURIComponent(
-        currentUser.id
-      )}&holidayId=${encodeURIComponent(holidayId)}`,
-      { method: 'DELETE' }
+      `/api/holidays?holidayId=${encodeURIComponent(holidayId)}`,
+      { method: 'DELETE', credentials: 'same-origin' }
     );
     const data = await res.json();
     if (!res.ok) {
       return { success: false, error: data.error || 'ลบวันหยุดไม่สำเร็จ' };
     }
-    await fetchDashboardData(currentUser.id);
+    await fetchDashboardData();
     return { success: true };
   };
 
@@ -454,6 +470,37 @@ export default function HomePage() {
               กำลังตรวจสอบข้อมูลเซสชัน...
             </p>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if ((!currentUser || !systemData) && storageError) {
+    return (
+      <div className="min-h-screen bg-[#F7F8FA] flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md rounded-3xl bg-white p-7 shadow-lg border border-amber-200/80 text-center space-y-5">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 border border-amber-200/70 text-amber-600">
+            <AlertCircle className="h-7 w-7" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-lg font-bold text-slate-900">
+              ไม่สามารถเชื่อมต่อฐานข้อมูลได้ชั่วคราว
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              {storageError}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => fetchDashboardData()}
+            disabled={loadingData}
+            className="w-full rounded-xl bg-[#0066FF] hover:bg-[#0052CC] py-3 px-5 text-sm font-semibold text-white transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${loadingData ? 'animate-spin' : ''}`}
+            />
+            <span>ลองเชื่อมต่อใหม่</span>
+          </button>
         </div>
       </div>
     );
@@ -510,7 +557,7 @@ export default function HomePage() {
             className="w-full rounded-xl bg-[#0066FF] hover:bg-[#0052CC] active:scale-[0.98] py-2.5 px-4 text-xs lg:text-sm font-semibold text-white shadow-sm shadow-blue-600/20 hover:shadow-md hover:shadow-blue-600/25 transition flex items-center justify-center gap-2 cursor-pointer min-h-[42px]"
           >
             <CalendarPlus className="h-4 w-4 shrink-0" />
-            <span>+ ยื่นใบลา / WFH</span>
+            <span>+ ยื่นใบลา</span>
           </button>
         </div>
 
@@ -779,7 +826,7 @@ export default function HomePage() {
           <div className="flex items-center gap-1.5 pt-1">
             <button
               type="button"
-              onClick={() => fetchDashboardData(currentUser.id)}
+              onClick={() => fetchDashboardData()}
               className="flex-1 rounded-xl border border-slate-200/80 bg-slate-50/70 hover:bg-slate-100 py-2 px-3 text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5 cursor-pointer"
               title="รีเฟรชข้อมูล"
             >
@@ -977,7 +1024,7 @@ export default function HomePage() {
               {/* Refresh button */}
               <button
                 type="button"
-                onClick={() => fetchDashboardData(currentUser.id)}
+                onClick={() => fetchDashboardData()}
                 className="rounded-xl border border-slate-200/80 bg-white p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition cursor-pointer min-h-[38px] min-w-[38px] sm:min-h-[40px] sm:min-w-[40px] flex items-center justify-center active:scale-95"
                 title="รีเฟรชข้อมูล"
                 aria-label="รีเฟรชข้อมูล"
@@ -1198,6 +1245,26 @@ export default function HomePage() {
 
       {/* Main Content Container */}
       <main className="mx-auto w-full max-w-[1360px] flex-1 px-4 sm:px-6 lg:px-8 py-5 sm:py-6 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] md:pb-10 space-y-6">
+        {/* Temporary Google Sheets Unavailability Banner (HTTP 503) */}
+        {storageError && (
+          <div className="rounded-2xl bg-amber-50/90 border border-amber-200/80 p-4 text-xs sm:text-sm text-amber-950 flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-start gap-2.5 min-w-0 flex-1">
+              <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+              <span>{storageError}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => fetchDashboardData()}
+              disabled={loadingData}
+              className="rounded-xl bg-amber-600 hover:bg-amber-700 text-white px-3.5 py-1.5 text-xs font-semibold inline-flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 shrink-0"
+            >
+              <RefreshCw
+                className={`h-3.5 w-3.5 ${loadingData ? 'animate-spin' : ''}`}
+              />
+              <span>ลองใหม่</span>
+            </button>
+          </div>
+        )}
         {/* Google Sheets API Warning Banner for Admin */}
         {currentUser.role === 'admin' && systemData.storageMode === 'demo_local' && systemData.syncError && (
           <div className="rounded-2xl bg-amber-50/90 border border-amber-200/80 p-4 text-xs sm:text-sm text-amber-950 flex items-start gap-3">
@@ -1214,7 +1281,7 @@ export default function HomePage() {
               </p>
               <div className="mt-2.5 flex flex-wrap items-center gap-2.5">
                 <a
-                  href="https://console.developers.google.com/apis/api/sheets.googleapis.com/overview?project=112533483238"
+                  href="https://console.cloud.google.com/apis/library/sheets.googleapis.com"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="rounded-xl bg-amber-600 hover:bg-amber-700 text-white px-3.5 py-1.5 font-semibold inline-flex items-center gap-1.5 transition cursor-pointer"

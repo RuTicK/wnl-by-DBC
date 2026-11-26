@@ -61,6 +61,7 @@ import {
   DEFAULT_GOOGLE_CHAT_WEBHOOK_URL,
   attendanceToAppSheetRow,
   attendanceToRow,
+  getEffectiveGoogleClientId,
   getRuntimeAppConfig,
   holidayToAppSheetRow,
   holidayToRow,
@@ -78,6 +79,11 @@ import {
   userToAppSheetRow,
   userToRow,
 } from '../storage';
+import { createSessionToken, SESSION_COOKIE_NAME } from '../session';
+
+function cookieHeaderFor(user: { id: string; email: string }): string {
+  return `${SESSION_COOKIE_NAME}=${createSessionToken(user)}`;
+}
 import { COMPANY_DEPARTMENTS, Holiday, LeaveRequest } from '../types';
 import {
   INITIAL_ATTENDANCE,
@@ -685,16 +691,35 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
           .allowed
       ).toBe(true);
 
-      // Service-level check: EMP007 requesting WFH on 2026-11-12 must fail due to probation
-      const wfhAttempt = await createLeaveRequest('EMP007', {
+      // Service-level check: EMP007 requesting Vacation on 2026-11-12 must fail due to probation
+      const vacAttempt = await createLeaveRequest('EMP007', {
+        leaveType: 'vacation',
+        durationType: 'full',
+        startDate: '2026-11-12',
+        endDate: '2026-11-12',
+        reason: 'ขอลาพักร้อนช่วงทดลองงาน',
+      });
+      expect(vacAttempt.success).toBe(false);
+      expect(vacAttempt.error).toContain('ทดลองงาน');
+
+      // WFH is check-in only (not a leave request) and also blocked during probation on check-in
+      const wfhLeaveAttempt = await createLeaveRequest('EMP007', {
         leaveType: 'wfh',
         durationType: 'full',
         startDate: '2026-11-12',
         endDate: '2026-11-12',
         reason: 'ขอ WFH ช่วงทดลองงาน',
       });
-      expect(wfhAttempt.success).toBe(false);
-      expect(wfhAttempt.error).toContain('ทดลองงาน');
+      expect(wfhLeaveAttempt.success).toBe(false);
+      expect(wfhLeaveAttempt.error).toContain('Check-in');
+
+      const wfhCheckInProbAttempt = await recordCheckIn('EMP007', {
+        workLocation: 'wfh',
+        meetLink: 'https://meet.google.com/abc-defg-hij',
+        date: '2026-11-12',
+      });
+      expect(wfhCheckInProbAttempt.success).toBe(false);
+      expect(wfhCheckInProbAttempt.error).toContain('ทดลองงาน');
 
       // EMP007 requesting Offsite (ไปหาลูกค้า) with locationDetail on 2026-11-12 must SUCCEED
       const offsiteSuccess = await createLeaveRequest('EMP007', {
@@ -796,11 +821,15 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
       expect(officeCheckOut.success).toBe(true);
       expect(officeCheckOut.record?.checkOutTime).toBe('18:05');
 
-      // Test API routes POST & PATCH /api/attendance
+      // Test API routes POST & PATCH /api/attendance (with signed session cookie)
+      const emp004Cookie = cookieHeaderFor({
+        id: 'EMP004',
+        email: 'praew.it@company.co.th',
+      });
       const postReq = new NextRequest('http://localhost:3000/api/attendance', {
         method: 'POST',
+        headers: { cookie: emp004Cookie },
         body: JSON.stringify({
-          actorId: 'EMP004',
           workLocation: 'office',
           note: 'เข้าออฟฟิศชั้น 12',
           date: '2026-11-16',
@@ -815,8 +844,8 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
 
       const patchReq = new NextRequest('http://localhost:3000/api/attendance', {
         method: 'PATCH',
+        headers: { cookie: emp004Cookie },
         body: JSON.stringify({
-          actorId: 'EMP004',
           date: '2026-11-16',
           checkOutTime: '17:30',
           note: 'เลิกงานแล้วค่ะ',
@@ -901,8 +930,13 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
         path.resolve(__dirname, '../storage.ts'),
         'utf-8'
       );
-      expect(storageContent).toContain("'Users!A2:O1000'");
-      expect(storageContent).not.toContain("'Users!A2:N1000'");
+      // Verify open-ended ranges including column O (avatarUrl) without 500/1000/5000 row caps
+      expect(storageContent).toContain("'Users!A1:O'");
+      expect(storageContent).toContain("'LeaveRequests!A1:V'");
+      expect(storageContent).toContain("'Attendance!A1:I'");
+      expect(storageContent).not.toContain('A2:O1000');
+      expect(storageContent).not.toContain('A2:V5000');
+      expect(storageContent).not.toContain('A2:I5000');
 
       const sampleLeave = hrData.leaves[0];
       const mappedLeave = rowToLeave(leaveToRow(sampleLeave).map(String));
@@ -920,30 +954,58 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
   });
 
   describe('7. Next.js API Route Handlers & Edge Cases', () => {
-    it('handles POST /api/auth (Google Login), GET /api/system, POST & PATCH /api/leaves, and POST /api/employees', async () => {
-      const loginReq = new NextRequest('http://localhost:3000/api/auth', {
-        method: 'POST',
-        body: JSON.stringify({
-          isGoogleLogin: true,
-          googleEmail: 'somchai.it@company.co.th',
-          googleEnglishName: 'Somchai Jaidee',
-        }),
+    it('handles POST /api/auth (verified Google OAuth Login + session cookie), GET /api/system, and POST /api/employees', async () => {
+      const originalFetch = globalThis.fetch;
+      try {
+        // Mock Google tokeninfo verification for somchai.it@company.co.th
+        const expectedAud = getEffectiveGoogleClientId();
+        globalThis.fetch = (async () =>
+          new Response(
+            JSON.stringify({
+              email: 'somchai.it@company.co.th',
+              name: 'Somchai Jaidee',
+              email_verified: 'true',
+              ...(expectedAud ? { aud: expectedAud } : {}),
+            }),
+            { status: 200 }
+          )) as typeof fetch;
+
+        const loginReq = new NextRequest('http://localhost:3000/api/auth', {
+          method: 'POST',
+          body: JSON.stringify({
+            googleIdToken: 'mock-valid-google-id-token',
+          }),
+        });
+        const loginRes = await authPost(loginReq);
+        expect(loginRes.status).toBe(200);
+        const loginJson = await loginRes.json();
+        expect(loginJson.user.id).toBe('EMP003');
+
+        // Verify signed HttpOnly session cookie is issued
+        const setCookie = loginRes.headers.get('set-cookie') || '';
+        expect(setCookie).toContain(`${SESSION_COOKIE_NAME}=`);
+        const sessionCookiePair = setCookie.split(';')[0];
+
+        const sysReq = new NextRequest(
+          'http://localhost:3000/api/system?year=2026',
+          { headers: { cookie: sessionCookiePair } }
+        );
+        const sysRes = await systemGet(sysReq);
+        expect(sysRes.status).toBe(200);
+        const sysJson = await sysRes.json();
+        expect(sysJson.currentUser.id).toBe('EMP003');
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+
+      const hrCookie = cookieHeaderFor({
+        id: 'EMP001',
+        email: 'siriporn.hr@company.co.th',
       });
-      const loginRes = await authPost(loginReq);
-      expect(loginRes.status).toBe(200);
-      const loginJson = await loginRes.json();
-      expect(loginJson.user.id).toBe('EMP003');
-
-      const sysReq = new NextRequest(
-        'http://localhost:3000/api/system?userId=EMP003&year=2026'
-      );
-      const sysRes = await systemGet(sysReq);
-      expect(sysRes.status).toBe(200);
-
       const empReq = new NextRequest('http://localhost:3000/api/employees', {
         method: 'POST',
+        headers: { cookie: hrCookie },
         body: JSON.stringify({
-          actorId: 'EMP001',
           employee: {
             username: 'newdev',
             name: 'ธนกร พัฒนาดี',
@@ -1153,8 +1215,7 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
       expect(secondAuth.user?.englishName).toBe('Nawaphon K. (Verified)');
     });
 
-    it('allows logged-in Google user to switch their own Role (employee/manager/hr/c_level) and 119-day probation startDate', async () => {
-      // Switch EMP003 from employee -> c_level and probation startDate via POST /api/auth (action: update_self_role)
+    it('forbids self role escalation via POST /api/auth (action: update_self_role) and updateOwnTestingProfile', async () => {
       const switchReq = new NextRequest('http://localhost:3000/api/auth', {
         method: 'POST',
         body: JSON.stringify({
@@ -1165,30 +1226,59 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
         }),
       });
       const switchRes = await authPost(switchReq);
-      expect(switchRes.status).toBe(200);
-      const switchJson = await switchRes.json();
-      expect(switchJson.user.role).toBe('c_level');
-      expect(switchJson.user.startDate).toBe('2026-10-25');
+      expect(switchRes.status).toBe(403);
 
-      // Verify updateOwnTestingProfile directly
-      const revertRes = await updateOwnTestingProfile('EMP003', {
-        role: 'employee',
-        startDate: '2023-01-10',
+      const directRes = await updateOwnTestingProfile('EMP003', {
+        role: 'c_level',
+        startDate: '2026-10-25',
       });
-      expect(revertRes.success).toBe(true);
-      expect(revertRes.user?.role).toBe('employee');
+      expect(directRes.success).toBe(false);
+
+      // Verify EMP003 role remains unchanged as 'employee'
+      const empData = await getSystemDataForUser('EMP003', 2026);
+      expect(empData.currentUser.role).toBe('employee');
     });
 
-    it('saves runtime Google Client ID & AppSheet config via /api/system without wiping pre-existing config, and maps AppSheet REST API rows cleanly', async () => {
+    it('restricts POST /api/system (save_config) to Admin only, hides secrets in GET ?action=config, and maps AppSheet REST API rows cleanly', async () => {
       const originalConfig = getRuntimeAppConfig();
       try {
+        // Unauthenticated save_config is rejected (401)
+        const unauthReq = new NextRequest('http://localhost:3000/api/system', {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'save_config',
+            googleClientId: 'attacker-client-id',
+          }),
+        });
+        const unauthRes = await systemPost(unauthReq);
+        expect(unauthRes.status).toBe(401);
+
+        // Register Admin user in test store so Admin session can update config
+        const adminRes = await upsertEmployee('EMP001', {
+          id: 'EMP011',
+          name: 'รุจน์ วัชรประดิษฐ์',
+          englishName: 'Rut Watcharapadit',
+          email: 'rut.wa@digitalbusinessconsult.asia',
+          role: 'admin',
+          department: 'Management (Admin)',
+          position: 'System Administrator',
+          startDate: '2023-01-01',
+        });
+        expect(adminRes.success).toBe(true);
+        const adminCookie = cookieHeaderFor({
+          id: 'EMP011',
+          email: 'rut.wa@digitalbusinessconsult.asia',
+        });
+
         const saveCfgReq = new NextRequest('http://localhost:3000/api/system', {
           method: 'POST',
+          headers: { cookie: adminCookie },
           body: JSON.stringify({
             action: 'save_config',
             googleClientId: '123456789-test.apps.googleusercontent.com',
             appsheetAppId: 'app-id-test-123',
             appsheetAccessKey: 'V2-access-key-xyz',
+            googleChatWebhookUrl: 'https://chat.googleapis.com/v1/spaces/SECRET/messages?key=k&token=t',
           }),
         });
         const saveCfgRes = await systemPost(saveCfgReq);
@@ -1198,22 +1288,38 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
           '123456789-test.apps.googleusercontent.com'
         );
         expect(saveCfgJson.appsheetConfigured).toBe(true);
+        expect(saveCfgJson.googleChatWebhookUrl).toBeUndefined();
 
-        const getCfgReq = new NextRequest(
+        // Public GET ?action=config returns only googleClientId & storageMode (never webhook URL or secrets)
+        const getPublicCfgReq = new NextRequest(
           'http://localhost:3000/api/system?action=config'
         );
-        const getCfgRes = await systemGet(getCfgReq);
-        expect(getCfgRes.status).toBe(200);
-        const getCfgJson = await getCfgRes.json();
-        expect(getCfgJson.googleClientId).toBe(
+        const getPublicCfgRes = await systemGet(getPublicCfgReq);
+        expect(getPublicCfgRes.status).toBe(200);
+        const getPublicCfgJson = await getPublicCfgRes.json();
+        expect(getPublicCfgJson.googleClientId).toBe(
           '123456789-test.apps.googleusercontent.com'
         );
-        expect(getCfgJson.appsheetConfigured).toBe(true);
+        expect(getPublicCfgJson.googleChatWebhookUrl).toBeUndefined();
+        expect(getPublicCfgJson.googleSheetId).toBeUndefined();
+
+        // Admin GET ?action=config includes boolean status flags without exposing secrets
+        const getAdminCfgReq = new NextRequest(
+          'http://localhost:3000/api/system?action=config',
+          { headers: { cookie: adminCookie } }
+        );
+        const getAdminCfgRes = await systemGet(getAdminCfgReq);
+        expect(getAdminCfgRes.status).toBe(200);
+        const getAdminCfgJson = await getAdminCfgRes.json();
+        expect(getAdminCfgJson.appsheetConfigured).toBe(true);
+        expect(getAdminCfgJson.googleChatConfigured).toBe(true);
+        expect(getAdminCfgJson.googleChatWebhookUrl).toBeUndefined();
       } finally {
         saveRuntimeAppConfig({
           googleClientId: originalConfig.googleClientId || '',
           appsheetAppId: originalConfig.appsheetAppId || '',
           appsheetAccessKey: originalConfig.appsheetAccessKey || '',
+          googleChatWebhookUrl: originalConfig.googleChatWebhookUrl || '',
         });
       }
 
@@ -1299,16 +1405,29 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
         expect(validIdRes.profile?.email).toBe('valid.user@dbc.co.th');
         expect(validIdRes.profile?.englishName).toBe('Valid Google User');
 
-        // 4. Accept valid access_token from Google OAuth 2.0 popup userinfo
-        globalThis.fetch = (async () =>
-          new Response(
+        // 4. Accept valid access_token from Google OAuth 2.0 popup (tokeninfo aud + userinfo)
+        globalThis.fetch = (async (input: RequestInfo | URL) => {
+          const url = String(input);
+          if (url.includes('/tokeninfo')) {
+            return new Response(
+              JSON.stringify({
+                aud: 'expected-client-id.apps.googleusercontent.com',
+                azp: 'expected-client-id.apps.googleusercontent.com',
+                email: 'popup.user@dbc.co.th',
+                email_verified: 'true',
+              }),
+              { status: 200 }
+            );
+          }
+          return new Response(
             JSON.stringify({
               email: 'popup.user@dbc.co.th',
               name: 'Popup OAuth User',
               email_verified: true,
             }),
             { status: 200 }
-          )) as typeof fetch;
+          );
+        }) as typeof fetch;
 
         const validAccessRes = await verifyGoogleOAuthCredentials({
           googleAccessToken: 'mock-access-token',
@@ -1414,8 +1533,9 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
       });
       expect(checkInRes.success).toBe(true);
 
-      // Switch department via updateOwnTestingProfile and verify attendance department updates too
-      const switchedDept = await updateOwnTestingProfile('EMP010', {
+      // Switch department via HR upsertEmployee and verify attendance department updates too
+      const switchedDept = await upsertEmployee('EMP001', {
+        id: 'EMP010',
         department: 'Sales & Marketing',
       });
       expect(switchedDept.success).toBe(true);
@@ -1585,12 +1705,16 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
     });
 
     it('creates employees cleanly via POST /api/employees for all 4 fixed COMPANY_DEPARTMENTS', async () => {
+      const hrCookie = cookieHeaderFor({
+        id: 'EMP001',
+        email: 'siriporn.hr@company.co.th',
+      });
       for (const [idx, dept] of COMPANY_DEPARTMENTS.entries()) {
         const empId = `EMP09${idx}`;
         const req = new NextRequest('http://localhost:3000/api/employees', {
           method: 'POST',
+          headers: { cookie: hrCookie },
           body: JSON.stringify({
-            actorId: 'EMP001',
             employee: {
               id: empId,
               name: `พนักงาน ${dept}`,
@@ -1975,15 +2099,15 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
       expect(isNotifiableLeaveType('wfh')).toBe(true);
       expect(isNotifiableLeaveType('offsite')).toBe(true);
       expect(isNotifiableLeaveType('wfa')).toBe(false);
-      expect(DEFAULT_GOOGLE_CHAT_WEBHOOK_URL).toContain(
-        'https://chat.googleapis.com/v1/spaces/AAQAxhyo86I/messages'
-      );
+      // Ensure NO hardcoded webhook secret remains in source code
+      expect(DEFAULT_GOOGLE_CHAT_WEBHOOK_URL).toBe('');
 
       const originalFetch = global.fetch;
       const calls: { url: string; body: string }[] = [];
 
       saveRuntimeAppConfig({
-        googleChatWebhookUrl: DEFAULT_GOOGLE_CHAT_WEBHOOK_URL,
+        googleChatWebhookUrl:
+          'https://chat.googleapis.com/v1/spaces/TEST_SPACE/messages?key=test-key&token=test-token',
       });
 
       global.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -1998,7 +2122,7 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
       }) as typeof fetch;
 
       try {
-        // 1. WFA request should NOT trigger Google Chat notification
+        // 1. WFA request is disabled & MUST NOT trigger Google Chat notification
         const wfaRes = await createLeaveRequest('EMP003', {
           leaveType: 'wfa',
           durationType: 'full',
@@ -2006,20 +2130,21 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
           endDate: '2026-12-01',
           reason: 'ทำงานต่างจังหวัด',
         });
-        expect(wfaRes.success).toBe(true);
+        expect(wfaRes.success).toBe(false);
         expect(calls.length).toBe(0);
 
-        // 2. WFH request MUST trigger Google Chat notification
-        const wfhRes = await createLeaveRequest('EMP003', {
-          leaveType: 'wfh',
-          durationType: 'full',
-          startDate: '2026-12-02',
-          endDate: '2026-12-02',
-          reason: 'ทำงานที่บ้าน',
+        // 2. WFH via Check-in (with Google Meet link) MUST trigger Google Chat notification
+        const wfhCheckInRes = await recordCheckIn('EMP003', {
+          date: '2026-12-02',
+          checkInTime: '08:55',
+          workLocation: 'wfh',
+          meetLink: 'https://meet.google.com/abc-defg-hij',
+          note: 'ทำงานที่บ้าน',
         });
-        expect(wfhRes.success).toBe(true);
+        expect(wfhCheckInRes.success).toBe(true);
         expect(calls.length).toBe(1);
         expect(calls[0].body).toContain('Work From Home');
+        expect(calls[0].body).toContain('https://meet.google.com/abc-defg-hij');
 
         // 3. Offsite (พบลูกค้า) MUST trigger Google Chat notification
         const offsiteRes = await createLeaveRequest('EMP003', {
@@ -2049,7 +2174,7 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
         expect(calls[2].body).toContain('สมชาย ใจดี');
       } finally {
         global.fetch = originalFetch;
-        saveRuntimeAppConfig({ googleChatWebhookUrl: '' });
+        saveRuntimeAppConfig({ googleChatWebhookUrl: '', googleChatWebhookUrl2: '' });
       }
     });
 
@@ -2129,18 +2254,34 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
         'https://lh3.googleusercontent.com/a/nida-avatar'
       );
 
-      // Login via POST /api/auth with @digitalbusinessconsult.asia also matches the same user EMP060
-      const apiAuthPrimaryReq = new NextRequest('http://localhost:3000/api/auth', {
-        method: 'POST',
-        body: JSON.stringify({
-          isGoogleLogin: true,
-          googleEmail: 'nida.consult@digitalbusinessconsult.asia',
-        }),
-      });
-      const apiAuthPrimaryRes = await authPost(apiAuthPrimaryReq);
-      expect(apiAuthPrimaryRes.status).toBe(200);
-      const apiAuthPrimaryJson = await apiAuthPrimaryRes.json();
-      expect(apiAuthPrimaryJson.user.id).toBe('EMP060');
+      // Login via POST /api/auth with verified Google OAuth token for @digitalbusinessconsult.asia matches EMP060
+      const originalFetch = globalThis.fetch;
+      try {
+        const expectedAud = getEffectiveGoogleClientId();
+        globalThis.fetch = (async () =>
+          new Response(
+            JSON.stringify({
+              email: 'nida.consult@digitalbusinessconsult.asia',
+              name: 'Nida Rattana',
+              email_verified: 'true',
+              ...(expectedAud ? { aud: expectedAud } : {}),
+            }),
+            { status: 200 }
+          )) as typeof fetch;
+
+        const apiAuthPrimaryReq = new NextRequest('http://localhost:3000/api/auth', {
+          method: 'POST',
+          body: JSON.stringify({
+            googleIdToken: 'mock-valid-nida-token',
+          }),
+        });
+        const apiAuthPrimaryRes = await authPost(apiAuthPrimaryReq);
+        expect(apiAuthPrimaryRes.status).toBe(200);
+        const apiAuthPrimaryJson = await apiAuthPrimaryRes.json();
+        expect(apiAuthPrimaryJson.user.id).toBe('EMP060');
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
 
       // 3. Employee registered with @dbcgroup.asia can log in using @digitalbusinessconsult.asia
       const addChildRes = await upsertEmployee('EMP001', {
@@ -2162,13 +2303,12 @@ describe('HR Leave, WFH/Offsite & PDPA Attendance System Tests', () => {
       expect(loginViaParent.user?.id).toBe('EMP061');
       expect(loginViaParent.user?.englishName).toBe('Panuwat M.');
 
-      // Non-Google password login also works with either domain email
+      // Hardcoded password '1234' login MUST be rejected
       const passLoginViaParent = await authenticateUser(
         'panuwat.mkt@digitalbusinessconsult.asia',
         '1234'
       );
-      expect(passLoginViaParent.success).toBe(true);
-      expect(passLoginViaParent.user?.id).toBe('EMP061');
+      expect(passLoginViaParent.success).toBe(false);
 
       // 4. Duplicate prevention across @digitalbusinessconsult.asia and @dbcgroup.asia
       const crossDomainDup1 = await upsertEmployee('EMP001', {

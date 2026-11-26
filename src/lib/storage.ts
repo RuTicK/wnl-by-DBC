@@ -6,6 +6,7 @@ import {
   AttendanceRecord,
   Holiday,
   LeaveDuration,
+  LeaveQuotas,
   LeaveRequest,
   LeaveStatus,
   LeaveType,
@@ -21,6 +22,8 @@ import {
 } from './mock-data';
 import {
   doesUserMatchEmail,
+  extractWfhMeetLinkAndNote,
+  normalizeAndValidateMeetLink,
   parseEmailList,
   STANDARD_LEAVE_QUOTAS,
 } from './leave-utils';
@@ -40,10 +43,45 @@ export interface RuntimeAppConfig {
   appsheetAppId?: string;
   appsheetAccessKey?: string;
   googleChatWebhookUrl?: string;
+  googleChatWebhookUrl2?: string;
 }
 
-export const DEFAULT_GOOGLE_CHAT_WEBHOOK_URL =
-  'https://chat.googleapis.com/v1/spaces/AAQAxhyo86I/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=zfFTqOIXXBO2Af_AZj3SU5Wd93vE0vj9XiL9XpVugT8';
+export type SheetTab = 'Users' | 'LeaveRequests' | 'Holidays' | 'Attendance';
+
+export type SheetMutation =
+  | {
+      type: 'append';
+      tab: SheetTab;
+      rows: (string | number)[][];
+    }
+  | {
+      type: 'upsertById';
+      tab: SheetTab;
+      items: Array<{ id: string; row: (string | number)[] }>;
+    }
+  | {
+      type: 'deleteByIds';
+      tab: SheetTab;
+      ids: string[];
+    };
+
+export class GoogleSheetsUnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'GoogleSheetsUnavailableError';
+  }
+}
+
+export class GoogleSheetsWriteGuardError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'GoogleSheetsWriteGuardError';
+  }
+}
+
+// Never hardcode webhook URLs or secrets in source code; configure via GOOGLE_CHAT_WEBHOOK_URL / GOOGLE_CHAT_WEBHOOK_URL_2 env vars.
+export const DEFAULT_GOOGLE_CHAT_WEBHOOK_URL = '';
+export const DEFAULT_GOOGLE_CHAT_WEBHOOK_URL_2 = '';
 
 const DATA_FILE_PATH = path.join(process.cwd(), '.data', 'hr-store.json');
 const CONFIG_FILE_PATH = path.join(process.cwd(), '.data', 'app-config.json');
@@ -51,8 +89,33 @@ const CONFIG_FILE_PATH = path.join(process.cwd(), '.data', 'app-config.json');
 let memoryStore: DatabaseState | null = null;
 let memoryConfig: RuntimeAppConfig | null = null;
 
+// Tracks DatabaseState instances genuinely loaded from Google Sheets so fallback/mock
+// states can NEVER overwrite production Google Sheets data.
+const googleSheetsOriginStates = new WeakSet<DatabaseState>();
+
+// In-process async mutex to serialize read-modify-write mutations and prevent lost updates.
+let databaseLockTail: Promise<void> = Promise.resolve();
+
+export async function withDatabaseLock<T>(task: () => Promise<T>): Promise<T> {
+  const prev = databaseLockTail;
+  let release!: () => void;
+  databaseLockTail = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await prev;
+  try {
+    return await task();
+  } finally {
+    release();
+  }
+}
+
 export function getRuntimeAppConfig(): RuntimeAppConfig {
   if (memoryConfig) {
+    return memoryConfig;
+  }
+  if (process.env.NODE_ENV === 'test' || process.env.VITEST) {
+    memoryConfig = {};
     return memoryConfig;
   }
   try {
@@ -80,16 +143,32 @@ export function saveRuntimeAppConfig(
     ...partial,
   };
   memoryConfig = updated;
+  if (process.env.NODE_ENV === 'test' || process.env.VITEST) {
+    return updated;
+  }
   try {
     const dir = path.dirname(CONFIG_FILE_PATH);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    fs.writeFileSync(
-      CONFIG_FILE_PATH,
-      JSON.stringify(updated, null, 2),
-      'utf-8'
-    );
+    const payload = JSON.stringify(updated, null, 2);
+    const tmpPath = `${CONFIG_FILE_PATH}.tmp.${process.pid}.${Date.now()}.${Math.random()
+      .toString(36)
+      .slice(2, 8)}`;
+    try {
+      fs.writeFileSync(tmpPath, payload, { encoding: 'utf-8', mode: 0o600 });
+      fs.renameSync(tmpPath, CONFIG_FILE_PATH);
+    } catch {
+      try {
+        if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
+      } catch {
+        // Ignore cleanup failure
+      }
+      fs.writeFileSync(CONFIG_FILE_PATH, payload, {
+        encoding: 'utf-8',
+        mode: 0o600,
+      });
+    }
   } catch {
     // On read-only serverless environments, memoryConfig persists in warm lambda
   }
@@ -129,13 +208,52 @@ export function isAppSheetConfigured(): boolean {
   return getEffectiveAppSheetConfig().configured;
 }
 
+function normalizeWebhookEnvValue(raw?: string): string {
+  const trimmed = (raw || '').trim();
+  if (
+    trimmed.length >= 2 &&
+    ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+      (trimmed.startsWith("'") && trimmed.endsWith("'")))
+  ) {
+    return trimmed.slice(1, -1).trim();
+  }
+  return trimmed;
+}
+
+export function isValidGoogleChatWebhookUrl(raw: unknown): boolean {
+  if (typeof raw !== 'string') return false;
+  const candidate = normalizeWebhookEnvValue(raw);
+  if (!candidate) return false;
+  try {
+    const parsedUrl = new URL(candidate);
+    return (
+      parsedUrl.protocol === 'https:' &&
+      parsedUrl.hostname === 'chat.googleapis.com' &&
+      !parsedUrl.username &&
+      !parsedUrl.password &&
+      !parsedUrl.port &&
+      parsedUrl.pathname.startsWith('/v1/spaces/')
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function getEffectiveGoogleChatWebhookUrl(): string {
   const cfg = getRuntimeAppConfig();
-  const isTest = process.env.NODE_ENV === 'test' || Boolean(process.env.VITEST);
   return (
-    process.env.GOOGLE_CHAT_WEBHOOK_URL?.trim() ||
-    cfg.googleChatWebhookUrl?.trim() ||
-    (isTest ? '' : DEFAULT_GOOGLE_CHAT_WEBHOOK_URL)
+    normalizeWebhookEnvValue(process.env.GOOGLE_CHAT_WEBHOOK_URL) ||
+    normalizeWebhookEnvValue(cfg.googleChatWebhookUrl) ||
+    ''
+  );
+}
+
+export function getEffectiveGoogleChatWebhookUrl2(): string {
+  const cfg = getRuntimeAppConfig();
+  return (
+    normalizeWebhookEnvValue(process.env.GOOGLE_CHAT_WEBHOOK_URL_2) ||
+    normalizeWebhookEnvValue(cfg.googleChatWebhookUrl2) ||
+    ''
   );
 }
 
@@ -158,6 +276,31 @@ export function getStorageMode(): 'google_sheets' | 'demo_local' {
   return isGoogleSheetsConfigured() ? 'google_sheets' : 'demo_local';
 }
 
+function parseQuotaNumber(value: unknown, fallback: number): number {
+  if (value === undefined || value === null || value === '') {
+    return fallback;
+  }
+  const num = typeof value === 'number' ? value : Number(String(value).trim());
+  if (!Number.isFinite(num) || num < 0) {
+    return fallback;
+  }
+  return num;
+}
+
+export function normalizeUserQuotas(
+  raw?: Partial<LeaveQuotas> | null
+): LeaveQuotas {
+  const src = raw && typeof raw === 'object' ? raw : {};
+  return {
+    sick: parseQuotaNumber(src.sick, STANDARD_LEAVE_QUOTAS.sick),
+    personal: parseQuotaNumber(src.personal, STANDARD_LEAVE_QUOTAS.personal),
+    vacation: parseQuotaNumber(src.vacation, STANDARD_LEAVE_QUOTAS.vacation),
+    wfh: parseQuotaNumber(src.wfh, STANDARD_LEAVE_QUOTAS.wfh),
+    wfa: parseQuotaNumber(src.wfa, STANDARD_LEAVE_QUOTAS.wfa),
+    offsite: parseQuotaNumber(src.offsite, STANDARD_LEAVE_QUOTAS.offsite),
+  };
+}
+
 function cloneInitialState(): DatabaseState {
   return {
     users: JSON.parse(JSON.stringify(INITIAL_USERS)),
@@ -167,44 +310,60 @@ function cloneInitialState(): DatabaseState {
   };
 }
 
+export function loadLocalStoreFromFile(
+  filePath: string = DATA_FILE_PATH
+): DatabaseState | null {
+  try {
+    if (!fs.existsSync(filePath)) {
+      return null;
+    }
+    const raw = fs.readFileSync(filePath, 'utf-8');
+    const parsed = JSON.parse(raw) as DatabaseState;
+    if (
+      Array.isArray(parsed.users) &&
+      Array.isArray(parsed.leaveRequests) &&
+      Array.isArray(parsed.holidays) &&
+      parsed.users.every((u) => 'startDate' in u && 'englishName' in u)
+    ) {
+      if (!Array.isArray(parsed.attendance)) {
+        parsed.attendance = JSON.parse(JSON.stringify(INITIAL_ATTENDANCE));
+      }
+      // Preserve custom quotas configured on each user; only fill missing/invalid fields with defaults.
+      for (const u of parsed.users) {
+        u.quotas = normalizeUserQuotas(u.quotas);
+      }
+      return parsed;
+    }
+  } catch {
+    // Ignore file read/parse errors
+  }
+  return null;
+}
+
+function cloneState(state: DatabaseState): DatabaseState {
+  return JSON.parse(JSON.stringify(state)) as DatabaseState;
+}
+
 function readLocalStore(): DatabaseState {
   if (memoryStore) {
-    return memoryStore;
+    return cloneState(memoryStore);
   }
   if (process.env.NODE_ENV === 'test' || process.env.VITEST) {
     memoryStore = cloneInitialState();
-    return memoryStore;
+    return cloneState(memoryStore);
   }
-  try {
-    if (fs.existsSync(DATA_FILE_PATH)) {
-      const raw = fs.readFileSync(DATA_FILE_PATH, 'utf-8');
-      const parsed = JSON.parse(raw) as DatabaseState;
-      if (
-        Array.isArray(parsed.users) &&
-        Array.isArray(parsed.leaveRequests) &&
-        Array.isArray(parsed.holidays) &&
-        parsed.users.every((u) => 'startDate' in u && 'englishName' in u)
-      ) {
-        if (!Array.isArray(parsed.attendance)) {
-          parsed.attendance = JSON.parse(JSON.stringify(INITIAL_ATTENDANCE));
-        }
-        for (const u of parsed.users) {
-          u.quotas = { ...STANDARD_LEAVE_QUOTAS };
-        }
-        memoryStore = parsed;
-        return memoryStore;
-      }
-    }
-  } catch {
-    // Ignore file read errors and use initial state
+  const loaded = loadLocalStoreFromFile(DATA_FILE_PATH);
+  if (loaded) {
+    memoryStore = loaded;
+    return cloneState(memoryStore);
   }
   memoryStore = cloneInitialState();
   writeLocalStore(memoryStore);
-  return memoryStore;
+  return cloneState(memoryStore);
 }
 
 function writeLocalStore(state: DatabaseState): void {
-  memoryStore = state;
+  memoryStore = cloneState(state);
   if (process.env.NODE_ENV === 'test' || process.env.VITEST) {
     return;
   }
@@ -213,7 +372,21 @@ function writeLocalStore(state: DatabaseState): void {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    fs.writeFileSync(DATA_FILE_PATH, JSON.stringify(state, null, 2), 'utf-8');
+    const payload = JSON.stringify(state, null, 2);
+    const tmpPath = `${DATA_FILE_PATH}.tmp.${process.pid}.${Date.now()}.${Math.random()
+      .toString(36)
+      .slice(2, 8)}`;
+    try {
+      fs.writeFileSync(tmpPath, payload, 'utf-8');
+      fs.renameSync(tmpPath, DATA_FILE_PATH);
+    } catch {
+      try {
+        if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
+      } catch {
+        // Ignore cleanup failure
+      }
+      fs.writeFileSync(DATA_FILE_PATH, payload, 'utf-8');
+    }
   } catch {
     // On read-only serverless environments, memoryStore still persists in the warm lambda
   }
@@ -265,6 +438,7 @@ export function userToRow(u: User): (string | number)[] {
     u.secondaryEmail.trim().toLowerCase() !== (u.email || '').trim().toLowerCase()
       ? `${u.email || ''}, ${u.secondaryEmail.trim().toLowerCase()}`
       : u.email || '';
+  const q = normalizeUserQuotas(u.quotas);
   return [
     u.id,
     u.name,
@@ -274,11 +448,11 @@ export function userToRow(u: User): (string | number)[] {
     u.department,
     u.position,
     u.startDate || '2023-01-01',
-    STANDARD_LEAVE_QUOTAS.sick,
-    STANDARD_LEAVE_QUOTAS.personal,
-    STANDARD_LEAVE_QUOTAS.vacation,
-    0,
-    0,
+    q.sick,
+    q.personal,
+    q.vacation,
+    q.wfh,
+    q.wfa,
     u.cLevelApproverId || '',
     u.avatarUrl || '',
   ];
@@ -307,11 +481,11 @@ export function rowToUser(row: string[]): User {
     cLevelApproverId: row[13] || undefined,
     avatarUrl: (row[14] || '').trim() || undefined,
     quotas: {
-      sick: STANDARD_LEAVE_QUOTAS.sick,
-      personal: STANDARD_LEAVE_QUOTAS.personal,
-      vacation: STANDARD_LEAVE_QUOTAS.vacation,
-      wfh: 0,
-      wfa: 0,
+      sick: parseQuotaNumber(row[8], STANDARD_LEAVE_QUOTAS.sick),
+      personal: parseQuotaNumber(row[9], STANDARD_LEAVE_QUOTAS.personal),
+      vacation: parseQuotaNumber(row[10], STANDARD_LEAVE_QUOTAS.vacation),
+      wfh: parseQuotaNumber(row[11], STANDARD_LEAVE_QUOTAS.wfh),
+      wfa: parseQuotaNumber(row[12], STANDARD_LEAVE_QUOTAS.wfa),
       offsite: 0,
     },
   };
@@ -438,6 +612,16 @@ export const ATTENDANCE_SHEET_HEADERS = [
 ];
 
 export function attendanceToRow(a: AttendanceRecord): string[] {
+  let serializedNote = (a.note || '').trim();
+  if (a.workLocation === 'wfh') {
+    const { meetLink, extraNote } = extractWfhMeetLinkAndNote(a);
+    if (meetLink) {
+      serializedNote = extraNote ? `${meetLink} • ${extraNote}` : meetLink;
+    }
+  } else if (a.workLocation === 'offsite' && a.locationName?.trim() && !serializedNote) {
+    serializedNote = a.locationName.trim();
+  }
+
   return [
     a.id,
     a.userId,
@@ -447,7 +631,7 @@ export function attendanceToRow(a: AttendanceRecord): string[] {
     a.checkInTime,
     a.checkOutTime || '',
     a.workLocation,
-    (a.note || '').slice(0, 2000),
+    serializedNote.slice(0, 2000),
   ];
 }
 
@@ -455,8 +639,15 @@ export function rowToAttendance(row: string[]): AttendanceRecord {
   const note = row[8] || undefined;
   const workLocation = ((row[7] as WorkLocationType) || 'office');
   let locationName: string | undefined = undefined;
+  let meetLink: string | undefined = undefined;
   if (workLocation === 'offsite' && note) {
     locationName = note.includes(' • ') ? note.split(' • ')[0].trim() : note.trim();
+  } else if (workLocation === 'wfh' && note) {
+    const firstPart = note.includes(' • ') ? note.split(' • ')[0].trim() : note.trim();
+    const checked = normalizeAndValidateMeetLink(firstPart);
+    if (checked.valid && checked.normalizedUrl) {
+      meetLink = checked.normalizedUrl;
+    }
   }
   return {
     id: row[0] || '',
@@ -468,6 +659,7 @@ export function rowToAttendance(row: string[]): AttendanceRecord {
     checkOutTime: row[6] || undefined,
     workLocation,
     locationName,
+    ...(meetLink ? { meetLink } : {}),
     note,
   };
 }
@@ -529,11 +721,26 @@ export function appSheetRowToUser(row: Record<string, any>): User {
     cLevelApproverId: cLevelApproverId || undefined,
     avatarUrl: (row.avatarUrl || row.AvatarUrl || '').toString().trim() || undefined,
     quotas: {
-      sick: STANDARD_LEAVE_QUOTAS.sick,
-      personal: STANDARD_LEAVE_QUOTAS.personal,
-      vacation: STANDARD_LEAVE_QUOTAS.vacation,
-      wfh: 0,
-      wfa: 0,
+      sick: parseQuotaNumber(
+        row.sickQuota ?? row.SickQuota,
+        STANDARD_LEAVE_QUOTAS.sick
+      ),
+      personal: parseQuotaNumber(
+        row.personalQuota ?? row.PersonalQuota,
+        STANDARD_LEAVE_QUOTAS.personal
+      ),
+      vacation: parseQuotaNumber(
+        row.vacationQuota ?? row.VacationQuota,
+        STANDARD_LEAVE_QUOTAS.vacation
+      ),
+      wfh: parseQuotaNumber(
+        row.wfhQuota ?? row.WfhQuota,
+        STANDARD_LEAVE_QUOTAS.wfh
+      ),
+      wfa: parseQuotaNumber(
+        row.wfaQuota ?? row.WfaQuota,
+        STANDARD_LEAVE_QUOTAS.wfa
+      ),
       offsite: 0,
     },
   };
@@ -714,8 +921,101 @@ export async function syncToAppSheetTable(
 }
 
 // ============================================================================
-// Google Sheets API Client
+// Google Sheets API Client (Unbounded Ranges + Row-Level Safe Mutations)
 // ============================================================================
+
+export const SHEET_TAB_CONFIG: Record<
+  SheetTab,
+  { headers: string[]; lastCol: string; fullRange: string; dataRange: string }
+> = {
+  Users: {
+    headers: USER_SHEET_HEADERS,
+    lastCol: 'O',
+    fullRange: 'Users!A1:O',
+    dataRange: 'Users!A2:O',
+  },
+  LeaveRequests: {
+    headers: LEAVE_SHEET_HEADERS,
+    lastCol: 'V',
+    fullRange: 'LeaveRequests!A1:V',
+    dataRange: 'LeaveRequests!A2:V',
+  },
+  Holidays: {
+    headers: HOLIDAY_SHEET_HEADERS,
+    lastCol: 'C',
+    fullRange: 'Holidays!A1:C',
+    dataRange: 'Holidays!A2:C',
+  },
+  Attendance: {
+    headers: ATTENDANCE_SHEET_HEADERS,
+    lastCol: 'I',
+    fullRange: 'Attendance!A1:I',
+    dataRange: 'Attendance!A2:I',
+  },
+};
+
+export interface GoogleSheetsClientLike {
+  spreadsheets: {
+    get: (params: { spreadsheetId: string }) => Promise<{
+      data: {
+        sheets?: Array<{ properties?: { title?: string | null; sheetId?: number | null } }>;
+      };
+    }>;
+    batchUpdate: (params: {
+      spreadsheetId: string;
+      requestBody: any;
+    }) => Promise<any>;
+    values: {
+      get: (params: {
+        spreadsheetId: string;
+        range: string;
+      }) => Promise<{ data: { values?: any[][] | null } }>;
+      batchGet: (params: {
+        spreadsheetId: string;
+        ranges: string[];
+      }) => Promise<{
+        data: { valueRanges?: Array<{ values?: any[][] | null }> };
+      }>;
+      update: (params: {
+        spreadsheetId: string;
+        range: string;
+        valueInputOption: string;
+        requestBody: { values: (string | number)[][] };
+      }) => Promise<any>;
+      append: (params: {
+        spreadsheetId: string;
+        range: string;
+        valueInputOption: string;
+        insertDataOption?: string;
+        requestBody: { values: (string | number)[][] };
+      }) => Promise<any>;
+      batchUpdate: (params: {
+        spreadsheetId: string;
+        requestBody: {
+          valueInputOption: string;
+          data: Array<{ range: string; values: (string | number)[][] }>;
+        };
+      }) => Promise<any>;
+      batchClear: (params: {
+        spreadsheetId: string;
+        requestBody: { ranges: string[] };
+      }) => Promise<any>;
+    };
+  };
+}
+
+type GoogleSheetsClientFactory = () => Promise<{
+  sheets: GoogleSheetsClientLike;
+  spreadsheetId: string;
+}>;
+
+let testSheetsClientFactory: GoogleSheetsClientFactory | null = null;
+
+export function setGoogleSheetsClientFactoryForTest(
+  factory: GoogleSheetsClientFactory | null
+): void {
+  testSheetsClientFactory = factory;
+}
 
 function getGoogleServiceAccountAuth() {
   const cfg = getRuntimeAppConfig();
@@ -735,118 +1035,394 @@ function getGoogleServiceAccountAuth() {
   });
 }
 
-async function getGoogleSheetsClient() {
+async function getGoogleSheetsClient(): Promise<{
+  sheets: GoogleSheetsClientLike;
+  spreadsheetId: string;
+}> {
+  if (testSheetsClientFactory) {
+    return testSheetsClientFactory();
+  }
   const cfg = getRuntimeAppConfig();
   const spreadsheetId =
     process.env.GOOGLE_SHEET_ID?.trim() || cfg.googleSheetId?.trim();
   const auth = getGoogleServiceAccountAuth();
-  const sheets = createSheetsClient({ version: 'v4', auth });
+  const sheets = createSheetsClient({ version: 'v4', auth }) as unknown as GoogleSheetsClientLike;
   return { sheets, spreadsheetId: spreadsheetId! };
 }
 
-async function ensureGoogleSheetsStructure() {
+async function ensureGoogleSheetsStructure(): Promise<Map<SheetTab, number>> {
   const { sheets, spreadsheetId } = await getGoogleSheetsClient();
   const meta = await sheets.spreadsheets.get({ spreadsheetId });
-  const existingTitles = new Set(
-    (meta.data.sheets || []).map((s) => s.properties?.title || '')
-  );
+  const sheetIdByTitle = new Map<string, number>();
 
-  const requiredTabs = ['Users', 'LeaveRequests', 'Holidays', 'Attendance'];
-  const requests = requiredTabs
-    .filter((t) => !existingTitles.has(t))
-    .map((title) => ({
-      addSheet: { properties: { title } },
-    }));
+  for (const s of meta.data.sheets || []) {
+    const title = s.properties?.title || '';
+    const sheetId = s.properties?.sheetId;
+    if (title && typeof sheetId === 'number') {
+      sheetIdByTitle.set(title, sheetId);
+    }
+  }
 
-  if (requests.length > 0) {
-    await sheets.spreadsheets.batchUpdate({
+  const requiredTabs: SheetTab[] = [
+    'Users',
+    'LeaveRequests',
+    'Holidays',
+    'Attendance',
+  ];
+  const missingTabs = requiredTabs.filter((t) => !sheetIdByTitle.has(t));
+
+  if (missingTabs.length > 0) {
+    const res = await sheets.spreadsheets.batchUpdate({
       spreadsheetId,
-      requestBody: { requests },
+      requestBody: {
+        requests: missingTabs.map((title) => ({
+          addSheet: { properties: { title } },
+        })),
+      },
+    });
+    const replies = res?.data?.replies || [];
+    missingTabs.forEach((title, idx) => {
+      const addedId = replies[idx]?.addSheet?.properties?.sheetId;
+      if (typeof addedId === 'number') {
+        sheetIdByTitle.set(title, addedId);
+      }
+    });
+
+    // If any newly added tab ID wasn't returned in replies, refresh metadata once
+    if (missingTabs.some((t) => !sheetIdByTitle.has(t))) {
+      const refreshed = await sheets.spreadsheets.get({ spreadsheetId });
+      for (const s of refreshed.data.sheets || []) {
+        const title = s.properties?.title || '';
+        const sheetId = s.properties?.sheetId;
+        if (title && typeof sheetId === 'number') {
+          sheetIdByTitle.set(title, sheetId);
+        }
+      }
+    }
+
+    // Write headers to newly created tabs
+    await sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        valueInputOption: 'RAW',
+        data: missingTabs.map((tab) => ({
+          range: `${tab}!A1`,
+          values: [SHEET_TAB_CONFIG[tab].headers],
+        })),
+      },
     });
   }
+
+  const result = new Map<SheetTab, number>();
+  for (const tab of requiredTabs) {
+    const id = sheetIdByTitle.get(tab);
+    if (typeof id === 'number') {
+      result.set(tab, id);
+    }
+  }
+  return result;
+}
+
+function stripHeaderRow(rows: string[][]): string[][] {
+  if (rows.length === 0) return [];
+  const firstCell = String(rows[0]?.[0] ?? '').trim().toLowerCase();
+  if (firstCell === 'id') {
+    return rows.slice(1);
+  }
+  return rows;
 }
 
 async function readFromGoogleSheets(): Promise<DatabaseState> {
   await ensureGoogleSheetsStructure();
   const { sheets, spreadsheetId } = await getGoogleSheetsClient();
 
+  // Open-ended ranges (no artificial 500/1000/5000 row limit)
   const res = await sheets.spreadsheets.values.batchGet({
     spreadsheetId,
     ranges: [
-      'Users!A2:O1000',
-      'LeaveRequests!A2:V5000',
-      'Holidays!A2:C500',
-      'Attendance!A2:I5000',
+      SHEET_TAB_CONFIG.Users.fullRange,
+      SHEET_TAB_CONFIG.LeaveRequests.fullRange,
+      SHEET_TAB_CONFIG.Holidays.fullRange,
+      SHEET_TAB_CONFIG.Attendance.fullRange,
     ],
   });
 
-  const valueRanges = res.data.valueRanges || [];
-  const userRows = (valueRanges[0]?.values as string[][] | undefined) || [];
-  const leaveRows = (valueRanges[1]?.values as string[][] | undefined) || [];
-  const holidayRows = (valueRanges[2]?.values as string[][] | undefined) || [];
-  const attendanceRows =
-    (valueRanges[3]?.values as string[][] | undefined) || [];
+  const valueRanges = res.data.valueRanges;
+  if (!Array.isArray(valueRanges) || valueRanges.length !== 4) {
+    throw new Error(
+      `Google Sheets API returned incomplete batchGet response (expected 4 tabs, got ${
+        Array.isArray(valueRanges) ? valueRanges.length : 0
+      })`
+    );
+  }
+  const userRows = stripHeaderRow(
+    (valueRanges[0]?.values as string[][] | undefined) || []
+  ).filter((r) => Boolean(r[0]));
+  const leaveRows = stripHeaderRow(
+    (valueRanges[1]?.values as string[][] | undefined) || []
+  ).filter((r) => Boolean(r[0]));
+  const holidayRows = stripHeaderRow(
+    (valueRanges[2]?.values as string[][] | undefined) || []
+  ).filter((r) => Boolean(r[0]));
+  const attendanceRows = stripHeaderRow(
+    (valueRanges[3]?.values as string[][] | undefined) || []
+  ).filter((r) => Boolean(r[0]));
 
-  if (userRows.length === 0) {
+  // Only seed initial state when ALL 4 tabs of the spreadsheet are genuinely brand-new & empty
+  if (
+    userRows.length === 0 &&
+    leaveRows.length === 0 &&
+    holidayRows.length === 0 &&
+    attendanceRows.length === 0
+  ) {
     const initial = cloneInitialState();
+    googleSheetsOriginStates.add(initial);
     await writeToGoogleSheets(initial);
     return initial;
   }
 
-  return {
-    users: userRows.filter((r) => r[0]).map(rowToUser),
-    leaveRequests: leaveRows.filter((r) => r[0]).map(rowToLeave),
-    holidays: holidayRows.filter((r) => r[0]).map(rowToHoliday),
-    attendance: attendanceRows.filter((r) => r[0]).map(rowToAttendance),
+  const state: DatabaseState = {
+    users: userRows.map(rowToUser),
+    leaveRequests: leaveRows.map(rowToLeave),
+    holidays: holidayRows.map(rowToHoliday),
+    attendance: attendanceRows.map(rowToAttendance),
   };
+  googleSheetsOriginStates.add(state);
+  return state;
 }
 
+/**
+ * Non-destructive full-table write:
+ * 1. Writes all new rows IN-PLACE first via values.batchUpdate (NEVER clears before writing).
+ * 2. Only AFTER batchUpdate succeeds, clears excess trailing rows if a tab shrank.
+ * If batchUpdate fails, existing sheet data remains 100% intact.
+ */
 async function writeToGoogleSheets(state: DatabaseState): Promise<void> {
   await ensureGoogleSheetsStructure();
   const { sheets, spreadsheetId } = await getGoogleSheetsClient();
 
-  await sheets.spreadsheets.values.batchClear({
+  // Measure existing row counts before overwriting so we can trim trailing excess rows AFTER write succeeds
+  const existingCountsRes = await sheets.spreadsheets.values.batchGet({
     spreadsheetId,
-    requestBody: {
-      ranges: [
-        'Users!A1:O1000',
-        'LeaveRequests!A1:V5000',
-        'Holidays!A1:C500',
-        'Attendance!A1:I5000',
+    ranges: ['Users!A:A', 'LeaveRequests!A:A', 'Holidays!A:A', 'Attendance!A:A'],
+  });
+  const prevCounts = (existingCountsRes.data.valueRanges || []).map(
+    (vr) => (vr.values || []).length
+  );
+
+  const tabData: Array<{ tab: SheetTab; values: (string | number)[][] }> = [
+    {
+      tab: 'Users',
+      values: [USER_SHEET_HEADERS, ...state.users.map(userToRow)],
+    },
+    {
+      tab: 'LeaveRequests',
+      values: [LEAVE_SHEET_HEADERS, ...state.leaveRequests.map(leaveToRow)],
+    },
+    {
+      tab: 'Holidays',
+      values: [HOLIDAY_SHEET_HEADERS, ...state.holidays.map(holidayToRow)],
+    },
+    {
+      tab: 'Attendance',
+      values: [
+        ATTENDANCE_SHEET_HEADERS,
+        ...state.attendance.map(attendanceToRow),
       ],
     },
-  });
+  ];
 
+  // Step 1: Write new values in-place FIRST (never clear beforehand!)
   await sheets.spreadsheets.values.batchUpdate({
     spreadsheetId,
     requestBody: {
       valueInputOption: 'RAW',
-      data: [
-        {
-          range: 'Users!A1',
-          values: [USER_SHEET_HEADERS, ...state.users.map(userToRow)],
-        },
-        {
-          range: 'LeaveRequests!A1',
-          values: [
-            LEAVE_SHEET_HEADERS,
-            ...state.leaveRequests.map(leaveToRow),
-          ],
-        },
-        {
-          range: 'Holidays!A1',
-          values: [HOLIDAY_SHEET_HEADERS, ...state.holidays.map(holidayToRow)],
-        },
-        {
-          range: 'Attendance!A1',
-          values: [
-            ATTENDANCE_SHEET_HEADERS,
-            ...state.attendance.map(attendanceToRow),
-          ],
-        },
-      ],
+      data: tabData.map(({ tab, values }) => ({
+        range: `${tab}!A1`,
+        values,
+      })),
     },
   });
+
+  // Step 2: Only after write succeeds, clear any leftover trailing rows if a tab shrank
+  const trailingClearRanges: string[] = [];
+  tabData.forEach(({ tab, values }, idx) => {
+    const prevRowCount = prevCounts[idx] || 0;
+    const newRowCount = values.length;
+    if (prevRowCount > newRowCount) {
+      const lastCol = SHEET_TAB_CONFIG[tab].lastCol;
+      trailingClearRanges.push(
+        `${tab}!A${newRowCount + 1}:${lastCol}${prevRowCount}`
+      );
+    }
+  });
+
+  if (trailingClearRanges.length > 0) {
+    await sheets.spreadsheets.values.batchClear({
+      spreadsheetId,
+      requestBody: { ranges: trailingClearRanges },
+    });
+  }
+}
+
+/**
+ * Targeted row-level mutations on Google Sheets (append / upsertById / deleteByIds).
+ * Never clears the sheet and never touches unrelated rows or unrelated tabs.
+ */
+async function applySheetMutations(mutations: SheetMutation[]): Promise<void> {
+  if (mutations.length === 0) return;
+
+  const sheetIdMap = await ensureGoogleSheetsStructure();
+  const { sheets, spreadsheetId } = await getGoogleSheetsClient();
+
+  for (const mutation of mutations) {
+    const cfg = SHEET_TAB_CONFIG[mutation.tab];
+
+    if (mutation.type === 'append') {
+      if (mutation.rows.length === 0) continue;
+
+      // Ensure header row exists on empty tab before appending
+      const headerCheck = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: `${mutation.tab}!A1:A1`,
+      });
+      if (!headerCheck.data.values || headerCheck.data.values.length === 0) {
+        await sheets.spreadsheets.values.update({
+          spreadsheetId,
+          range: `${mutation.tab}!A1`,
+          valueInputOption: 'RAW',
+          requestBody: { values: [cfg.headers] },
+        });
+      }
+
+      await sheets.spreadsheets.values.append({
+        spreadsheetId,
+        range: `${mutation.tab}!A:${cfg.lastCol}`,
+        valueInputOption: 'RAW',
+        insertDataOption: 'INSERT_ROWS',
+        requestBody: { values: mutation.rows },
+      });
+      continue;
+    }
+
+    if (mutation.type === 'upsertById') {
+      if (mutation.items.length === 0) continue;
+
+      const colARes = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: `${mutation.tab}!A:A`,
+      });
+      const colARows = colARes.data.values || [];
+
+      if (colARows.length === 0) {
+        await sheets.spreadsheets.values.update({
+          spreadsheetId,
+          range: `${mutation.tab}!A1`,
+          valueInputOption: 'RAW',
+          requestBody: { values: [cfg.headers] },
+        });
+      }
+
+      const idToRowNum = new Map<string, number>();
+      colARows.forEach((r, idx) => {
+        const cellId = String(r?.[0] ?? '').trim();
+        if (idx === 0 && cellId.toLowerCase() === 'id') return;
+        if (cellId) {
+          idToRowNum.set(cellId, idx + 1); // 1-based sheet row number
+        }
+      });
+
+      const updates: Array<{ range: string; values: (string | number)[][] }> =
+        [];
+      const appends: (string | number)[][] = [];
+
+      for (const item of mutation.items) {
+        const paddedRow =
+          item.row.length < cfg.headers.length
+            ? [
+                ...item.row,
+                ...Array(cfg.headers.length - item.row.length).fill(''),
+              ]
+            : item.row;
+        const rowNum = idToRowNum.get(item.id.trim());
+        if (rowNum !== undefined) {
+          updates.push({
+            range: `${mutation.tab}!A${rowNum}:${cfg.lastCol}${rowNum}`,
+            values: [paddedRow],
+          });
+        } else {
+          appends.push(paddedRow);
+        }
+      }
+
+      if (updates.length > 0) {
+        await sheets.spreadsheets.values.batchUpdate({
+          spreadsheetId,
+          requestBody: {
+            valueInputOption: 'RAW',
+            data: updates,
+          },
+        });
+      }
+
+      if (appends.length > 0) {
+        await sheets.spreadsheets.values.append({
+          spreadsheetId,
+          range: `${mutation.tab}!A:${cfg.lastCol}`,
+          valueInputOption: 'RAW',
+          insertDataOption: 'INSERT_ROWS',
+          requestBody: { values: appends },
+        });
+      }
+      continue;
+    }
+
+    if (mutation.type === 'deleteByIds') {
+      if (mutation.ids.length === 0) continue;
+      const targetIds = new Set(mutation.ids.map((id) => id.trim()).filter(Boolean));
+      if (targetIds.size === 0) continue;
+
+      const colARes = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: `${mutation.tab}!A:A`,
+      });
+      const colARows = colARes.data.values || [];
+
+      const zeroBasedIndices: number[] = [];
+      colARows.forEach((r, idx) => {
+        const cellId = String(r?.[0] ?? '').trim();
+        if (idx === 0 && cellId.toLowerCase() === 'id') return;
+        if (targetIds.has(cellId)) {
+          zeroBasedIndices.push(idx);
+        }
+      });
+
+      if (zeroBasedIndices.length === 0) continue;
+
+      const sheetId = sheetIdMap.get(mutation.tab);
+      if (sheetId === undefined) {
+        throw new Error(`ไม่พบ sheetId ของแท็บ ${mutation.tab}`);
+      }
+
+      // Delete bottom-up (descending) so lower row indices never shift
+      zeroBasedIndices.sort((a, b) => b - a);
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        requestBody: {
+          requests: zeroBasedIndices.map((rowIdx) => ({
+            deleteDimension: {
+              range: {
+                sheetId,
+                dimension: 'ROWS',
+                startIndex: rowIdx,
+                endIndex: rowIdx + 1,
+              },
+            },
+          })),
+        },
+      });
+    }
+  }
 }
 
 // ============================================================================
@@ -865,34 +1441,39 @@ export async function getDatabaseState(): Promise<{
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Google Sheets connection error';
-      return {
-        state: readLocalStore(),
-        mode: 'demo_local',
-        syncError: `ไม่สามารถเชื่อมต่อ Google Sheets ได้ (${message}) ระบบสลับมาใช้ฐานข้อมูลจำลองชั่วคราว`,
-      };
+      // NEVER silently fall back to local mock data when Google Sheets is configured,
+      // because a subsequent write would overwrite production Google Sheets with mock data.
+      throw new GoogleSheetsUnavailableError(
+        `ไม่สามารถเชื่อมต่อ Google Sheets ได้ชั่วคราว (${message}) กรุณาลองใหม่อีกครั้ง`
+      );
     }
   }
   return { state: readLocalStore(), mode: 'demo_local' };
 }
 
-export async function saveDatabaseState(state: DatabaseState): Promise<{
+export async function saveDatabaseState(
+  state: DatabaseState,
+  mutations?: SheetMutation[]
+): Promise<{
   mode: 'google_sheets' | 'demo_local';
   syncError?: string;
 }> {
-  writeLocalStore(state);
-
   if (isGoogleSheetsConfigured()) {
-    try {
-      await writeToGoogleSheets(state);
-      return { mode: 'google_sheets' };
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Google Sheets write error';
-      return {
-        mode: 'demo_local',
-        syncError: `บันทึกข้อมูลลง Google Sheets ไม่สำเร็จ (${message}) บันทึกในโหมด Local แทนแล้ว`,
-      };
+    if (!googleSheetsOriginStates.has(state)) {
+      throw new GoogleSheetsWriteGuardError(
+        'ปฏิเสธการบันทึก: ไม่อนุญาตให้เขียนข้อมูลจำลอง (Local/Mock) ทับ Google Sheets'
+      );
     }
+    if (mutations && mutations.length > 0) {
+      await applySheetMutations(mutations);
+    } else {
+      await writeToGoogleSheets(state);
+    }
+    // Keep local mirror updated only after Google Sheets write succeeds
+    writeLocalStore(state);
+    return { mode: 'google_sheets' };
   }
+
+  writeLocalStore(state);
   return { mode: 'demo_local' };
 }
